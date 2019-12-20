@@ -1,5 +1,5 @@
 syntax = "proto3";
-
+option java_package = "org.interledger.spsp.server.grpc";
 package org.interledger.stream.proto;
 
 // Defines the fields required to initiate a STREAM payment.
