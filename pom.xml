@@ -43,7 +43,7 @@
 
         <java.version>1.8</java.version>
         <quilt.version>1.0.2</quilt.version>
-        <ilp-connector.version>0.1.0-SNAPSHOT</ilp-connector.version>
+        <ilp-connector.version>HEAD-SNAPSHOT</ilp-connector.version>
         <problem.version>0.23.0</problem.version>
         <problem-spring-web.version>0.25.2</problem-spring-web.version>
         <failBuildOnAnyVulnerability>false</failBuildOnAnyVulnerability>
@@ -470,7 +470,6 @@
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>0.6.1</version>
                 <configuration>
-                    <protocExecutable>/usr/local/bin/protoc</protocExecutable>
                     <protoSourceRoot>${project.basedir}/protocol-buffers/proto</protoSourceRoot>
                     <protocArtifact>
                         com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}
@@ -544,6 +543,26 @@
                                     <ignoredDependency>org.springframework.data</ignoredDependency>
                                     <ignoredDependency>org.zalando</ignoredDependency>
                                 </ignoredDependencies>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>copy-protoc</id>
+                            <phase>generate-sources</phase>
+                            <goals>
+                                <goal>copy</goal>
+                            </goals>
+                            <configuration>
+                                <artifactItems>
+                                    <artifactItem>
+                                        <groupId>com.google.protobuf</groupId>
+                                        <artifactId>protoc</artifactId>
+                                        <version>${protobuf.version}</version>
+                                        <classifier>${os.detected.classifier}</classifier>
+                                        <type>exe</type>
+                                        <overWrite>true</overWrite>
+                                        <outputDirectory>${project.build.directory}</outputDirectory>
+                                    </artifactItem>
+                                </artifactItems>
                             </configuration>
                         </execution>
                     </executions>
