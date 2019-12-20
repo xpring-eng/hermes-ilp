@@ -63,6 +63,22 @@ jobs:
       - store_artifacts:
           path: ~/junit
 
+      - run:
+          name: "Install Linter"
+          command: |
+            sudo curl -sSL https://github.com/uber/prototool/releases/download/v1.8.0/prototool-$(uname -s)-$(uname -m) -o /usr/local/bin/prototool
+            sudo chmod +x /usr/local/bin/prototool
+
+      - run:
+          name: "Lint Protocol Buffers"
+          command:
+            prototool lint
+
+      - run:
+          name: "Check Protocol Buffer Breakages"
+          command:
+            prototool break check
+
       # publish the coverage report to codecov.io
       - run: bash <(curl -s https://codecov.io/bash)
 
