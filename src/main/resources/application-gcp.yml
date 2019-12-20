@@ -1,0 +1,8 @@
+# Used for pure development purposes. All accounts are simulated using the Loopback Link.
+# See https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#common-application-properties
+interledger:
+  connector:
+    keystore:
+      gcpkms:
+        enabled: true
+        # locationId: foo

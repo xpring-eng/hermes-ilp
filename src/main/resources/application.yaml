@@ -1,0 +1,79 @@
+logging:
+  level:
+    ROOT: INFO
+    com: INFO
+    org.springframework.boot: INFO
+    org.springframework.web: INFO
+    org.hibernate: INFO
+    org.hibernate.SQL: INFO
+    org.hibernate.engine: WARN
+
+management:
+  endpoints:
+    enabled-by-default: false
+
+spring:
+  cache:
+    redis:
+      time-to-live: 86400
+  output:
+    ansi:
+      enabled: ALWAYS
+  http:
+    log-request-details: false
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        show_sql: false
+        use_sql_comments: false
+        format_sql: false
+  liquibase:
+    enabled: false
+  mvc:
+    throw-exception-if-no-handler-found: true
+  resources:
+    add-mappings: false
+  servlet:
+    multipart:
+      enabled: false
+      max-file-size: 32KB
+      max-request-size: 32KB
+    session:
+      persistent: false # Whether to persist session data between restarts.
+      timeout: 0 # Session timeout. If a duration suffix is not specified, seconds will be used.
+      tracking-modes: SSL # Session tracking modes.
+  session:
+    store-type: NONE
+  cloud:
+    # disabled by default. enabled via the gcp profile
+    gcp:
+      pubsub:
+        enabled: false
+
+interledger:
+  spsp-server:
+    keys:
+      secret0:
+        alias: secret0
+        version: 1
+      accountSettings:
+        alias: secret0
+        version: 1
+    ilpOverHttp:
+      connectionDefaults:
+      # Applied when connecting a TCP socket to the target host. A value of 0 means no timeout, otherwise values must
+      # be between 1 and {@link Integer#MAX_VALUE} when converted to milliseconds.  If unspecified, defaults to 10.
+      connectTimeoutMillis: 10000
+      # This is applied to both the TCP socket and for individual read IO operations. A value of 0 means no timeout,
+      # otherwise values must be between 1 and {@link Integer#MAX_VALUE} when converted to milliseconds.  If
+      # unspecified, defaults to 10.
+      readTimeoutMillis: 60000
+      # Applied to individual write IO operations. A value of 0 means no timeout, otherwise values must be between 1
+      # and {@link Integer#MAX_VALUE} when converted to milliseconds. If unspecified, defaults to 10.
+      writeTimeoutMillis: 60000
+      #
+      maxIdleConnections: 5
+      keepAliveMinutes: 5

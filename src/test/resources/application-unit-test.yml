@@ -1,0 +1,32 @@
+# Test settings to validate loading configuration properties.
+interledger:
+  spsp-server:
+    require-32-byte-shared-secrets: true
+    keys:
+      secret0:
+        alias: secret0
+        version: 2
+      account-settings:
+        alias: accounts
+        version: 3
+    operator-address: test.example
+    parent-account:
+      id: alice
+      link-type: ILP_OVER_HTTP
+      asset-code: XRP
+      asset-scale: 9
+      maximum-packet-amount: 100001
+#      settlement-engine-details:
+#        url: "https://example.com"
+#        settlement-engine-accountId: seAccount
+#        custom-settings:
+#          foo: bar1
+#          boo: baz1
+      balance-settings:
+        min-balance: 1
+        max-balance: 2
+        settle-threshold: 10000001
+        settle-to: 3
+      custom-settings:
+        foo: bar
+        boo: baz

@@ -1,0 +1,20 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "io.xpring.xrpl";
+
+package io.xpring;
+
+import "send_payment_request.proto";
+import "send_payment_response.proto";
+
+// RPCs available to interact with the XRP Ledger.
+service ILPService {
+//  // Get account info for an account on the XRP Ledger.
+//  rpc GetAccountInfo (GetAccountInfoRequest) returns (AccountInfo);
+//
+//  // Get the fee for a transaction on the XRP Ledger.
+//  rpc GetFee (GetFeeRequest) returns (Fee);
+//
+//  // Submit a signed transaction to the XRP Ledger.
+//  rpc SubmitSignedTransaction (SubmitSignedTransactionRequest) returns (SubmitSignedTransactionResponse);
+}

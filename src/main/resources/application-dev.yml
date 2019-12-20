@@ -1,0 +1,41 @@
+# Used for pure development purposes. All accounts are simulated using the Loopback Link.
+# See https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#common-application-properties
+spring:
+  profiles:
+    include: h2, management, jks
+
+interledger:
+  spsp-server:
+    # Base64-encoded String of bytes.
+    server-secret: aQLR5IWAGV2vKnBhnFFsl2cXOCh9u0IWz3PiA64KlJ8=
+    parent-account:
+      id: alice
+      linkType: ILP_OVER_HTTP
+      asset-code: XRP
+      asset-scale: 9
+      maximum-packet-amount: 100001
+      #      settlement-engine-details:
+      #        url: "https://example.com"
+      #        settlement-engine-accountId: seAccount
+      #        custom-settings:
+      #          foo: bar1
+      #          boo: baz1
+      balance-settings:
+        min-balance: 1
+        max-balance: 2
+        settle-threshold: 10000001
+        settle-to: 3
+      custom-settings:
+        ilpOverHttp:
+          incoming:
+            auth_type: SIMPLE
+            token_subject: alice
+            # A simulated routing secret, which is a seed used for generating routing table auth values.
+            # Represents the plaintext value of `shh`, encrypted.
+            shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
+          outgoing:
+            auth_type: SIMPLE
+            token_subject: user_amgl3h6l
+            # This is a testnet credential in the xpring.dev testnet, so it's OK to be public.
+            shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADFP1VOP5YiqFF36-RaqYRnUuqf5PrToHyM-HUvpUQ215H7BiHkIcy2TKSQO9lTlEBBVSMRUfdT0=
+            url: https://rs3.xpring.dev/ilp

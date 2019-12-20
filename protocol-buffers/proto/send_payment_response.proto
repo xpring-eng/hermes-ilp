@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package org.interledger.stream.proto;
+
+// Defines the fields required to initiate a STREAM payment.
+// Next field: 4
+message SendPaymentRequest {
+
+    // TODO: Add fields.
+
+//    // The destination PP to pay.
+//    string destinationPaymentPointer = 1;
+//
+//    // The amount of this payment in the units and scale of the account.
+//    uint64 amount = 2;
+//
+//    // TODO: Should the client be able to specify this?
+//    // The number of seconds to wait for this payment to complete.
+//    uint64 timeoutSeconds = 3;
+
+    //TODO: Enum for SenderAmount vs ReceiverAmount
+    
+}
