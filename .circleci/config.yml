@@ -79,6 +79,12 @@ jobs:
           command:
             prototool break check
 
+      - run:
+          name: "Node Client Tests"
+          command: |
+            cd node-client
+            npm test
+
       # publish the coverage report to codecov.io
       - run: bash <(curl -s https://codecov.io/bash)
 
