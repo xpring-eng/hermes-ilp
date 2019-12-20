@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package org.interledger.stream.proto;
 
-// Defines the fields required to initiate a STREAM payment.
+// Defines the fields that are returned after a SendPayment RPC has completed.
 // Next field: 4
-message SendPaymentRequest {
+message SendPaymentResponse {
 
     // TODO: Add fields.
 

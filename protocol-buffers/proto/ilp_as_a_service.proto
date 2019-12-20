@@ -8,7 +8,7 @@ import "send_payment_request.proto";
 import "send_payment_response.proto";
 
 // RPCs available to interact with the XRP Ledger.
-service ILPService {
+service IlpService {
 //  // Get account info for an account on the XRP Ledger.
 //  rpc GetAccountInfo (GetAccountInfoRequest) returns (AccountInfo);
 //
@@ -18,3 +18,11 @@ service ILPService {
 //  // Submit a signed transaction to the XRP Ledger.
 //  rpc SubmitSignedTransaction (SubmitSignedTransactionRequest) returns (SubmitSignedTransactionResponse);
 }
+
+// Real Methods
+//
+
+// Temporary Methods
+// Sign-up for ILP (create ILP Account)
+// Get Account Details for AccountId
+//

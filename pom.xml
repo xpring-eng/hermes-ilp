@@ -8,28 +8,28 @@
         <version>2.2.1.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>org.interledger.spsp</groupId>
-    <artifactId>spsp-server</artifactId>
+    <groupId>io.xpring.interledger.hermes</groupId>
+    <artifactId>hermes-server</artifactId>
     <version>0.1-SNAPSHOT</version>
-    <name>spsp-server</name>
-    <description>An Interledger SPSP server with a stateless STREAM receiver that publishes events.</description>
+    <name>Hermes Parent</name>
+    <description>
+        An ILP-as-a-Service endpoint that provides STREAM sending and SPSP support via gRPC to Xpring Wallet
+    </description>
 
     <properties>
-        <container.image>interledger4j/spsp-server</container.image>
-        <container.version>${project.version}</container.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
 
-        <java.version>1.8</java.version>
-        <ilp.version>1.0.1</ilp.version>
-        <ilp-connector.version>0.1.0-SNAPSHOT</ilp-connector.version>
-        <problem.version>0.23.0</problem.version>
-        <problem-spring-web.version>0.25.2</problem-spring-web.version>
-        <failBuildOnAnyVulnerability>false</failBuildOnAnyVulnerability>
-        <spring-cloud.version>Hoxton.RC2</spring-cloud.version>
-        <grpc.version>1.16.1</grpc.version>
-        <protobuf.version>3.10.0</protobuf.version>
+        <container.image>interledger4j/hermes-server</container.image>
+        <container.version>${project.version}</container.version>
 
         <checkstyle.config.location>checkstyle.xml</checkstyle.config.location>
         <checkstyle.violationSeverity>error</checkstyle.violationSeverity>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.resources.sourceEncoding>UTF-8</project.resources.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
         <!-- org.jacoco:jacoc-maven-plugin -->
         <jacoco.propertyName>argLine</jacoco.propertyName>
         <!--
@@ -40,7 +40,24 @@
         <skipTests>false</skipTests>
         <skipITs>${skipTests}</skipITs>
         <skipUTs>${skipTests}</skipUTs>
+
+        <java.version>1.8</java.version>
+        <quilt.version>1.0.2</quilt.version>
+        <ilp-connector.version>0.1.0-SNAPSHOT</ilp-connector.version>
+        <problem.version>0.23.0</problem.version>
+        <problem-spring-web.version>0.25.2</problem-spring-web.version>
+        <failBuildOnAnyVulnerability>false</failBuildOnAnyVulnerability>
+        <spring-cloud.version>Hoxton.RC2</spring-cloud.version>
+        <!-- NOTE: This should align with connector-crypto until that module is no longer a dependency -->
+        <grpc.version>1.23.0</grpc.version>
+        <protobuf.version>3.11.1</protobuf.version>
     </properties>
+
+    <scm>
+        <connection>scm:git:git@github.com:xpring-eng/hermes-ilp.git</connection>
+        <url>scm:git:git@github.com:xpring-eng/hermes-ilp.git</url>
+        <developerConnection>scm:git:git@github.com:xpring-eng/hermes-ilp.git</developerConnection>
+    </scm>
 
     <dependencies>
         <dependency>
@@ -107,9 +124,13 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.grpc</groupId>-->
+<!--            <artifactId>grpc-netty</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>io.grpc</groupId>
-            <artifactId>grpc-netty</artifactId>
+            <artifactId>grpc-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
@@ -298,6 +319,11 @@
             </dependency>
             <dependency>
                 <groupId>io.grpc</groupId>
+                <artifactId>grpc-api</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
                 <artifactId>grpc-netty</artifactId>
                 <version>${grpc.version}</version>
             </dependency>
@@ -327,7 +353,7 @@
             <dependency>
                 <groupId>org.interledger</groupId>
                 <artifactId>quilt-bom</artifactId>
-                <version>${ilp.version}</version>
+                <version>${quilt.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -386,6 +412,14 @@
     </dependencyManagement>
 
     <build>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.6.2</version>
+            </extension>
+        </extensions>
+
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -443,9 +477,8 @@
                     </protocArtifact>
                     <pluginId>grpc-java</pluginId>
                     <pluginArtifact>
-                        <!-- TODO: Use ${grpc.version}? -->
                         <!-- TODO: Fix in Xpring4j? -->
-                        io.grpc:protoc-gen-grpc-java:1.24.0:exe:${os.detected.classifier}
+                        io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
                     </pluginArtifact>
                 </configuration>
                 <executions>
@@ -454,6 +487,19 @@
                             <goal>compile</goal>
                             <goal>compile-custom</goal>
                             <goal>test-compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -481,9 +527,9 @@
 
                                     <!-- Ignore these so that the KMS client dictates the versions -->
                                     <ignoredDependency>com.google.http-client:google-http-client:jar</ignoredDependency>
-                                    <ignoredDependency>com.google.protobuf:protobuf-java:jar</ignoredDependency>
-                                    <ignoredDependency>com.google.api.grpc:proto-google-cloud-kms-v1:jar
-                                    </ignoredDependency>
+<!--                                    <ignoredDependency>com.google.protobuf:protobuf-java:jar</ignoredDependency>-->
+<!--                                    <ignoredDependency>com.google.api.grpc:proto-google-cloud-kms-v1:jar-->
+<!--                                    </ignoredDependency>-->
 
                                     <!-- Not used for compile time, only for OkHttp 4 support-->
                                     <ignoredDependency>com.fasterxml.jackson.module:jackson-module-kotlin:jar
@@ -508,9 +554,25 @@
 
     <repositories>
         <repository>
+            <id>interledger4j-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+        <repository>
             <id>spring-milestones</id>
             <name>Spring Milestones</name>
             <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
         </repository>
     </repositories>
 
