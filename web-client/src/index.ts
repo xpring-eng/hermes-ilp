@@ -7,7 +7,7 @@ import { AccountId } from "../generated/accounts_pb";
 
 /** Export a test function in the browser. */
 export async function runILPTest(): Promise<void> {
-  const client = new IlpServiceClient("127.0.0.1:6565");
+  const client = new IlpServiceClient("http://127.0.0.1:6565");
 
   const req = new AccountId();
   client.getBalance(req, undefined, (error, response): void => {
