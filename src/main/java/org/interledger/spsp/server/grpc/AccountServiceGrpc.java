@@ -3,9 +3,14 @@ package org.interledger.spsp.server.grpc;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static org.interledger.link.http.IlpOverHttpConstants.BEARER;
 
+import org.interledger.connector.accounts.AccountId;
+import org.interledger.connector.accounts.AccountSettings;
+import org.interledger.connector.accounts.ImmutableAccountSettings;
 import org.interledger.link.http.auth.BearerTokenSupplier;
 import org.interledger.link.http.auth.SimpleBearerTokenSupplier;
+import org.interledger.spsp.PaymentPointer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.stub.StreamObserver;
 import okhttp3.Headers;
@@ -16,25 +21,38 @@ import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLDecoder;
 
 @GRpcService
 public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
 
-  private static final String TESTNET_URI = "https://rs3.xpring.dev";
+  private static final String TESTNET_URI = "https://jc.ilpv4.dev";
   private static final String ACCOUNT_URI = "/accounts/{accountId}";
   // NOTE - replace this with the passkey for your sender account
-  private static final String SENDER_PASS_KEY = "w6uwvg42ogktl";
+  private static final String SENDER_PASS_KEY = "YWRtaW46cGFzc3dvcmQ=";
+  private static final String BASIC = "Basic ";
 
   @Autowired
   protected OkHttpClient okHttpClient;
+
+  @Autowired
+  protected ObjectMapper objectMapper;
 
   public void getAccount(GetAccountRequest request, StreamObserver<GetAccountResponse> responseObserver) {
     Request getBalanceRequest = this.constructNewGetAccountRequest(request);
     try {
       Response response = okHttpClient.newCall(getBalanceRequest).execute();
 
-      final GetAccountResponse.Builder replyBuilder = GetAccountResponse.newBuilder();
-      JsonFormat.parser().ignoringUnknownFields().merge(response.body().string(), replyBuilder);
+      String responseBodyString = response.body().string();
+      final AccountSettings accountSettingsResponse = objectMapper.readValue(responseBodyString, ImmutableAccountSettings.class);
+
+      final GetAccountResponse.Builder replyBuilder = GetAccountResponse.newBuilder()
+          .setAccountId(accountSettingsResponse.accountId().value())
+          .setAssetCode(accountSettingsResponse.assetCode())
+          .setPaymentPointer(paymentPointerFromUriAndAccountId(accountSettingsResponse.accountId()).toString())
+          .setAssetScale(accountSettingsResponse.assetScale());
 
       responseObserver.onNext(replyBuilder.build());
       responseObserver.onCompleted();
@@ -43,11 +61,24 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
     }
   }
 
+  private PaymentPointer paymentPointerFromUriAndAccountId(AccountId accountId) {
+    String hostName;
+    try {
+      hostName = new URL(TESTNET_URI).getHost();
+    } catch (MalformedURLException e) {
+      e.printStackTrace();
+      hostName = "jc.ilpv4.dev";
+    }
+
+    String paymentPointerString = "$" + hostName + "/" + accountId;
+
+    return PaymentPointer.of(paymentPointerString);
+  }
+
   private Request constructNewGetAccountRequest(GetAccountRequest request) {
-    BearerTokenSupplier tokenSupplier = new SimpleBearerTokenSupplier(request.getAccountId() + ":" + SENDER_PASS_KEY);
 
     final Headers httpRequestHeaders = new Headers.Builder()
-        .add(AUTHORIZATION, BEARER + tokenSupplier.get())
+        .add(AUTHORIZATION, BASIC + SENDER_PASS_KEY)
         .build();
 
     String requestUrl = TESTNET_URI + ACCOUNT_URI;

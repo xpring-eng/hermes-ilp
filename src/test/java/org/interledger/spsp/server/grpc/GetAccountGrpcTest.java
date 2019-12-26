@@ -37,7 +37,7 @@ public class GetAccountGrpcTest {
    * behaviors or state changes from the client side.
    */
   @Test
-  public void getAccountFor_user_9wgfsfte() throws Exception {
+  public void getAccountFor_connie() throws Exception {
     // Generate a unique in-process server name.
     String serverName = InProcessServerBuilder.generateName();
 
@@ -51,12 +51,13 @@ public class GetAccountGrpcTest {
 
 
     GetAccountResponse reply =
-        blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId("user_9wgfsfte").build());
+        blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId("connie").build());
 
-    assertEquals(reply.getAccountId(), "user_9wgfsfte");
+    System.out.println(reply);
+    assertEquals(reply.getAccountId(), "connie");
     assertEquals(reply.getAssetScale(), 9);
     assertEquals(reply.getAssetCode(), "XRP");
-    assertEquals(reply.getPaymentPointer(), "$test.xpring-dev.rs3/user_9wgfsfte");
+    assertEquals(reply.getPaymentPointer(), "$jc.ilpv4.dev/connie");
   }
 }
 
