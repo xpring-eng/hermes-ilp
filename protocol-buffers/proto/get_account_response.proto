@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.interledger.spsp.server.grpc";
+package org.interledger.stream.proto;
+
+message GetAccountResponse {
+    string accountId = 1;
+    string paymentPointer = 2;
+    string assetCode = 3;
+    int32 assetScale = 4;
+
+    /*
+        TODO: Should we just pass all the account info back to client and only
+                show basic info? If/When the client sends money, this would save
+                Hermes another request to the connector for all the account settings
+    */
+
+
+}
+
+
