@@ -283,6 +283,28 @@
             <groupId>org.zalando</groupId>
             <artifactId>problem-violations</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.github.lognet</groupId>
+            <artifactId>grpc-spring-boot-starter</artifactId>
+            <!--<exclusions>
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-services</artifactId>
+                </exclusion>
+            </exclusions>-->
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-testing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-core</artifactId>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.grpc</groupId>-->
+<!--            <artifactId>grpc-services</artifactId>-->
+<!--        </dependency>-->
     </dependencies>
 
     <dependencyManagement>
@@ -320,6 +342,11 @@
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-api</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>
@@ -408,6 +435,21 @@
                 <artifactId>problem-violations</artifactId>
                 <version>${problem-spring-web.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.github.lognet</groupId>
+                <artifactId>grpc-spring-boot-starter</artifactId>
+                <version>3.5.1</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-testing</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-services</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -476,7 +518,6 @@
                     </protocArtifact>
                     <pluginId>grpc-java</pluginId>
                     <pluginArtifact>
-                        <!-- TODO: Fix in Xpring4j? -->
                         io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
                     </pluginArtifact>
                 </configuration>

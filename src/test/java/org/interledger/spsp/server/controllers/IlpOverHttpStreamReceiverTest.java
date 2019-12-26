@@ -24,7 +24,7 @@ import org.interledger.link.http.IlpOverHttpLinkSettings.AuthType;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.StreamConnectionDetails;
-import org.interledger.spsp.server.SpspServerApplication;
+import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.controllers.IlpOverHttpStreamReceiverTest.TestConfiguration;
 import org.interledger.spsp.server.model.SpspServerSettings;
 import org.interledger.stream.Denomination;
@@ -70,7 +70,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
   webEnvironment = WebEnvironment.RANDOM_PORT,
-  classes = {SpspServerApplication.class, TestConfiguration.class}
+  classes = {HermesServerApplication.class, TestConfiguration.class}
 )
 @ActiveProfiles({"test"})
 public class IlpOverHttpStreamReceiverTest {

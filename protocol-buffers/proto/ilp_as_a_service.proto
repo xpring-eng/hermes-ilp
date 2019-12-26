@@ -6,24 +6,26 @@ package org.interledger.stream.proto;
 
 import "send_payment_request.proto";
 import "send_payment_response.proto";
-import "accounts.proto";
-import "balances.proto";
+import "get_account_response.proto";
+import "get_balance_response.proto";
+import "get_balance_request.proto";
+import "get_account_request.proto";
 import "google/protobuf/empty.proto";
 
 // RPCs available to interact with Hermes.
 service IlpService {
 
     // Send a payment through Hermes to a given payment pointer
-    rpc SendMoney (SendPaymentRequest) returns (SendPaymentResponse);
+    //    rpc SendMoney (SendPaymentRequest) returns (SendPaymentResponse);
 
     // Get account info for a given AccountId on the connector
-    rpc GetAccount (AccountId) returns (AccountSettings);
+    rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
 
     // Create a new account on a connector. HTTP response code will tell if succeeded
-    rpc CreateAccount (AccountSettings) returns (google.protobuf.Empty);
+    //    rpc CreateAccount (AccountSettings) returns (google.protobuf.Empty);
 
     // Get the balance of a certain account on a connector
-    rpc GetBalance (AccountId) returns (GetBalanceResponse);
+    //rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
 
 }
 

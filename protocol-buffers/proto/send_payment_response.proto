@@ -19,4 +19,5 @@ message SendPaymentResponse {
     // Indicates if the payment was completed successfully.
     bool successfulPayment = 4;
 
+    // TODO : include all other meta-data from SendPaymentResult
 }
