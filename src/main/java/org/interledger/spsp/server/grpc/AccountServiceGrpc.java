@@ -11,6 +11,7 @@ import org.interledger.link.http.auth.SimpleBearerTokenSupplier;
 import org.interledger.spsp.PaymentPointer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Empty;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.stub.StreamObserver;
 import okhttp3.Headers;
@@ -40,6 +41,7 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
   @Autowired
   protected ObjectMapper objectMapper;
 
+  @Override
   public void getAccount(GetAccountRequest request, StreamObserver<GetAccountResponse> responseObserver) {
     Request getBalanceRequest = this.constructNewGetAccountRequest(request);
     try {
@@ -51,7 +53,6 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
       final GetAccountResponse.Builder replyBuilder = GetAccountResponse.newBuilder()
           .setAccountId(accountSettingsResponse.accountId().value())
           .setAssetCode(accountSettingsResponse.assetCode())
-          .setPaymentPointer(paymentPointerFromUriAndAccountId(accountSettingsResponse.accountId()).toString())
           .setAssetScale(accountSettingsResponse.assetScale());
 
       responseObserver.onNext(replyBuilder.build());
@@ -61,18 +62,9 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
     }
   }
 
-  private PaymentPointer paymentPointerFromUriAndAccountId(AccountId accountId) {
-    String hostName;
-    try {
-      hostName = new URL(TESTNET_URI).getHost();
-    } catch (MalformedURLException e) {
-      e.printStackTrace();
-      hostName = "jc.ilpv4.dev";
-    }
-
-    String paymentPointerString = "$" + hostName + "/" + accountId;
-
-    return PaymentPointer.of(paymentPointerString);
+  @Override
+  public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
+    super.createAccount(request, responseObserver);
   }
 
   private Request constructNewGetAccountRequest(GetAccountRequest request) {

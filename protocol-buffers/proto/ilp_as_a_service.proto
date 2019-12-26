@@ -10,6 +10,8 @@ import "get_account_response.proto";
 import "get_balance_response.proto";
 import "get_balance_request.proto";
 import "get_account_request.proto";
+import "create_account_request.proto";
+import "create_account_response.proto";
 import "google/protobuf/empty.proto";
 
 // RPCs available to interact with Hermes.
@@ -22,7 +24,7 @@ service IlpService {
     rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
 
     // Create a new account on a connector. HTTP response code will tell if succeeded
-    //    rpc CreateAccount (AccountSettings) returns (google.protobuf.Empty);
+    rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse);
 
     // Get the balance of a certain account on a connector
     //rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
