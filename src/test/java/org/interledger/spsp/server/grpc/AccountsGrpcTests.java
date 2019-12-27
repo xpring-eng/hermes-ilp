@@ -1,5 +1,8 @@
 package org.interledger.spsp.server.grpc;
 
+import static com.google.common.net.HttpHeaders.ACCEPT;
+import static com.google.common.net.HttpHeaders.AUTHORIZATION;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static org.junit.Assert.assertEquals;
 
 import org.interledger.spsp.server.HermesServerApplication;
@@ -8,16 +11,26 @@ import com.google.protobuf.Empty;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.testing.GrpcCleanupRule;
+import okhttp3.Headers;
+import okhttp3.Request;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Random;
+import java.util.UUID;
+import javax.annotation.PostConstruct;
 
 
 @RunWith(SpringRunner.class)
@@ -26,6 +39,10 @@ import java.io.IOException;
     classes = {HermesServerApplication.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class AccountsGrpcTests {
+  private static final String SENDER_PASS_KEY = "YWRtaW46cGFzc3dvcmQ=";
+  private static final String BASIC = "Basic ";
+  private static final String TESTNET_URI = "https://jc.ilpv4.dev";
+  private static final String ACCOUNT_URI = "/accounts";
   /**
    * This rule manages automatic graceful shutdown for the registered servers and channels at the
    * end of test.
@@ -73,15 +90,44 @@ public class AccountsGrpcTests {
     */
   @Test
   public void createAccountTest() {
+
+    String accountID = UUID.randomUUID().toString();
+
     CreateAccountRequest.Builder request = CreateAccountRequest.newBuilder()
-        .setAccountId("noah")
+        .setAccountId(accountID)
         .setAssetCode("XRP")
         .setAssetScale(9)
         .setDescription("Noah's test account");
 
     CreateAccountResponse reply = blockingStub.createAccount(request.build());
 
-    assertEquals(1,1);
+    System.out.println(reply);
+
+    deleteAccountByID(accountID);
+    assertEquals(reply.getCreateStatus(), HttpStatus.CREATED.value());
+  }
+
+  // Just need this so we don't create a bunch of orphan accounts on the dev connector
+  private void deleteAccountByID(String accountId) {
+    final Headers httpRequestHeaders = new Headers.Builder()
+        .add(AUTHORIZATION, BASIC + SENDER_PASS_KEY)
+        .add(CONTENT_TYPE, org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
+        .add(ACCEPT, org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
+        .build();
+
+    String requestUrl = TESTNET_URI + ACCOUNT_URI + "/" + URLEncoder.encode(accountId);
+
+    Request deleteRequest = new Request.Builder()
+        .headers(httpRequestHeaders)
+        .url(requestUrl)
+        .delete()
+        .build();
+
+    try {
+      accountServiceGrpc.okHttpClient.newCall(deleteRequest).execute();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 }
 

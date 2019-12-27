@@ -37,6 +37,7 @@ public class ObjectMapperFactory {
       .registerModule(new JavaTimeModule())
       .registerModule(new GuavaModule())
       .registerModule(new InterledgerAddressModule())
+      .registerModule(new AccountIdModule())
       .registerModule(new InterledgerAddressPrefixModule()) // TODO: Remove once Quilt 1.0.2 is released.
       .registerModule(new LinkIdModule())
       .registerModule(new LinkTypeModule())

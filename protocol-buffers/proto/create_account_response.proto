@@ -6,7 +6,7 @@ package org.interledger.stream.proto;
 
 message CreateAccountResponse {
 
-  AccountRelationship accountRelationship = 1;
+  string accountRelationship = 1;
   string assetCode = 2;
   int32 assetScale = 3;
   uint64 maximumPacketAmount = 4;
@@ -29,11 +29,7 @@ message CreateAccountResponse {
   bool isPeerAccount = 21;
   bool isPeerOrParentAccount = 22;
 
-  enum AccountRelationship {
-      PARENT = 0;
-      PEER = 1;
-      CHILD = 2;
-  }
+  int32 createStatus = 23;
 
   message SettlementEngineDetails {
       string settlementEngineAccountId = 1;
