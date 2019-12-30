@@ -5,12 +5,18 @@ import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static org.interledger.link.http.IlpOverHttpConstants.BEARER;
 
+import org.interledger.connector.accounts.AccountBalanceSettings;
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.accounts.ImmutableAccountSettings;
 import org.interledger.connector.accounts.SettlementEngineDetails;
+import org.interledger.link.LinkType;
 import org.interledger.link.LoopbackLink;
+import org.interledger.link.http.IlpOverHttpLink;
+import org.interledger.link.http.IlpOverHttpLinkSettings;
+import org.interledger.link.http.IncomingLinkSettings;
+import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.link.http.auth.BearerTokenSupplier;
 import org.interledger.link.http.auth.SimpleBearerTokenSupplier;
 import org.interledger.spsp.PaymentPointer;
@@ -18,6 +24,8 @@ import org.interledger.spsp.PaymentPointer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Empty;
+import com.google.protobuf.Int32Value;
+import com.google.protobuf.Int64Value;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.stub.StreamObserver;
 import okhttp3.Headers;
@@ -26,6 +34,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.jetbrains.annotations.NotNull;
 import org.lognet.springboot.grpc.GRpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +45,10 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @GRpcService
 public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
@@ -85,54 +98,11 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
       String responseBodyString = response.body().string();
       final AccountSettings accountSettingsResponse = objectMapper.readValue(responseBodyString, ImmutableAccountSettings.class);
 
-
-      SettlementEngineDetails settlementEngineDetails = accountSettingsResponse.settlementEngineDetails().isPresent() ?
-          accountSettingsResponse.settlementEngineDetails().get() : null;
-
-      long maxPacketAmount = accountSettingsResponse.maximumPacketAmount().isPresent() ?
-          accountSettingsResponse.maximumPacketAmount().get().longValue() : 0L;
-
-      // TODO: Maybe there is a way to copy properties to reduce some of this code
-      // Convert AccountSettings into CreateAccountResponse
-      final CreateAccountResponse.Builder replyBuilder = CreateAccountResponse.newBuilder()
-          .setAccountRelationship(accountSettingsResponse.accountRelationship().toString())
-          .setAssetCode(accountSettingsResponse.assetCode())
-          .setAssetScale(accountSettingsResponse.assetScale())
-          .setMaximumPacketAmount(maxPacketAmount)
-          // TODO: Figure out types for settings map fields
-//          .putAllCustomSettings(accountSettingsResponse.customSettings())
-          .setAccountId(accountSettingsResponse.accountId().value())
-          .setCreatedAt(accountSettingsResponse.createdAt().toString())
-          .setModifiedAt(accountSettingsResponse.modifiedAt().toString())
-          .setDescription(accountSettingsResponse.description())
-          .setLinkType(accountSettingsResponse.linkType().value())
-          .setIsInternal(accountSettingsResponse.isInternal())
-          .setIsConnectionInitiator(accountSettingsResponse.isConnectionInitiator())
-          .setIlpAddressSegment(accountSettingsResponse.ilpAddressSegment())
-          .setIsSendRoutes(accountSettingsResponse.isSendRoutes())
-          .setIsReceiveRoutes(accountSettingsResponse.isReceiveRoutes())
-//          .putAllBalanceSettings(accountSettingsResponse.balanceSettings())
-//          .putAllRateLimitSettings(accountSettingsResponse.rateLimitSettings())
-          // TODO: What should we do about this being null. Cant set CreateAccountResponse.SettlementEngineDetails to null
-          .setSettlementEngineDetails(settlementEngineDetails == null ?
-              CreateAccountResponse.SettlementEngineDetails.newBuilder()
-                  .setSettlementEngineAccountId("")
-                  .setBaseUrl("") :
-              CreateAccountResponse.SettlementEngineDetails.newBuilder()
-                .setSettlementEngineAccountId(settlementEngineDetails.settlementEngineAccountId().isPresent() ?
-                    settlementEngineDetails.settlementEngineAccountId().get().value() : null)
-                .setBaseUrl(settlementEngineDetails.baseUrl().toString())
-//                .putAllCustomSettings(settlementEngineDetails.customSettings())
-          )
-          .setIsParentAccount(accountSettingsResponse.isParentAccount())
-          .setIsChildAccount(accountSettingsResponse.isChildAccount())
-          .setIsPeerAccount(accountSettingsResponse.isPeerAccount())
-          .setIsPeerOrParentAccount(accountSettingsResponse.isPeerOrParentAccount());
+      final CreateAccountResponse.Builder replyBuilder = generateCreateAccountResponseFromAccountSettings(accountSettingsResponse);
 
       logger.info("Account created successfully with accountId: " + request.getAccountId());
 
-      responseObserver.onNext(replyBuilder
-          .setCreateStatus(HttpStatus.CREATED.value()).build());
+      responseObserver.onNext(replyBuilder.build());
       responseObserver.onCompleted();
     } catch (IOException e) {
       logger.error("Account creation failed.  Error is: ");
@@ -140,6 +110,77 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
 
       responseObserver.onError(e);
     }
+  }
+
+  private CreateAccountResponse.Builder generateCreateAccountResponseFromAccountSettings(AccountSettings accountSettings) {
+
+    long maxPacketAmount = accountSettings.maximumPacketAmount().isPresent() ?
+        accountSettings.maximumPacketAmount().get().longValue() : 0L;
+
+    // TODO: Maybe there is a way to copy properties to reduce some of this code
+    // Convert AccountSettings into CreateAccountResponse
+    AccountBalanceSettings accountBalanceSettings = accountSettings.balanceSettings();
+    CreateAccountResponse.Builder protoResponseBuilder = CreateAccountResponse.newBuilder()
+      .setAccountRelationship(accountSettings.accountRelationship().toString())
+      .setAssetCode(accountSettings.assetCode())
+      .setAssetScale(accountSettings.assetScale())
+      .setMaximumPacketAmount(maxPacketAmount)
+      // TODO: Figure out types for settings map fields
+//          .putAllCustomSettings(accountSettingsResponse.customSettings())
+      .setAccountId(accountSettings.accountId().value())
+      .setCreatedAt(accountSettings.createdAt().toString())
+      .setModifiedAt(accountSettings.modifiedAt().toString())
+      .setDescription(accountSettings.description())
+      .setLinkType(accountSettings.linkType().value())
+      .setIsInternal(accountSettings.isInternal())
+      .setIsConnectionInitiator(accountSettings.isConnectionInitiator())
+      .setIlpAddressSegment(accountSettings.ilpAddressSegment())
+      .setIsSendRoutes(accountSettings.isSendRoutes())
+      .setIsReceiveRoutes(accountSettings.isReceiveRoutes());
+
+
+    CreateAccountResponse.BalanceSettings.Builder balanceSettingsBuilder = CreateAccountResponse.BalanceSettings.newBuilder()
+      .setSettleTo(accountBalanceSettings.settleTo());
+    accountBalanceSettings.minBalance().ifPresent(
+      minBalance -> balanceSettingsBuilder.setMinBalance(accountBalanceSettings.minBalance().get())
+    );
+    accountBalanceSettings.settleThreshold().ifPresent(
+      minBalance -> balanceSettingsBuilder.setSettleThreshold(accountBalanceSettings.settleThreshold().get())
+    );
+
+    protoResponseBuilder.setBalanceSettings(balanceSettingsBuilder.build());
+
+    accountSettings.rateLimitSettings().maxPacketsPerSecond().ifPresent(
+      max -> protoResponseBuilder.setMaximumPacketAmount(accountSettings.rateLimitSettings().maxPacketsPerSecond().get())
+    );
+
+    Optional<SettlementEngineDetails> settlementEngineDetails = accountSettings.settlementEngineDetails();
+    CreateAccountResponse.SettlementEngineDetails.Builder settlementEngineBuilder = CreateAccountResponse.SettlementEngineDetails.newBuilder();
+    settlementEngineDetails.ifPresent(
+      settle -> {
+        settlementEngineDetails.get().settlementEngineAccountId().ifPresent(
+          accountId -> settlementEngineBuilder.setSettlementEngineAccountId(settlementEngineDetails.get().settlementEngineAccountId().get().value())
+        );
+
+        settlementEngineBuilder.setBaseUrl(settlementEngineDetails.get().baseUrl() == null ? null : settlementEngineDetails.get().baseUrl().toString());
+
+        settlementEngineBuilder.putAllCustomSettings(settingsMapToGrpcSettingsMap(settlementEngineDetails.get().customSettings()));
+      });
+
+    protoResponseBuilder
+      .setIsParentAccount(accountSettings.isParentAccount())
+      .setIsChildAccount(accountSettings.isChildAccount())
+      .setIsPeerAccount(accountSettings.isPeerAccount())
+      .setIsPeerOrParentAccount(accountSettings.isPeerOrParentAccount())
+      .putAllCustomSettings(settingsMapToGrpcSettingsMap(accountSettings.customSettings()));
+
+      return protoResponseBuilder;
+  }
+
+  private Map<String, String> settingsMapToGrpcSettingsMap(Map<String, Object> settingsMap) {
+    return settingsMap.entrySet()
+      .stream()
+      .collect(Collectors.toMap((e) -> e.getKey(), e -> e.getValue().toString()));
   }
 
   private Request constructNewCreateAccountRequest(CreateAccountRequest request) throws JsonProcessingException {
@@ -151,15 +192,30 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
 
     String requestUrl = TESTNET_URI + ACCOUNT_URI;
 
+    Map<String, Object> customSettings = new HashMap<>();
+//    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, request.getAccountId());
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_HS_256); // FIXME use JWT_RS_256 from new quilt
+    // FIXME: Once we add JWT_RS_256 to this, we should take this from the jwt
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, "auth0???");
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_SHARED_SECRET, "some secret"); // Do we need this for RS256?
+
+    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_TOKEN_SUBJECT, request.getAccountId());
+    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_HS_256); // FIXME use JWT_RS_256 from new quilt
+    // FIXME: Once we add JWT_RS_256 to this, we should take this from the jwt
+    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_TOKEN_AUDIENCE, "auth0???");
+    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_SHARED_SECRET, "some secret"); // Do we need this for RS256?
+    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_URL, "https://someurl.com"); // Do we need this for RS256?
+
     // Had to bring in AccountIdModule to objectMapper from connector-jackson for this serialization to work
     String bodyJson = objectMapper.writeValueAsString(AccountSettings.builder()
-        .accountId(AccountId.of(request.getAccountId()))
-        .assetCode(request.getAssetCode())
-        .assetScale(request.getAssetScale())
-        .description(request.getDescription())
-        .accountRelationship(AccountRelationship.CHILD)
-        .linkType(LoopbackLink.LINK_TYPE)
-        .build());
+      .accountId(AccountId.of(request.getAccountId()))
+      .assetCode(request.getAssetCode())
+      .assetScale(request.getAssetScale())
+      .description(request.getDescription())
+      .accountRelationship(AccountRelationship.CHILD)
+      .linkType(IlpOverHttpLink.LINK_TYPE)
+      .customSettings(customSettings)
+      .build());
 
     RequestBody body = RequestBody.create(
         bodyJson,

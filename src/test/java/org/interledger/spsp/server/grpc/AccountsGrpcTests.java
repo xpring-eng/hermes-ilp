@@ -4,10 +4,14 @@ import static com.google.common.net.HttpHeaders.ACCEPT;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.verify;
 
 import org.interledger.spsp.server.HermesServerApplication;
 
 import com.google.protobuf.Empty;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.testing.GrpcCleanupRule;
@@ -99,12 +103,15 @@ public class AccountsGrpcTests {
         .setAssetScale(9)
         .setDescription("Noah's test account");
 
-    CreateAccountResponse reply = blockingStub.createAccount(request.build());
+    try {
+      CreateAccountResponse reply = blockingStub.createAccount(request.build());
+      System.out.println(reply);
 
-    System.out.println(reply);
-
-    deleteAccountByID(accountID);
-    assertEquals(reply.getCreateStatus(), HttpStatus.CREATED.value());
+      // Get rid of phantom created account
+      deleteAccountByID(accountID);
+    } catch (StatusRuntimeException sre) {
+      fail("createAccountTest failed with error code: " + sre.getStatus().toString());
+    }
   }
 
   // Just need this so we don't create a bunch of orphan accounts on the dev connector

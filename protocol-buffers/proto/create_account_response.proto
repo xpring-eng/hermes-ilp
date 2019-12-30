@@ -2,6 +2,8 @@ syntax = "proto3";
 
 option java_multiple_files = true;
 option java_package = "org.interledger.spsp.server.grpc";
+
+
 package org.interledger.stream.proto;
 
 message CreateAccountResponse {
@@ -21,20 +23,28 @@ message CreateAccountResponse {
   string ilpAddressSegment = 13;
   bool isSendRoutes = 14;
   bool isReceiveRoutes = 15;
-  map<string, string> balanceSettings = 16;
-  map<string, string> rateLimitSettings = 17;
+  BalanceSettings balanceSettings = 16;
+  int32 maxPacketsPerSecond = 17;
   SettlementEngineDetails settlementEngineDetails = 18;
   bool isParentAccount = 19;
   bool isChildAccount = 20;
   bool isPeerAccount = 21;
   bool isPeerOrParentAccount = 22;
 
-  int32 createStatus = 23;
-
   message SettlementEngineDetails {
       string settlementEngineAccountId = 1;
       string baseUrl = 2;
       map<string, string> customSettings = 3;
+  }
+
+  message BalanceSettings {
+    int64 minBalance = 1;
+    int64 settleThreshold = 2;
+    int64 settleTo = 3;
+  }
+
+  message RateLimitSettingsResponse {
+
   }
 }
 
