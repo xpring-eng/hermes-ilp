@@ -13,6 +13,9 @@ message CreateAccountRequest {
     int32 assetScale = 3;
 
     string description = 4;
+
+    // No need to authenticate user in Hermes, just need jwt to set up accounts
+    string jwt = 5;
 }
 
 

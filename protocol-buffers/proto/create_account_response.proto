@@ -42,10 +42,6 @@ message CreateAccountResponse {
     int64 settleThreshold = 2;
     int64 settleTo = 3;
   }
-
-  message RateLimitSettingsResponse {
-
-  }
 }
 
 

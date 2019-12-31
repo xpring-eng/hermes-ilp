@@ -21,6 +21,8 @@ import org.interledger.link.http.auth.BearerTokenSupplier;
 import org.interledger.link.http.auth.SimpleBearerTokenSupplier;
 import org.interledger.spsp.PaymentPointer;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Empty;
@@ -125,8 +127,7 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
       .setAssetCode(accountSettings.assetCode())
       .setAssetScale(accountSettings.assetScale())
       .setMaximumPacketAmount(maxPacketAmount)
-      // TODO: Figure out types for settings map fields
-//          .putAllCustomSettings(accountSettingsResponse.customSettings())
+      .putAllCustomSettings(settingsMapToGrpcSettingsMap(accountSettings.customSettings()))
       .setAccountId(accountSettings.accountId().value())
       .setCreatedAt(accountSettings.createdAt().toString())
       .setModifiedAt(accountSettings.modifiedAt().toString())
@@ -167,20 +168,18 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
         settlementEngineBuilder.putAllCustomSettings(settingsMapToGrpcSettingsMap(settlementEngineDetails.get().customSettings()));
       });
 
-    protoResponseBuilder
+    return protoResponseBuilder
       .setIsParentAccount(accountSettings.isParentAccount())
       .setIsChildAccount(accountSettings.isChildAccount())
       .setIsPeerAccount(accountSettings.isPeerAccount())
       .setIsPeerOrParentAccount(accountSettings.isPeerOrParentAccount())
       .putAllCustomSettings(settingsMapToGrpcSettingsMap(accountSettings.customSettings()));
-
-      return protoResponseBuilder;
   }
 
   private Map<String, String> settingsMapToGrpcSettingsMap(Map<String, Object> settingsMap) {
     return settingsMap.entrySet()
       .stream()
-      .collect(Collectors.toMap((e) -> e.getKey(), e -> e.getValue().toString()));
+      .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
   }
 
   private Request constructNewCreateAccountRequest(CreateAccountRequest request) throws JsonProcessingException {
@@ -192,19 +191,22 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
 
     String requestUrl = TESTNET_URI + ACCOUNT_URI;
 
+    DecodedJWT jwt = JWT.decode(request.getJwt());
     Map<String, Object> customSettings = new HashMap<>();
+//    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_URL, "https://someurl.com"); // Do we need this for RS256?
 //    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, request.getAccountId());
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_SHARED_SECRET, "some shared secret");
+    customSettings.put("ilpOverHttp.incoming.token_subject", request.getAccountId()); // FIXME use above line from new quilt
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_HS_256); // FIXME use JWT_RS_256 from new quilt
-    // FIXME: Once we add JWT_RS_256 to this, we should take this from the jwt
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, "auth0???");
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_SHARED_SECRET, "some secret"); // Do we need this for RS256?
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, jwt.getAudience());
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, jwt.getIssuer());
 
-    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_TOKEN_SUBJECT, request.getAccountId());
-    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_HS_256); // FIXME use JWT_RS_256 from new quilt
-    // FIXME: Once we add JWT_RS_256 to this, we should take this from the jwt
-    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_TOKEN_AUDIENCE, "auth0???");
-    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_SHARED_SECRET, "some secret"); // Do we need this for RS256?
     customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_URL, "https://someurl.com"); // Do we need this for RS256?
+    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_SHARED_SECRET, "some shared secret");
+    customSettings.put("ilpOverHttp.outgoing.token_subject", request.getAccountId()); // FIXME use above line from new quilt
+    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_HS_256); // FIXME use JWT_RS_256 from new quilt
+    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_TOKEN_AUDIENCE, jwt.getAudience());
+    customSettings.put(OutgoingLinkSettings.HTTP_OUTGOING_TOKEN_ISSUER, jwt.getIssuer());
 
     // Had to bring in AccountIdModule to objectMapper from connector-jackson for this serialization to work
     String bodyJson = objectMapper.writeValueAsString(AccountSettings.builder()
