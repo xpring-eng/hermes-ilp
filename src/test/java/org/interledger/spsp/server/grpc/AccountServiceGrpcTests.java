@@ -94,6 +94,7 @@ public class AccountServiceGrpcTests {
   /**
    * Creates an account through Hermes Grpc
     */
+  // TODO: Spin up a connector locally
   @Test
   public void createAccountTest() {
 
@@ -112,7 +113,7 @@ public class AccountServiceGrpcTests {
       System.out.println(reply);
 
       // Get rid of phantom created account
-//      deleteAccountByID(accountID);
+      deleteAccountByID(accountID);
     } catch (StatusRuntimeException sre) {
       fail("createAccountTest failed with error code: " + sre.getStatus().toString());
     }

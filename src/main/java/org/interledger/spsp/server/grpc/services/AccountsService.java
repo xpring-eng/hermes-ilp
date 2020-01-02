@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 
-@Service
 @EnableConfigurationProperties(AccountsServiceConfig.class)
 public class AccountsService {
 
@@ -39,14 +38,18 @@ public class AccountsService {
 
   private static final String BASIC = "Basic ";
 
-  @Autowired
   protected ObjectMapper objectMapper;
 
-  @Autowired
   protected OkHttpClient okHttpClient;
 
-  @Autowired
-  protected RequestResponseConverter requestResponseConverter;
+
+  public AccountsService() {
+  }
+
+  public AccountsService(ObjectMapper objectMapper, OkHttpClient okHttpClient) {
+    this.objectMapper = objectMapper;
+    this.okHttpClient = okHttpClient;
+  }
 
   public AccountSettings getAccount(AccountId accountId) {
 
@@ -99,7 +102,7 @@ public class AccountsService {
     String requestUrl = CONNECTOR_URL + ACCOUNT_URI;
 
     // Had to bring in AccountIdModule to objectMapper from connector-jackson for this serialization to work
-    String bodyJson = objectMapper.writeValueAsString(requestResponseConverter.accountSettingsFromCreateAccountRequest(request));
+    String bodyJson = objectMapper.writeValueAsString(RequestResponseConverter.accountSettingsFromCreateAccountRequest(request));
 
     RequestBody body = RequestBody.create(
       bodyJson,

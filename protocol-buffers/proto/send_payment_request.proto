@@ -16,6 +16,8 @@ message SendPaymentRequest {
     // The number of seconds to wait for this payment to complete.
     uint64 timeoutSeconds = 3;
 
+    // Account Id of the sender
+    string accountId = 4;
     //TODO: Enum for SenderAmount vs ReceiverAmount
 
 }

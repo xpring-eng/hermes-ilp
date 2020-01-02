@@ -21,11 +21,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Service
 public class RequestResponseConverter {
 
 
-  public GetAccountResponse.Builder createGetAccountResponseFromAccountSettings(AccountSettings accountSettings) {
+  public static GetAccountResponse.Builder createGetAccountResponseFromAccountSettings(AccountSettings accountSettings) {
 
     long maxPacketAmount = accountSettings.maximumPacketAmount().isPresent() ?
       accountSettings.maximumPacketAmount().get().longValue() : 0L;
@@ -87,7 +86,7 @@ public class RequestResponseConverter {
       .putAllCustomSettings(settingsMapToGrpcSettingsMap(accountSettings.customSettings()));
   }
 
-  public CreateAccountResponse.Builder generateCreateAccountResponseFromAccountSettings(AccountSettings accountSettings) {
+  public static CreateAccountResponse.Builder generateCreateAccountResponseFromAccountSettings(AccountSettings accountSettings) {
 
     long maxPacketAmount = accountSettings.maximumPacketAmount().isPresent() ?
       accountSettings.maximumPacketAmount().get().longValue() : 0L;
@@ -149,13 +148,13 @@ public class RequestResponseConverter {
       .putAllCustomSettings(settingsMapToGrpcSettingsMap(accountSettings.customSettings()));
   }
 
-  private Map<String, String> settingsMapToGrpcSettingsMap(Map<String, Object> settingsMap) {
+  private static Map<String, String> settingsMapToGrpcSettingsMap(Map<String, Object> settingsMap) {
     return settingsMap.entrySet()
       .stream()
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
   }
 
-  public AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRequest createAccountRequest) {
+  public static AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRequest createAccountRequest) {
     // Derive custom settings (auth) from jwt
     DecodedJWT jwt = JWT.decode(createAccountRequest.getJwt());
     Map<String, Object> customSettings = new HashMap<>();

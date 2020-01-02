@@ -53,14 +53,11 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
   @Autowired
   protected AccountsService accountsService;
 
-  @Autowired
-  protected RequestResponseConverter converter;
-
   @Override
   public void getAccount(GetAccountRequest request, StreamObserver<GetAccountResponse> responseObserver) {
     try {
       AccountSettings accountSettings = accountsService.getAccount(AccountId.of(request.getAccountId()));
-      GetAccountResponse.Builder getAccountResponse = converter.createGetAccountResponseFromAccountSettings(accountSettings);
+      GetAccountResponse.Builder getAccountResponse = RequestResponseConverter.createGetAccountResponseFromAccountSettings(accountSettings);
 
       responseObserver.onNext(getAccountResponse.build());
       responseObserver.onCompleted();
@@ -78,7 +75,7 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
       String responseBodyString = response.body().string();
       final AccountSettings accountSettingsResponse = objectMapper.readValue(responseBodyString, ImmutableAccountSettings.class);
 
-      final CreateAccountResponse.Builder replyBuilder = converter.generateCreateAccountResponseFromAccountSettings(accountSettingsResponse);
+      final CreateAccountResponse.Builder replyBuilder = RequestResponseConverter.generateCreateAccountResponseFromAccountSettings(accountSettingsResponse);
 
       logger.info("Account created successfully with accountId: " + request.getAccountId());
 
