@@ -5,7 +5,7 @@ import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.crypto.Decryptor;
 import org.interledger.crypto.EncryptedSecret;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
-import org.interledger.link.http.SharedSecretTokenSettings;
+//import org.interledger.link.http.SharedSecretTokenSettings;
 import org.interledger.spsp.server.model.ParentAccountSettings;
 import org.interledger.spsp.server.model.SpspServerSettings;
 
@@ -166,7 +166,7 @@ public class IlpOverHttpAuthenticationProvider implements AuthenticationProvider
    *
    * @return The actual underlying shared-secret.
    */
-  @VisibleForTesting
+  /*@VisibleForTesting
   protected final EncryptedSecret getIncomingSecret(
     final AccountId authPrincipal, final SharedSecretTokenSettings sharedSecretTokenSettings
   ) {
@@ -177,7 +177,7 @@ public class IlpOverHttpAuthenticationProvider implements AuthenticationProvider
       .map(SharedSecretTokenSettings::encryptedTokenSharedSecret)
       .map(EncryptedSecret::fromEncodedValue)
       .orElseThrow(() -> new BadCredentialsException(String.format("No account found for `%s`", authPrincipal)));
-  }
+  }*/
 
   private AuthenticationDecision authenticateAsJwt(BearerAuthentication pendingAuth) {
     try {
@@ -229,9 +229,10 @@ public class IlpOverHttpAuthenticationProvider implements AuthenticationProvider
   }
 
   private EncryptedSecret getIncomingSecret(AccountId accountId) {
-    final IlpOverHttpLinkSettings ilpOverHttpLinkSettings = IlpOverHttpLinkSettings
+    /*final IlpOverHttpLinkSettings ilpOverHttpLinkSettings = IlpOverHttpLinkSettings
       .fromCustomSettings(parentAccountSettings.customSettings()).build();
-    return getIncomingSecret(accountId, ilpOverHttpLinkSettings.incomingHttpLinkSettings());
+    return getIncomingSecret(accountId, ilpOverHttpLinkSettings.incomingHttpLinkSettings());*/
+    return null;
   }
 
 

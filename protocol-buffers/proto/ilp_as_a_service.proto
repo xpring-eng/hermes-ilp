@@ -18,7 +18,7 @@ import "google/protobuf/empty.proto";
 service IlpService {
 
     // Send a payment through Hermes to a given payment pointer
-    //    rpc SendMoney (SendPaymentRequest) returns (SendPaymentResponse);
+    rpc SendMoney (SendPaymentRequest) returns (SendPaymentResponse);
 
     // Get account info for a given AccountId on the connector
     rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
@@ -27,7 +27,7 @@ service IlpService {
     rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse);
 
     // Get the balance of a certain account on a connector
-    //rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
+//    rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
 
 }
 

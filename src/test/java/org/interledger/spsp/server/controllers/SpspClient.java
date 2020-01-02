@@ -1,5 +1,7 @@
 package org.interledger.spsp.server.controllers;
 
+import static org.interledger.spsp.client.SpspClient.ACCEPT_SPSP_JSON;
+
 import org.interledger.quilt.jackson.InterledgerModule;
 import org.interledger.quilt.jackson.conditions.Encoding;
 import org.interledger.spsp.PaymentPointer;
@@ -50,7 +52,8 @@ public class SpspClient extends InterledgerRustNodeClient {
   public SpspClient(
     OkHttpClient okHttpClient, String authToken, String baseUri, PaymentPointerResolver paymentPointerResolver
   ) {
-    super(okHttpClient, authToken, baseUri, paymentPointerResolver);
+//    super(okHttpClient, authToken, baseUri, paymentPointerResolver);
+    super(okHttpClient, authToken, baseUri);
     this.authToken = Objects.requireNonNull(authToken);
     this.httpClient = Objects.requireNonNull(okHttpClient);
     this.objectMapper = mapper();
@@ -69,11 +72,11 @@ public class SpspClient extends InterledgerRustNodeClient {
     return objectMapper;
   }
 
-  @Override
+  /*@Override
   public StreamConnectionDetails getStreamConnectionDetails(PaymentPointer paymentPointer)
     throws InvalidReceiverClientException {
     return super.getStreamConnectionDetails(paymentPointer);
-  }
+  }*/
 
   public StreamConnectionDetails getStreamConnectionDetails(
     final HttpUrl spspUrl

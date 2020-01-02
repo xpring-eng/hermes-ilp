@@ -19,13 +19,17 @@ interledger:
       custom-settings:
         ilpOverHttp:
           incoming:
-            auth_type: SIMPLE
-            token_subject: alice
-            # Represents the plaintext value of `shh`, encrypted.
-            shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
+              auth_type: SIMPLE
+              simple:
+                token_subject: alice
+                # Represents the plaintext value of `shh`, encrypted.
+                shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
+                auth_token: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
           outgoing:
-            auth_type: SIMPLE
-            token_subject: bob
-            # Represents the plaintext value of `shh`, encrypted.
-            shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
-            url: http://localhost:8080/
+              auth_type: SIMPLE
+              url: http://localhost:8080/
+              simple:
+                token_subject: bob
+                # Represents the plaintext value of `shh`, encrypted.
+                shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
+                auth_token: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
