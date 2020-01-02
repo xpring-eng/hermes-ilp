@@ -34,7 +34,7 @@ public class HermesServerApplication {
 
   @PostConstruct
   public void init() {
-    final IldcpResponse ildcpResponse = ildcpFetcher.fetch(IldcpRequest.builder().build());
+    /*final IldcpResponse ildcpResponse = ildcpFetcher.fetch(IldcpRequest.builder().build());
 
     final SpspServerSettingsFromPropertyFile modifiableSpspServerSettings =
       ((SpspServerSettingsFromPropertyFile) this.spspServerSettings);
@@ -52,6 +52,6 @@ public class HermesServerApplication {
       modifiableSpspServerSettings.operatorAddress().getValue(),
       modifiableSpspServerSettings.parentAccountSettings().assetCode(),
       modifiableSpspServerSettings.parentAccountSettings().assetScale()
-    );
+    );*/
   }
 }

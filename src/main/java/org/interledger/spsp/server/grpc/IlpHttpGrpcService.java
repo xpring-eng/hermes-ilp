@@ -87,7 +87,7 @@ public class IlpHttpGrpcService extends IlpServiceGrpc.IlpServiceImplBase {
   protected AccountsService accountService;
 
   @Override
-  public void sendMoney(SendPaymentRequestOuterClass.SendPaymentRequest request, StreamObserver<SendPaymentResponseOuterClass.SendPaymentResponse> responseObserver) {
+  public void sendMoney(SendPaymentRequest request, StreamObserver<SendPaymentResponse> responseObserver) {
     SpspClient spspClient = new SimpleSpspClient();
 
     // Fetch shared secret and destination address using SPSP client
