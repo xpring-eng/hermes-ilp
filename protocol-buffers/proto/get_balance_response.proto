@@ -10,7 +10,9 @@ message GetBalanceResponse {
     string accountId = 1;
     string assetCode = 2;
     int32 assetScale = 3;
-    int64 balance = 4;
+    int64 netBalance = 4;
+    int64 prepaidAmount = 5;
+    int64 settlementAmount = 6;
 }
 
 

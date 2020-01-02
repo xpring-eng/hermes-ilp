@@ -65,7 +65,7 @@ public class IlpHttpGrpcTests {
 
   @Test
   public void sendMoneyTest() {
-    
+
   }
 
 

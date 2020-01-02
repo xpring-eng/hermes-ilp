@@ -18,6 +18,8 @@ message SendPaymentRequest {
 
     // Account Id of the sender
     string accountId = 4;
+
+    string jwt = 5;
     //TODO: Enum for SenderAmount vs ReceiverAmount
 
 }
