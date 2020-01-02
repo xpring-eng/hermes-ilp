@@ -1,13 +1,22 @@
 package org.interledger.spsp.server.grpc.services;
 
 import org.interledger.connector.accounts.AccountBalanceSettings;
+import org.interledger.connector.accounts.AccountId;
+import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.accounts.SettlementEngineDetails;
+import org.interledger.link.http.IlpOverHttpLink;
+import org.interledger.link.http.IlpOverHttpLinkSettings;
+import org.interledger.link.http.IncomingLinkSettings;
+import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.GetAccountResponse;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -146,4 +155,23 @@ public class RequestResponseConverter {
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
   }
 
+  public AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRequest createAccountRequest) {
+    // Derive custom settings (auth) from jwt
+    DecodedJWT jwt = JWT.decode(createAccountRequest.getJwt());
+    Map<String, Object> customSettings = new HashMap<>();
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, jwt.getIssuer());
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, jwt.getAudience().get(0));
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, jwt.getSubject());
+
+    return AccountSettings.builder()
+      .accountId(AccountId.of(createAccountRequest.getAccountId()))
+      .assetCode(createAccountRequest.getAssetCode())
+      .assetScale(createAccountRequest.getAssetScale())
+      .description(createAccountRequest.getDescription())
+      .accountRelationship(AccountRelationship.CHILD)
+      .linkType(IlpOverHttpLink.LINK_TYPE)
+      .customSettings(customSettings)
+      .build();
+  }
 }

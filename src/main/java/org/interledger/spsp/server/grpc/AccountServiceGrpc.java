@@ -44,12 +44,6 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  private static final String TESTNET_URI = "https://jc.ilpv4.dev";
-  private static final String ACCOUNT_URI = "/accounts";
-  // NOTE - replace this with the passkey for your sender account
-  private static final String SENDER_PASS_KEY = "YWRtaW46cGFzc3dvcmQ=";
-  private static final String BASIC = "Basic ";
-
   @Autowired
   protected OkHttpClient okHttpClient;
 

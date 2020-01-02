@@ -5,21 +5,13 @@ import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
 import org.interledger.connector.accounts.AccountId;
-import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.accounts.ImmutableAccountSettings;
-import org.interledger.link.http.IlpOverHttpLink;
-import org.interledger.link.http.IlpOverHttpLinkSettings;
-import org.interledger.link.http.IncomingLinkSettings;
-import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.grpc.CreateAccountRequest;
-import org.interledger.spsp.server.grpc.GetAccountResponse;
+import org.interledger.spsp.server.grpc.config.AccountsServiceConfig;
 import org.interledger.spsp.server.grpc.exceptions.HermesAccountsClientException;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
@@ -27,19 +19,24 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
+@EnableConfigurationProperties(AccountsServiceConfig.class)
 public class AccountsService {
 
-  private static final String TESTNET_URI = "https://jc.ilpv4.dev";
+  @Value("${interledger.connector.connector-url}")
+  private String CONNECTOR_URL;
+
   private static final String ACCOUNT_URI = "/accounts";
-  // NOTE - replace this with the passkey for your sender account
-  private static final String SENDER_PASS_KEY = "YWRtaW46cGFzc3dvcmQ=";
+
+  @Value("${interledger.connector.admin-key}")
+  private String SENDER_PASS_KEY;
+
   private static final String BASIC = "Basic ";
 
   @Autowired
@@ -47,6 +44,9 @@ public class AccountsService {
 
   @Autowired
   protected OkHttpClient okHttpClient;
+
+  @Autowired
+  protected RequestResponseConverter requestResponseConverter;
 
   public AccountSettings getAccount(AccountId accountId) {
 
@@ -80,7 +80,7 @@ public class AccountsService {
       .add(AUTHORIZATION, BASIC + SENDER_PASS_KEY)
       .build();
 
-    String requestUrl = TESTNET_URI + ACCOUNT_URI + "/" + accountId;
+    String requestUrl = CONNECTOR_URL + ACCOUNT_URI + "/" + accountId;
 
     return new Request.Builder()
       .headers(httpRequestHeaders)
@@ -96,25 +96,10 @@ public class AccountsService {
       .add(ACCEPT, org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
       .build();
 
-    String requestUrl = TESTNET_URI + ACCOUNT_URI;
-
-    DecodedJWT jwt = JWT.decode(request.getJwt());
-    Map<String, Object> customSettings = new HashMap<>();
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, jwt.getIssuer());
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, jwt.getAudience().get(0));
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, jwt.getSubject());
+    String requestUrl = CONNECTOR_URL + ACCOUNT_URI;
 
     // Had to bring in AccountIdModule to objectMapper from connector-jackson for this serialization to work
-    String bodyJson = objectMapper.writeValueAsString(AccountSettings.builder()
-      .accountId(AccountId.of(request.getAccountId()))
-      .assetCode(request.getAssetCode())
-      .assetScale(request.getAssetScale())
-      .description(request.getDescription())
-      .accountRelationship(AccountRelationship.CHILD)
-      .linkType(IlpOverHttpLink.LINK_TYPE)
-      .customSettings(customSettings)
-      .build());
+    String bodyJson = objectMapper.writeValueAsString(requestResponseConverter.accountSettingsFromCreateAccountRequest(request));
 
     RequestBody body = RequestBody.create(
       bodyJson,
