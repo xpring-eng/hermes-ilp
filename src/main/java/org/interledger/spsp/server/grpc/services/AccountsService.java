@@ -2,9 +2,10 @@ package org.interledger.spsp.server.grpc.services;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountSettings;
+import org.interledger.spsp.server.grpc.exceptions.HermesAccountException;
 
 /**
- *
+ *  Helper service that interacts with a connector to get and create accounts
  */
 public interface AccountsService {
 
@@ -13,7 +14,7 @@ public interface AccountsService {
    * @param accountId
    * @return Account settings from connector
    *
-   * @throws {@link org.interledger.spsp.server.grpc.exceptions.HermesAccountsClientException}
+   * @throws {@link HermesAccountException}
    */
   AccountSettings getAccount(AccountId accountId);
 
@@ -22,7 +23,7 @@ public interface AccountsService {
    * @param accountSettings
    * @return Account settings as returned by the connector after creating an account
    *
-   * @throws {@link org.interledger.spsp.server.grpc.exceptions.HermesAccountsClientException}
+   * @throws {@link HermesAccountException}
    */
   AccountSettings createAccount(AccountSettings accountSettings);
 }

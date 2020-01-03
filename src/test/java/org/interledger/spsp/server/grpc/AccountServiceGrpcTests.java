@@ -9,14 +9,11 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.verify;
 
 import org.interledger.connector.accounts.AccountId;
-import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.spsp.server.HermesServerApplication;
-import org.interledger.spsp.server.grpc.exceptions.HermesAccountsClientException;
 
-import com.google.protobuf.Empty;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
@@ -25,7 +22,6 @@ import io.grpc.testing.GrpcCleanupRule;
 import okhttp3.Headers;
 import okhttp3.Request;
 import org.assertj.core.api.Assertions;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,20 +29,13 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
-import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
-import javax.annotation.PostConstruct;
 
 
 @RunWith(SpringRunner.class)
@@ -107,21 +96,20 @@ public class AccountServiceGrpcTests {
   }
 
   /**
-   * Gets account for foo.  Should succeed on {@link org.interledger.spsp.server.grpc.exceptions.HermesAccountsClientException}
+   * Gets account for foo.  Should throw a {@link StatusRuntimeException} with code {@code Status.NOT_FOUND}
    */
   @Test
   public void getAccountFooFailsAccountNotFound() {
-/*    expectedException.expect(HermesAccountsClientException.class);
-    expectedException.expectCause(is(new StatusRuntimeException(Status.UNKNOWN)));*/
-
-    expectedException.expect(StatusRuntimeException.class);
     AccountId accountId = AccountId.of("foo");
-    /*expectedException.expectCause(is(new HermesAccountsClientException("Unable to get account information from connector for accountId = " + accountId,
-      new AccountNotFoundProblem(accountId), accountId)));*/
 
-    GetAccountResponse reply =
-      blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId("foo").build());
-
+    try {
+      GetAccountResponse reply =
+        blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId("foo").build());
+      fail();
+    } catch (StatusRuntimeException e){
+      System.out.println("Failed successfully.  Error status: " + e.getStatus());
+      assertEquals(e.getStatus(), Status.NOT_FOUND);
+    }
   }
 
   /**

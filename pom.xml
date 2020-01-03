@@ -155,6 +155,10 @@
             <artifactId>connector-accounts</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.interledger.connector</groupId>
+            <artifactId>connector-admin-client</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.interledger</groupId>
             <artifactId>jackson-datatypes</artifactId>
         </dependency>
@@ -389,6 +393,11 @@
             <dependency>
                 <groupId>org.interledger.connector</groupId>
                 <artifactId>connector-accounts</artifactId>
+                <version>${ilp-connector.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.interledger.connector</groupId>
+                <artifactId>connector-admin-client</artifactId>
                 <version>${ilp-connector.version}</version>
             </dependency>
             <dependency>

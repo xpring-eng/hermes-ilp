@@ -9,9 +9,8 @@ import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.accounts.ImmutableAccountSettings;
-import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.config.AccountsServiceConfig;
-import org.interledger.spsp.server.grpc.exceptions.HermesAccountsClientException;
+import org.interledger.spsp.server.grpc.exceptions.HermesAccountException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,9 +65,9 @@ public class AccountsServiceImpl implements AccountsService {
           String errorMessage = "Unable to get account information from connector for accountId = " + accountId;
           // Account not found
           if (response.code() == 404) {
-            throw new HermesAccountsClientException(errorMessage, new AccountNotFoundProblem(accountId), accountId);
+            throw new AccountNotFoundProblem(accountId);
           } else {
-            throw new HermesAccountsClientException(errorMessage, accountId);
+            throw new HermesAccountException(errorMessage, accountId);
           }
         }
 
@@ -77,9 +76,11 @@ public class AccountsServiceImpl implements AccountsService {
 
         return accountSettingsResponse;
       } catch (JsonProcessingException e) {
-        throw new HermesAccountsClientException("Unable to deserialize response from connector into AccountSettings. AccountId = " + accountId, e, accountId);
+        // This should never really happen, assuming we don't have invalid data on the connector
+        throw new HermesAccountException("Unable to deserialize response from connector into AccountSettings. AccountId = " + accountId, e, accountId);
       } catch (IOException e) {
-        throw new HermesAccountsClientException("Problem constructing OkHttpRequest for getAccount for accoundId " + accountId, e, accountId);
+        // Will happen if there is a network
+        throw new HermesAccountException("OkHttpClient error.  Unable to get account for " + accountId, e, accountId);
       }
   }
 
@@ -110,18 +111,18 @@ public class AccountsServiceImpl implements AccountsService {
       if (!response.isSuccessful()) {
         // Account already exists
         if (response.code() == 409) {
-
-          throw new HermesAccountsClientException("Could not create account. Account already exists",
-            new AccountAlreadyExistsProblem(accountId), accountId);
+          throw new AccountAlreadyExistsProblem(accountId);
         }
       }
 
       String responseBodyString = response.body().string();
       return objectMapper.readValue(responseBodyString, ImmutableAccountSettings.class);
     } catch (JsonProcessingException e) {
-      throw new HermesAccountsClientException("Unable to deserialize response from connector into AccountSettings. AccountId = " + accountId, e, accountId);
+      throw new HermesAccountException(
+        "Unable to deserialize response from connector into AccountSettings. AccountId = " + accountId, e, accountId);
     } catch (IOException e) {
-      throw new HermesAccountsClientException("Problem constructing OkHttpRequest for getAccount for accoundId " + accountId, e, accountId);
+      throw new HermesAccountException(
+        "Problem constructing OkHttpRequest for getAccount for accoundId " + accountId, e, accountId);
     }
   }
 

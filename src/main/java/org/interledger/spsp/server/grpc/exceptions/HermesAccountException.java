@@ -4,16 +4,16 @@ import org.interledger.connector.accounts.AccountId;
 
 import java.util.Objects;
 
-public class HermesAccountsClientException extends RuntimeException {
+public class HermesAccountException extends RuntimeException {
 
   private AccountId accountId;
 
-  public HermesAccountsClientException(String message, AccountId accountId) {
+  public HermesAccountException(String message, AccountId accountId) {
     super(message);
     this.accountId = Objects.requireNonNull(accountId);
   }
 
-  public HermesAccountsClientException(String message, Throwable e, AccountId accountId) {
+  public HermesAccountException(String message, Throwable e, AccountId accountId) {
     super(message, e);
     this.accountId = Objects.requireNonNull(accountId);
   }
