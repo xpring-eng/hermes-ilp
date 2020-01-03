@@ -1,53 +1,35 @@
 package org.interledger.spsp.server.grpc;
 
-import static com.google.common.net.HttpHeaders.ACCEPT;
-import static com.google.common.net.HttpHeaders.AUTHORIZATION;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static okhttp3.CookieJar.NO_COOKIES;
 
 import org.interledger.codecs.ilp.InterledgerCodecContextFactory;
-import org.interledger.connector.accounts.AccountBalanceSettings;
 import org.interledger.connector.accounts.AccountId;
-import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
-import org.interledger.connector.accounts.ImmutableAccountSettings;
-import org.interledger.connector.accounts.SettlementEngineDetails;
 import org.interledger.core.InterledgerAddress;
 import org.interledger.core.SharedSecret;
 import org.interledger.link.Link;
 import org.interledger.link.http.IlpOverHttpLink;
-import org.interledger.link.http.IlpOverHttpLinkSettings;
-import org.interledger.link.http.IncomingLinkSettings;
-import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.link.http.auth.SimpleBearerTokenSupplier;
 import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.StreamConnectionDetails;
 import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.grpc.config.AccountsServiceConfig;
-import org.interledger.spsp.server.grpc.services.AccountsService;
+import org.interledger.spsp.server.grpc.services.AccountsServiceImpl;
+import org.interledger.spsp.server.grpc.services.RequestResponseConverter;
 import org.interledger.stream.Denomination;
-import org.interledger.stream.Denominations;
 import org.interledger.stream.SendMoneyRequest;
 import org.interledger.stream.SendMoneyResult;
 import org.interledger.stream.sender.FixedSenderAmountPaymentTracker;
 import org.interledger.stream.sender.SimpleStreamSender;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.primitives.UnsignedLong;
 import io.grpc.stub.StreamObserver;
 import okhttp3.ConnectionPool;
 import okhttp3.ConnectionSpec;
-import okhttp3.Headers;
 import okhttp3.HttpUrl;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 import org.lognet.springboot.grpc.GRpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,15 +37,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @GRpcService
 @EnableConfigurationProperties(AccountsServiceConfig.class)
@@ -84,7 +61,7 @@ public class IlpHttpGrpcService extends IlpServiceGrpc.IlpServiceImplBase {
   protected ObjectMapper objectMapper;
 
   @Autowired
-  protected AccountsService accountService;
+  protected AccountsServiceImpl accountService;
 
   @Override
   public void sendMoney(SendPaymentRequest request, StreamObserver<SendPaymentResponse> responseObserver) {
@@ -108,6 +85,7 @@ public class IlpHttpGrpcService extends IlpServiceGrpc.IlpServiceImplBase {
 
     // Send payment using STREAM
     SendMoneyResult result = null;
+
     try {
       result = simpleStreamSender.sendMoney(
         SendMoneyRequest.builder()
@@ -123,13 +101,15 @@ public class IlpHttpGrpcService extends IlpServiceGrpc.IlpServiceImplBase {
           .sharedSecret(SharedSecret.of(connectionDetails.sharedSecret().value()))
           .build()
       ).get();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } catch (ExecutionException e) {
-      e.printStackTrace();
+    } catch (InterruptedException | ExecutionException e) {
+      responseObserver.onError(e);
     }
 
-    System.out.println("Send money result: " + result);
+    SendPaymentResponse sendPaymentResponse = RequestResponseConverter.sendPaymentResponseFromSendMoneyResult(result);
+    System.out.println("Send Payment Response: " + sendPaymentResponse);
+    responseObserver.onNext(sendPaymentResponse);
+
+    responseObserver.onCompleted();
   }
 
   private Link newIlpOverHttpLink(InterledgerAddress senderAddress, String senderAccountId) {

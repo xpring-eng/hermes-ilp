@@ -1,57 +1,42 @@
 package org.interledger.spsp.server.grpc;
 
-import static com.google.common.net.HttpHeaders.ACCEPT;
-import static com.google.common.net.HttpHeaders.AUTHORIZATION;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-
-import org.interledger.connector.accounts.AccountBalanceSettings;
 import org.interledger.connector.accounts.AccountId;
-import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.accounts.ImmutableAccountSettings;
-import org.interledger.connector.accounts.SettlementEngineDetails;
-import org.interledger.link.http.IlpOverHttpLink;
-import org.interledger.link.http.IlpOverHttpLinkSettings;
-import org.interledger.link.http.IncomingLinkSettings;
-import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.grpc.exceptions.HermesAccountsClientException;
-import org.interledger.spsp.server.grpc.services.AccountsService;
+import org.interledger.spsp.server.grpc.services.AccountsServiceImpl;
 import org.interledger.spsp.server.grpc.services.RequestResponseConverter;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.grpc.stub.StreamObserver;
-import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.lognet.springboot.grpc.GRpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @GRpcService
 public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired
+//  @Autowired
   protected OkHttpClient okHttpClient;
 
-  @Autowired
+//  @Autowired
   protected ObjectMapper objectMapper;
 
-  @Autowired
-  protected AccountsService accountsService;
+//  @Autowired
+  protected AccountsServiceImpl accountsService;
+
+  public AccountServiceGrpc(OkHttpClient okHttpClient, ObjectMapper objectMapper, AccountsServiceImpl accountsService) {
+    this.okHttpClient = okHttpClient;
+    this.objectMapper = objectMapper;
+    this.accountsService = accountsService;
+  }
 
   @Override
   public void getAccount(GetAccountRequest request, StreamObserver<GetAccountResponse> responseObserver) {
@@ -69,19 +54,20 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
   @Override
   public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
     try {
-      Request createAccountRequest = accountsService.constructNewCreateAccountRequest(request);
-      Response response = okHttpClient.newCall(createAccountRequest).execute();
+      // Convert request to AccountSettings
+      AccountSettings requestedAccountSettings = RequestResponseConverter.accountSettingsFromCreateAccountRequest(request);
 
-      String responseBodyString = response.body().string();
-      final AccountSettings accountSettingsResponse = objectMapper.readValue(responseBodyString, ImmutableAccountSettings.class);
+      // Create account on the connector
+      AccountSettings returnedAccountSettings = accountsService.createAccount(requestedAccountSettings);
 
-      final CreateAccountResponse.Builder replyBuilder = RequestResponseConverter.generateCreateAccountResponseFromAccountSettings(accountSettingsResponse);
+      // Convert returned AccountSettings into Grpc response object
+      final CreateAccountResponse.Builder replyBuilder =
+        RequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings);
 
       logger.info("Account created successfully with accountId: " + request.getAccountId());
-
       responseObserver.onNext(replyBuilder.build());
       responseObserver.onCompleted();
-    } catch (IOException e) {
+    } catch (HermesAccountsClientException e) {
       logger.error("Account creation failed.  Error is: ");
       logger.error(e.getMessage());
 

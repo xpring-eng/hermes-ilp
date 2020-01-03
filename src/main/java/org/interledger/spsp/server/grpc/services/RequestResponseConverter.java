@@ -11,10 +11,11 @@ import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.GetAccountResponse;
+import org.interledger.spsp.server.grpc.SendPaymentResponse;
+import org.interledger.stream.SendMoneyResult;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -172,5 +173,9 @@ public class RequestResponseConverter {
       .linkType(IlpOverHttpLink.LINK_TYPE)
       .customSettings(customSettings)
       .build();
+  }
+
+  public static SendPaymentResponse sendPaymentResponseFromSendMoneyResult(SendMoneyResult result) {
+    return null;
   }
 }
