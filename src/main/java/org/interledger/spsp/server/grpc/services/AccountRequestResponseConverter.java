@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class RequestResponseConverter {
+public class AccountRequestResponseConverter {
 
 
   public static GetAccountResponse.Builder createGetAccountResponseFromAccountSettings(AccountSettings accountSettings) {

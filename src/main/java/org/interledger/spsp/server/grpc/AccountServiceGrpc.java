@@ -6,7 +6,7 @@ import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.spsp.server.grpc.exceptions.HermesAccountException;
 import org.interledger.spsp.server.grpc.services.AccountsServiceImpl;
-import org.interledger.spsp.server.grpc.services.RequestResponseConverter;
+import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.grpc.Status;
@@ -45,7 +45,7 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
 
     try {
       AccountSettings accountSettings = accountsService.getAccount(AccountId.of(request.getAccountId()));
-      GetAccountResponse.Builder getAccountResponse = RequestResponseConverter.createGetAccountResponseFromAccountSettings(accountSettings);
+      GetAccountResponse.Builder getAccountResponse = AccountRequestResponseConverter.createGetAccountResponseFromAccountSettings(accountSettings);
 
       responseObserver.onNext(getAccountResponse.build());
       responseObserver.onCompleted();
@@ -67,14 +67,14 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
     Status grpcStatus = Status.OK;
     try {
       // Convert request to AccountSettings
-      AccountSettings requestedAccountSettings = RequestResponseConverter.accountSettingsFromCreateAccountRequest(request);
+      AccountSettings requestedAccountSettings = AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(request);
 
       // Create account on the connector
       AccountSettings returnedAccountSettings = accountsService.createAccount(requestedAccountSettings);
 
       // Convert returned AccountSettings into Grpc response object
       final CreateAccountResponse.Builder replyBuilder =
-        RequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings);
+        AccountRequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings);
 
       logger.info("Account created successfully with accountId: " + request.getAccountId());
       responseObserver.onNext(replyBuilder.build());

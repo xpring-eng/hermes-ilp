@@ -14,9 +14,8 @@ import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.StreamConnectionDetails;
 import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
-import org.interledger.spsp.server.grpc.config.AccountsServiceConfig;
 import org.interledger.spsp.server.grpc.services.AccountsServiceImpl;
-import org.interledger.spsp.server.grpc.services.RequestResponseConverter;
+import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.stream.Denomination;
 import org.interledger.stream.SendMoneyRequest;
 import org.interledger.stream.SendMoneyResult;
@@ -35,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -43,7 +41,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 @GRpcService
-@EnableConfigurationProperties(AccountsServiceConfig.class)
 public class IlpHttpGrpcService extends IlpServiceGrpc.IlpServiceImplBase {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -51,8 +48,8 @@ public class IlpHttpGrpcService extends IlpServiceGrpc.IlpServiceImplBase {
   @Value("${interledger.connector.connector-url}")
   private String CONNECTOR_URL;
 
-  @Value("${interledger.connector.admin-key}")
-  private String SENDER_PASS_KEY;
+//  @Value("${interledger.connector.admin-key}")
+  private String ADMIN_TOKEN = "YWRtaW46cGFzc3dvcmQ=";
 
   @Autowired
   protected OkHttpClient okHttpClient;
@@ -105,7 +102,7 @@ public class IlpHttpGrpcService extends IlpServiceGrpc.IlpServiceImplBase {
       responseObserver.onError(e);
     }
 
-    SendPaymentResponse sendPaymentResponse = RequestResponseConverter.sendPaymentResponseFromSendMoneyResult(result);
+    SendPaymentResponse sendPaymentResponse = AccountRequestResponseConverter.sendPaymentResponseFromSendMoneyResult(result);
     System.out.println("Send Payment Response: " + sendPaymentResponse);
     responseObserver.onNext(sendPaymentResponse);
 
@@ -119,7 +116,7 @@ public class IlpHttpGrpcService extends IlpServiceGrpc.IlpServiceImplBase {
       newHttpClient(),
       new ObjectMapper(),
       InterledgerCodecContextFactory.oer(),
-      new SimpleBearerTokenSupplier(senderAccountId + ":" + SENDER_PASS_KEY)
+      new SimpleBearerTokenSupplier(senderAccountId + ":" + ADMIN_TOKEN)
     );
   }
 

@@ -1,11 +1,8 @@
 package org.interledger.spsp.server.config.jackson;
 
-//import org.interledger.connector.jackson.modules.AccountIdModule;
-//import org.interledger.connector.jackson.modules.HttpUrlModule;
-//import org.interledger.connector.jackson.modules.InterledgerAddressPrefixModule;
-//import org.interledger.connector.jackson.modules.SettlementAccountIdModule;
-
+import org.interledger.connector.jackson.modules.AccountIdModule;
 import org.interledger.quilt.jackson.address.InterledgerAddressModule;
+import org.interledger.quilt.jackson.addressprefix.InterledgerAddressPrefixModule;
 import org.interledger.quilt.jackson.link.LinkIdModule;
 import org.interledger.quilt.jackson.link.LinkTypeModule;
 
@@ -38,7 +35,7 @@ public class ObjectMapperFactory {
       .registerModule(new GuavaModule())
       .registerModule(new InterledgerAddressModule())
       .registerModule(new AccountIdModule())
-      .registerModule(new InterledgerAddressPrefixModule()) // TODO: Remove once Quilt 1.0.2 is released.
+      .registerModule(new InterledgerAddressPrefixModule())
       .registerModule(new LinkIdModule())
       .registerModule(new LinkTypeModule())
       .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)

@@ -7,7 +7,7 @@ spring:
 interledger:
   connector:
     connector-url: https://jc.ilpv4.dev
-    admin-key: YWRtaW46cGFzc3dvcmQ=
+#    admin-key:
   spsp-server:
     # Base64-encoded String of bytes.
     server-secret: aQLR5IWAGV2vKnBhnFFsl2cXOCh9u0IWz3PiA64KlJ8=
@@ -35,7 +35,7 @@ interledger:
             simple:
               token_subject: alice
               # Represents the plaintext value of `shh`, encrypted.
-              shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
+#              shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
               auth_token: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
           outgoing:
             auth_type: SIMPLE
@@ -43,5 +43,5 @@ interledger:
             simple:
               token_subject: bob
               # Represents the plaintext value of `shh`, encrypted.
-              shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
+#              shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
               auth_token: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=

@@ -52,6 +52,8 @@
         <!-- NOTE: This should align with connector-crypto until that module is no longer a dependency -->
         <grpc.version>1.23.0</grpc.version>
         <protobuf.version>3.11.1</protobuf.version>
+        <feign.version>10.7.0</feign.version>
+        <testcontainers.version>1.12.1</testcontainers.version>
     </properties>
 
     <scm>
@@ -106,6 +108,10 @@
             <artifactId>protobuf-java</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
@@ -157,6 +163,10 @@
         <dependency>
             <groupId>org.interledger.connector</groupId>
             <artifactId>connector-admin-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.interledger.connector</groupId>
+            <artifactId>connector-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>org.interledger</groupId>
@@ -277,6 +287,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.zalando</groupId>
             <artifactId>jackson-datatype-problem</artifactId>
         </dependency>
@@ -305,6 +320,14 @@
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-jackson</artifactId>
         </dependency>
 <!--        <dependency>-->
 <!--            <groupId>io.grpc</groupId>-->
@@ -338,6 +361,21 @@
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
                 <version>${protobuf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java-util</artifactId>
+                <version>${protobuf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.openfeign</groupId>
+                <artifactId>feign-core</artifactId>
+                <version>${feign.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.openfeign</groupId>
+                <artifactId>feign-jackson</artifactId>
+                <version>${feign.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.squareup.okhttp3</groupId>
@@ -402,6 +440,11 @@
             </dependency>
             <dependency>
                 <groupId>org.interledger.connector</groupId>
+                <artifactId>connector-jackson</artifactId>
+                <version>${ilp-connector.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.interledger.connector</groupId>
                 <artifactId>connector-core</artifactId>
                 <version>${ilp-connector.version}</version>
             </dependency>
@@ -429,6 +472,12 @@
                 <groupId>org.interledger.connector</groupId>
                 <artifactId>connector-service-impl</artifactId>
                 <version>${ilp-connector.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers</artifactId>
+                <version>${testcontainers.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.zalando</groupId>

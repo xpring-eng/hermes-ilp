@@ -27,7 +27,7 @@ service IlpService {
     rpc CreateAccount (CreateAccountRequest) returns (CreateAccountResponse);
 
     // Get the balance of a certain account on a connector
-//    rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
+    rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
 
 }
 

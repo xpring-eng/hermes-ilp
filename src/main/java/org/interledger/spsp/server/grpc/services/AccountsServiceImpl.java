@@ -9,7 +9,6 @@ import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.accounts.ImmutableAccountSettings;
-import org.interledger.spsp.server.grpc.config.AccountsServiceConfig;
 import org.interledger.spsp.server.grpc.exceptions.HermesAccountException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,11 +21,10 @@ import okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import java.io.IOException;
+import java.util.Objects;
 
-@EnableConfigurationProperties(AccountsServiceConfig.class)
 public class AccountsServiceImpl implements AccountsService {
   private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -35,8 +33,7 @@ public class AccountsServiceImpl implements AccountsService {
 
   private static final String ACCOUNT_URI = "/accounts";
 
-  @Value("${interledger.connector.admin-key}")
-  private String SENDER_PASS_KEY;
+  private String senderPassKey;
 
   private static final String BASIC = "Basic ";
 
@@ -44,13 +41,10 @@ public class AccountsServiceImpl implements AccountsService {
 
   protected OkHttpClient okHttpClient;
 
-
-  public AccountsServiceImpl() {
-  }
-
   public AccountsServiceImpl(ObjectMapper objectMapper, OkHttpClient okHttpClient) {
-    this.objectMapper = objectMapper;
-    this.okHttpClient = okHttpClient;
+    this.objectMapper = Objects.requireNonNull(objectMapper);
+    this.okHttpClient = Objects.requireNonNull(okHttpClient);
+    this.senderPassKey = "shh"; // FIXME: Get rid of this
   }
 
   @Override
@@ -87,7 +81,7 @@ public class AccountsServiceImpl implements AccountsService {
   private Request constructNewGetAccountRequest(AccountId accountId) {
 
     final Headers httpRequestHeaders = new Headers.Builder()
-      .add(AUTHORIZATION, BASIC + SENDER_PASS_KEY)
+      .add(AUTHORIZATION, BASIC + senderPassKey)
       .build();
 
     String requestUrl = CONNECTOR_URL + ACCOUNT_URI + "/" + accountId;
@@ -128,7 +122,7 @@ public class AccountsServiceImpl implements AccountsService {
 
   public Request constructNewCreateAccountRequest(AccountSettings accountSettings) throws JsonProcessingException {
     final Headers httpRequestHeaders = new Headers.Builder()
-      .add(AUTHORIZATION, BASIC + SENDER_PASS_KEY)
+      .add(AUTHORIZATION, BASIC + senderPassKey)
       .add(CONTENT_TYPE, org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
       .add(ACCEPT, org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
       .build();

@@ -9,8 +9,8 @@ spring:
 
 interledger:
   connector:
-    connector-url: https://jc.ilpv4.dev
-    admin-key: YWRtaW46cGFzc3dvcmQ=
+    connector-url: http://localhost:8080
+    #    admin-key:
   spsp-server:
     # Base64-encoded String of bytes.
     server-secret: aQLR5IWAGV2vKnBhnFFsl2cXOCh9u0IWz3PiA64KlJ8=
