@@ -4,7 +4,6 @@ import org.interledger.crypto.ByteArrayUtils;
 import org.interledger.crypto.Decryptor;
 import org.interledger.spsp.server.auth.BearerTokenSecurityContextRepository;
 import org.interledger.spsp.server.auth.IlpOverHttpAuthenticationProvider;
-import org.interledger.spsp.server.controllers.IlpHttpController;
 import org.interledger.spsp.server.model.SpspServerSettings;
 
 import com.auth0.spring.security.api.JwtAuthenticationEntryPoint;
@@ -12,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -57,18 +55,6 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
   public void configure(final HttpSecurity http) throws Exception {
 
     byte[] ephemeralBytes = ByteArrayUtils.generate32RandomBytes();
-
-    // Must come first in order to register properly due to 'denyAll' directive below.
-    configureBearerTokenSecurity(http, ephemeralBytes)
-      .authorizeRequests()
-      //////
-      // ILP-over-HTTP
-      //////
-      .antMatchers(HttpMethod.HEAD, IlpHttpController.ILP_PATH).authenticated()
-      .antMatchers(HttpMethod.POST, IlpHttpController.ILP_PATH).authenticated()
-    //.antMatchers(HttpMethod.GET, METRICS_ENDPOINT_URL_PATH).permitAll() // permitAll if hidden by LB.
-    ;
-
 
     // WARNING: Don't add `denyAll` here...it's taken care of after the JWT security below. To verify, turn on debugging
     // for Spring Security (e.g.,  org.springframework.security: DEBUG) and look at the security filter chain).
