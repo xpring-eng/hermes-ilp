@@ -44,7 +44,7 @@ public class AccountsServiceImpl implements AccountsService {
   public AccountsServiceImpl(ObjectMapper objectMapper, OkHttpClient okHttpClient) {
     this.objectMapper = Objects.requireNonNull(objectMapper);
     this.okHttpClient = Objects.requireNonNull(okHttpClient);
-    this.senderPassKey = "shh"; // FIXME: Get rid of this
+    this.senderPassKey = "YWRtaW46cGFzc3dvcmQ="; // FIXME: Get rid of this
   }
 
   @Override

@@ -41,7 +41,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 @GRpcService
-public class IlpHttpGrpcService extends IlpServiceGrpc.IlpServiceImplBase {
+public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpServiceImplBase {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 

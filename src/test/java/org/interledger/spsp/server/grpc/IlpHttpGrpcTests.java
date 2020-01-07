@@ -1,19 +1,13 @@
 package org.interledger.spsp.server.grpc;
 
-import static com.google.common.net.HttpHeaders.ACCEPT;
-import static com.google.common.net.HttpHeaders.AUTHORIZATION;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import org.interledger.spsp.server.HermesServerApplication;
 
-import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.testing.GrpcCleanupRule;
-import okhttp3.Headers;
-import okhttp3.Request;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,7 +18,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 
 
 @RunWith(SpringRunner.class)
@@ -44,10 +37,10 @@ public class IlpHttpGrpcTests {
   @Rule
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
-  private IlpServiceGrpc.IlpServiceBlockingStub blockingStub;
+  private IlpOverHttpServiceGrpc.IlpOverHttpServiceBlockingStub blockingStub;
 
   @Autowired
-  IlpHttpGrpcService ilpHttpGrpcService;
+  IlpOverHttpGrpcHandler ilpOverHttpGrpcHandler;
 
   @Before
   public void setUp() throws IOException {
@@ -56,9 +49,9 @@ public class IlpHttpGrpcTests {
 
     // Create a server, add service, start, and register for automatic graceful shutdown.
     grpcCleanup.register(InProcessServerBuilder
-        .forName(serverName).directExecutor().addService(ilpHttpGrpcService).build().start());
+        .forName(serverName).directExecutor().addService(ilpOverHttpGrpcHandler).build().start());
 
-    blockingStub = IlpServiceGrpc.newBlockingStub(
+    blockingStub = IlpOverHttpServiceGrpc.newBlockingStub(
         // Create a client channel and register for automatic graceful shutdown.
         grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
   }

@@ -58,10 +58,10 @@ import java.util.Map;
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
 @SpringBootTest(
-  classes = {HermesServerApplication.class, BalanceServiceGrpcTests.TestConfig.class},
+  classes = {HermesServerApplication.class, BalanceGrpcHandlerTests.TestConfig.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
   properties = {"spring.main.allow-bean-definition-overriding=true"})
-public class BalanceServiceGrpcTests {
+public class BalanceGrpcHandlerTests {
 
   private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -89,7 +89,7 @@ public class BalanceServiceGrpcTests {
   /**
    * gRpc stubs to test Hermes
    */
-  IlpServiceGrpc.IlpServiceBlockingStub blockingStub;
+  BalanceServiceGrpc.BalanceServiceBlockingStub blockingStub;
 
   /**
    * This rule manages automatic graceful shutdown for the registered servers and channels at the
@@ -99,7 +99,7 @@ public class BalanceServiceGrpcTests {
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
   @Autowired
-  BalanceServiceGrpc balanceServiceGrpc;
+  BalanceGrpcHandler balanceGrpcHandler;
 
   /**
    * This starts up a mock JWKS server
@@ -176,9 +176,9 @@ public class BalanceServiceGrpcTests {
 
     // Create a server, add service, start, and register for automatic graceful shutdown.
     grpcCleanup.register(InProcessServerBuilder
-      .forName(serverName).directExecutor().addService(balanceServiceGrpc).build().start());
+      .forName(serverName).directExecutor().addService(balanceGrpcHandler).build().start());
 
-    blockingStub = IlpServiceGrpc.newBlockingStub(
+    blockingStub = BalanceServiceGrpc.newBlockingStub(
       // Create a client channel and register for automatic graceful shutdown.
       grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
   }

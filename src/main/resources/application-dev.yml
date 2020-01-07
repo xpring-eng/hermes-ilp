@@ -45,3 +45,7 @@ interledger:
               # Represents the plaintext value of `shh`, encrypted.
 #              shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
               auth_token: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
+
+grpc:
+  port: 6565
+  enableReflection: true

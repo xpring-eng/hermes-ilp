@@ -43,7 +43,7 @@ import java.util.Map;
 @SpringBootTest(
     classes = {HermesServerApplication.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class AccountServiceGrpcTests {
+public class AccountGrpcHandlerTests {
   private static final String SENDER_PASS_KEY = "YWRtaW46cGFzc3dvcmQ=";
   private static final String BASIC = "Basic ";
   private static final String TESTNET_URI = "https://jc.ilpv4.dev";
@@ -59,10 +59,10 @@ public class AccountServiceGrpcTests {
   @Rule
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
-  private IlpServiceGrpc.IlpServiceBlockingStub blockingStub;
+  private AccountServiceGrpc.AccountServiceBlockingStub blockingStub;
 
   @Autowired
-  AccountServiceGrpc accountServiceGrpc;
+  AccountGrpcHandler accountGrpcHandler;
 
   @Before
   public void setUp() throws IOException {
@@ -71,16 +71,16 @@ public class AccountServiceGrpcTests {
 
     // Create a server, add service, start, and register for automatic graceful shutdown.
     grpcCleanup.register(InProcessServerBuilder
-        .forName(serverName).directExecutor().addService(accountServiceGrpc).build().start());
+        .forName(serverName).directExecutor().addService(accountGrpcHandler).build().start());
 
-    blockingStub = IlpServiceGrpc.newBlockingStub(
+    blockingStub = AccountServiceGrpc.newBlockingStub(
         // Create a client channel and register for automatic graceful shutdown.
         grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
   }
 
 
   /**
-   * Sends a request to the {@link IlpServiceGrpc} getAccount method for user 'connie'.
+   * Sends a request to the {@link AccountServiceGrpc} getAccount method for user 'connie'.
    */
   @Test
   public void getAccountFor_connie() throws Exception {
@@ -178,7 +178,7 @@ public class AccountServiceGrpcTests {
         .build();
 
     try {
-      accountServiceGrpc.okHttpClient.newCall(deleteRequest).execute();
+      accountGrpcHandler.okHttpClient.newCall(deleteRequest).execute();
     } catch (IOException e) {
       e.printStackTrace();
     }

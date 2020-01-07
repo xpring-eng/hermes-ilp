@@ -1,13 +1,13 @@
-import { IlpServiceClient } from "../generated/ilp_as_a_service_grpc_pb";
 import { credentials } from "grpc";
 import { GetAccountRequest } from "../generated/get_account_request_pb";
+import { AccountServiceClient } from "../generated/account_service_grpc_pb";
 
 /* eslint-disable @typescript-eslint/no-floating-promises */
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/require-await */
 
 async function runILPGetBalanceTest(): Promise<void> {
-  const client = new IlpServiceClient(
+  const client = new AccountServiceClient (
     "127.0.0.1:6565",
     credentials.createInsecure()
   );

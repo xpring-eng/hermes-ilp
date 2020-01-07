@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 @GRpcService
-public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
+public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBase {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -33,7 +33,7 @@ public class AccountServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
 //  @Autowired
   protected AccountsServiceImpl accountsService;
 
-  public AccountServiceGrpc(OkHttpClient okHttpClient, ObjectMapper objectMapper, AccountsServiceImpl accountsService) {
+  public AccountGrpcHandler(OkHttpClient okHttpClient, ObjectMapper objectMapper, AccountsServiceImpl accountsService) {
     this.okHttpClient = okHttpClient;
     this.objectMapper = objectMapper;
     this.accountsService = accountsService;

@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @GRpcService
-public class BalanceServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
+public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBase {
   Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Autowired
