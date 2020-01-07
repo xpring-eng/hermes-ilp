@@ -6,11 +6,11 @@ package org.interledger.stream.proto;
 
 message CreateAccountRequest {
     // Username
-    string accountId = 1;
+    string account_id = 1;
 
-    string assetCode = 2;
+    string asset_code = 2;
 
-    int32 assetScale = 3;
+    int32 asset_scale = 3;
 
     string description = 4;
 
