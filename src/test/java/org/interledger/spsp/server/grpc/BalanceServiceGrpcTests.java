@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import feign.FeignException;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.testing.GrpcCleanupRule;
@@ -33,12 +35,12 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
@@ -46,8 +48,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
-import org.zalando.problem.ThrowableProblem;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,14 +62,35 @@ import java.util.Map;
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
   properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class BalanceServiceGrpcTests {
+
   private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
+  /**
+   * Fields for our JWKS mock server
+   */
   public static final String WELL_KNOWN_JWKS_JSON = "/.well-known/jwks.json";
   public static final int WIRE_MOCK_PORT = 32456;
-  public static final String ADMIN_AUTH_TOKEN = "YWRtaW46cGFzc3dvcmQ=";
+  HttpUrl issuer;
+
+  /**
+   * Connector fields
+   */
   private static final Network network = Network.newNetwork();
   private static final int CONNECTOR_PORT = 8080;
+
+  /**
+   * Admin token for creating the account for accountIdHermes
+   */
   private AccountId accountIdHermes;
+  public static final String ADMIN_AUTH_TOKEN = "YWRtaW46cGFzc3dvcmQ=";
+
+  /**
+   * gRpc stubs to test Hermes
+   */
+  IlpServiceGrpc.IlpServiceBlockingStub blockingStub;
+
   /**
    * This rule manages automatic graceful shutdown for the registered servers and channels at the
    * end of test.
@@ -75,34 +98,41 @@ public class BalanceServiceGrpcTests {
   @Rule
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
+  @Autowired
+  BalanceServiceGrpc balanceServiceGrpc;
+
+  /**
+   * This starts up a mock JWKS server
+   */
   @Rule
   public WireMockRule wireMockRule = new WireMockRule(WIRE_MOCK_PORT);
 
+  // Need this to have the JWKS port exposed to the connector running in the container
   static {
     Testcontainers.exposeHostPorts(WIRE_MOCK_PORT);
   }
 
+  /**
+   *  Start up a connector from the nightly docker image
+   */
   @ClassRule
   public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:nightly")
     .withExposedPorts(CONNECTOR_PORT)
-    .withNetwork(network)
-    //.withLogConsumer(new org.testcontainers.containers.output.Slf4jLogConsumer (logger)) // uncomment to see logs
-    ;
-  @Autowired
-  BalanceServiceGrpc balanceServiceGrpc;
+    .withNetwork(network);
+
 
   private ConnectorAdminClient adminClient;
   private JwksServer jwtServer;
   private ObjectMapper objectMapper = ObjectMapperFactory.create();
-  HttpUrl issuer;
 
   @Before
-  public void setUp() throws JsonProcessingException {
-
+  public void setUp() throws IOException {
+    // Set up the JWKS server
     jwtServer = new JwksServer();
     resetJwks();
     issuer = HttpUrl.parse("http://host.testcontainers.internal:" + wireMockRule.port());
 
+    // Create an admin client to create a test account
     accountIdHermes = AccountId.of("hermes");
     this.adminClient = ConnectorAdminClient
       .construct(getInterledgerBaseUri(), template -> {
@@ -111,6 +141,7 @@ public class BalanceServiceGrpcTests {
 
     JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
 
+    // Set up auth settings to use JWT_RS_256
     Map<String, Object> customSettings = new HashMap<>();
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, jwtAuthSettings.tokenIssuer().get().toString());
@@ -132,9 +163,24 @@ public class BalanceServiceGrpcTests {
       if (e.status() != 409) {
         throw e;
       } else {
-        logger.info("Hermes account already exists. If you want to update the account, delete it and try again with new settings.");
+        logger.warn("Hermes account already exists. If you want to update the account, delete it and try again with new settings.");
       }
     }
+
+    registerGrpc();
+  }
+
+  private void registerGrpc() throws IOException {
+    // Generate a unique in-process server name.
+    String serverName = InProcessServerBuilder.generateName();
+
+    // Create a server, add service, start, and register for automatic graceful shutdown.
+    grpcCleanup.register(InProcessServerBuilder
+      .forName(serverName).directExecutor().addService(balanceServiceGrpc).build().start());
+
+    blockingStub = IlpServiceGrpc.newBlockingStub(
+      // Create a client channel and register for automatic graceful shutdown.
+      grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
   }
 
   /**
@@ -151,21 +197,12 @@ public class BalanceServiceGrpcTests {
   }
 
   /**
-   * To test the server, make calls with a real stub using the in-process channel, and verify
-   * behaviors or state changes from the client side.
+   * Get the balance for the account we created in the setUp method.
+   *
+   * Balances should all be 0, as the hermes account has not sent or received any money.
    */
   @Test
-  public void getBalanceTest() throws Exception {
-    // Generate a unique in-process server name.
-    String serverName = InProcessServerBuilder.generateName();
-
-    // Create a server, add service, start, and register for automatic graceful shutdown.
-    grpcCleanup.register(InProcessServerBuilder
-      .forName(serverName).directExecutor().addService(balanceServiceGrpc).build().start());
-
-    IlpServiceGrpc.IlpServiceBlockingStub blockingStub = IlpServiceGrpc.newBlockingStub(
-      // Create a client channel and register for automatic graceful shutdown.
-      grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
+  public void getBalanceTest() {
 
     JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
     String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
@@ -176,13 +213,50 @@ public class BalanceServiceGrpcTests {
         .setJwt(jwt)
         .build());
 
-    logger.info("Reply: " + reply);
+    logger.info("Balance: " + reply);
     assertThat(reply.getAccountId()).isEqualTo("hermes");
     assertThat(reply.getAssetCode()).isEqualTo("XRP");
     assertThat(reply.getAssetScale()).isEqualTo(9);
     assertThat(reply.getClearingBalance()).isEqualTo(0L);
     assertThat(reply.getPrepaidAmount()).isEqualTo(0L);
     assertThat(reply.getNetBalance()).isZero();
+  }
+
+  /**
+   * Get the balance for the account we created in the setUp method without passing in a jwt.
+   *
+   * Should pass if grpc returns a {@link io.grpc.StatusRuntimeException} with Status.PERMISSION_DENIED
+   */
+  @Test
+  public void getBalanceTestFailsNoJwt() {
+
+    expectedException.expect(StatusRuntimeException.class);
+    expectedException.expectMessage(Status.PERMISSION_DENIED.getCode().name());
+
+    blockingStub.getBalance(GetBalanceRequest.newBuilder()
+      .setAccountId(accountIdHermes.value())
+      .setJwt("thisIsNotAValidJwt")
+      .build());
+  }
+
+  /**
+   * Get the balance for the account we created in the setUp method without passing in a jwt.
+   *
+   * Should pass if grpc returns a {@link io.grpc.StatusRuntimeException} with Status.PERMISSION_DENIED
+   */
+  @Test
+  public void getBalanceTestFailsAccountNotFound() {
+
+    expectedException.expect(StatusRuntimeException.class);
+    expectedException.expectMessage(Status.NOT_FOUND.getCode().name());
+
+    JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
+    String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
+
+    blockingStub.getBalance(GetBalanceRequest.newBuilder()
+      .setAccountId("thisAccountDoesntExist")
+      .setJwt(jwt)
+      .build());
   }
 
   private ImmutableJwtAuthSettings defaultAuthSettings(HttpUrl issuer) {
@@ -205,6 +279,11 @@ public class BalanceServiceGrpcTests {
 
   public static class TestConfig {
 
+    /**
+     * Overrides the balanceClient bean for test purposes to connect to our Connector container
+     *
+     * @return a ConnectorBalanceClient that can speak to the test container connector
+     */
     @Bean
     @Primary
     public ConnectorBalanceClient balanceClient() {
