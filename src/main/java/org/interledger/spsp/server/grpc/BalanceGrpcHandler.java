@@ -26,9 +26,6 @@ public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBas
   protected ConnectorBalanceClient balanceClient;
 
   @Autowired
-  protected OkHttpClient okHttpClient;
-
-  @Autowired
   protected ObjectMapper objectMapper;
 
   @Override

@@ -1,39 +1,68 @@
 package org.interledger.spsp.server.grpc;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.google.common.net.HttpHeaders.ACCEPT;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.verify;
 
 import org.interledger.connector.accounts.AccountId;
+import org.interledger.connector.accounts.AccountRelationship;
+import org.interledger.connector.accounts.AccountSettings;
+import org.interledger.connector.client.ConnectorAdminClient;
+import org.interledger.connector.jackson.ObjectMapperFactory;
 import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
+import org.interledger.link.http.ImmutableJwtAuthSettings;
 import org.interledger.link.http.IncomingLinkSettings;
+import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.spsp.server.HermesServerApplication;
+import org.interledger.spsp.server.client.ConnectorBalanceClient;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import feign.FeignException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.testing.GrpcCleanupRule;
 import okhttp3.Headers;
+import okhttp3.HttpUrl;
 import okhttp3.Request;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,16 +70,58 @@ import java.util.Map;
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
 @SpringBootTest(
-    classes = {HermesServerApplication.class},
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+    classes = {HermesServerApplication.class, AccountGrpcHandlerTests.TestConfig.class},
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class AccountGrpcHandlerTests {
-  private static final String SENDER_PASS_KEY = "YWRtaW46cGFzc3dvcmQ=";
-  private static final String BASIC = "Basic ";
-  private static final String TESTNET_URI = "https://jc.ilpv4.dev";
-  private static final String ACCOUNT_URI = "/accounts";
+
+  private Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
+  /**
+   * Fields for our JWKS mock server
+   */
+  public static final String WELL_KNOWN_JWKS_JSON = "/.well-known/jwks.json";
+  public static final int WIRE_MOCK_PORT = 32456;
+  HttpUrl issuer;
+
+  /**
+   * Connector fields
+   */
+  private static final Network network = Network.newNetwork();
+  private static final int CONNECTOR_PORT = 8080;
+
+  /**
+   * Admin token for creating the account for accountIdHermes
+   */
+  private AccountId accountIdHermes;
+  public static final String ADMIN_AUTH_TOKEN = "YWRtaW46cGFzc3dvcmQ=";
+
+  /**
+   * This starts up a mock JWKS server
+   */
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(WIRE_MOCK_PORT);
+
+  // Need this to have the JWKS port exposed to the connector running in the container
+  static {
+    Testcontainers.exposeHostPorts(WIRE_MOCK_PORT);
+  }
+
+  /**
+   *  Start up a connector from the nightly docker image
+   */
+  @ClassRule
+  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:nightly")
+    .withExposedPorts(CONNECTOR_PORT)
+    .withNetwork(network);
+
+  @Autowired
+  private ConnectorAdminClient adminClient;
+
+  private JwksServer jwtServer;
+  private ObjectMapper objectMapper = ObjectMapperFactory.create();
 
   /**
    * This rule manages automatic graceful shutdown for the registered servers and channels at the
@@ -66,33 +137,85 @@ public class AccountGrpcHandlerTests {
 
   @Before
   public void setUp() throws IOException {
+    // Set up the JWKS server
+    jwtServer = new JwksServer();
+    resetJwks();
+    issuer = HttpUrl.parse("http://host.testcontainers.internal:" + wireMockRule.port());
+
+    // Create an admin client to create a test account
+    accountIdHermes = AccountId.of("hermes");
+    JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
+
+    // Set up auth settings to use JWT_RS_256
+    Map<String, Object> customSettings = new HashMap<>();
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, jwtAuthSettings.tokenIssuer().get().toString());
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, jwtAuthSettings.tokenAudience().get());
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, jwtAuthSettings.tokenSubject());
+
+    try {
+      this.adminClient.createAccount(
+        AccountSettings.builder()
+          .accountId(accountIdHermes)
+          .assetCode("XRP")
+          .assetScale(9)
+          .linkType(IlpOverHttpLink.LINK_TYPE)
+          .accountRelationship(AccountRelationship.CHILD)
+          .customSettings(customSettings)
+          .build()
+      );
+    } catch (FeignException e) {
+      if (e.status() != 409) {
+        throw e;
+      } else {
+        logger.warn("Hermes account already exists. If you want to update the account, delete it and try again with new settings.");
+      }
+    }
+
+    registerGrpc();
+  }
+
+  private void registerGrpc() throws IOException {
     // Generate a unique in-process server name.
     String serverName = InProcessServerBuilder.generateName();
 
     // Create a server, add service, start, and register for automatic graceful shutdown.
     grpcCleanup.register(InProcessServerBuilder
-        .forName(serverName).directExecutor().addService(accountGrpcHandler).build().start());
+      .forName(serverName).directExecutor().addService(accountGrpcHandler).build().start());
 
     blockingStub = AccountServiceGrpc.newBlockingStub(
-        // Create a client channel and register for automatic graceful shutdown.
-        grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
+      // Create a client channel and register for automatic graceful shutdown.
+      grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
   }
 
+  /**
+   * Helper method to return the base URL for the Rust Connector.
+   *
+   * @return An {@link HttpUrl} to communicate with.
+   */
+  private static HttpUrl getInterledgerBaseUri() {
+    return new HttpUrl.Builder()
+      .scheme("http")
+      .host(interledgerNode.getContainerIpAddress())
+      .port(interledgerNode.getFirstMappedPort())
+      .build();
+  }
 
   /**
    * Sends a request to the {@link AccountServiceGrpc} getAccount method for user 'connie'.
    */
   @Test
-  public void getAccountFor_connie() throws Exception {
+  public void getAccountForHermes() {
 
     GetAccountResponse reply =
-        blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId("connie").build());
+        blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId(accountIdHermes.value()).build());
 
-    System.out.println(reply);
-    assertEquals(reply.getAccountId(), "connie");
-    assertEquals(reply.getAssetScale(), 9);
-    assertEquals(reply.getAssetCode(), "XRP");
-//    assertEquals(reply.getPaymentPointer(), "$jc.ilpv4.dev/connie");
+    logger.info(reply.toString());
+    assertThat(reply.getAccountId()).isEqualTo("hermes");
+    assertThat(reply.getAssetScale()).isEqualTo(9);
+    assertThat(reply.getAssetCode()).isEqualTo("XRP");
+    assertThat(reply.getLinkType()).isEqualTo(IlpOverHttpLink.LINK_TYPE.value());
+    assertThat(reply.getAccountRelationship()).isEqualTo(AccountRelationship.CHILD.toString());
   }
 
   /**
@@ -104,7 +227,7 @@ public class AccountGrpcHandlerTests {
 
     try {
       GetAccountResponse reply =
-        blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId("foo").build());
+        blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId(accountId.value()).build());
       fail();
     } catch (StatusRuntimeException e){
       System.out.println("Failed successfully.  Error status: " + e.getStatus());
@@ -115,16 +238,19 @@ public class AccountGrpcHandlerTests {
   /**
    * Creates an account through Hermes Grpc
     */
-  // TODO: Spin up a connector locally
   @Test
   public void createAccountTest() {
     String accountID = "AccountServiceGRPCTest";
     String accountDescription = "Noah's test account";
+
+    JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
+    String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
+
     Map<String, String> customSettings = new HashMap<>();
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, "https://xpringsandbox.auth0.com/");
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, "0r1frZ59eylDsMH3acVeSJD5KI6puEho");
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, "github|4440345");
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, jwtAuthSettings.tokenIssuer().get().toString());
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, jwtAuthSettings.tokenAudience().get());
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, jwtAuthSettings.tokenSubject());
 
     CreateAccountResponse expected = CreateAccountResponse.newBuilder()
       .setAccountRelationship("CHILD")
@@ -140,8 +266,6 @@ public class AccountGrpcHandlerTests {
       .setIsChildAccount(true)
       .build();
 
-
-    String jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik1rTTJPRGMxUVRKR05qSXlRelJFUmtKQk5qRTNNMFpCTkRsRFJEQkVSVFF3UWpWRk5VSkNNdyJ9.eyJuaWNrbmFtZSI6Im5oYXJ0bmVyIiwibmFtZSI6Im5oYXJ0bmVyQGdtYWlsLmNvbSIsInBpY3R1cmUiOiJodHRwczovL2F2YXRhcnMwLmdpdGh1YnVzZXJjb250ZW50LmNvbS91LzQ0NDAzNDU_dj00IiwidXBkYXRlZF9hdCI6IjIwMTktMTItMjdUMTg6NTI6MDMuMTg1WiIsImVtYWlsIjoibmhhcnRuZXJAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8veHByaW5nc2FuZGJveC5hdXRoMC5jb20vIiwic3ViIjoiZ2l0aHVifDQ0NDAzNDUiLCJhdWQiOiIwcjFmclo1OWV5bERzTUgzYWNWZVNKRDVLSTZwdUVobyIsImlhdCI6MTU3NzQ3MjczMywiZXhwIjoxNTc3NDc2MzMzfQ.Kzddgj_Zd4Ib7jq4avLCigzIxJJjuh8NZII0wKfT4lA1XEPc_HAUEhNCTRe--CHpaCOo6HLs4YQdTcC_0flWLXX7_Uz5zVCS9KVX__g3BJRvU_pZjzt51iBkA8zKKzmxMAd9w2g0Lq8SanqMDZq7TfNXb85ZFDBPAjPDLV42sgkWy0i0RADddEadmACuvnp_GC91RDLIMOPY8BCDF8JBB2RRZ_CsPRLlpMlGaQYAgs9fbquq6qPwHXoFxHVfsGg_xYi4W8uAc_J1qWxOPDUEWKf_HLAu0a-0_kbufn1xXqkHowHaR4VA90ljabFUR92ioWXYUlwvPaFKqzalkeDdpQ";
     CreateAccountRequest.Builder request = CreateAccountRequest.newBuilder()
       .setAccountId(accountID)
       .setAssetCode("XRP")
@@ -152,35 +276,43 @@ public class AccountGrpcHandlerTests {
     CreateAccountResponse reply = blockingStub.createAccount(request.build());
     System.out.println(reply);
 
-    // Get rid of phantom created account
-    deleteAccountByID(accountID);
-
-    Assertions.assertThat(expected)
+    assertThat(expected)
       .usingRecursiveComparison()
       .ignoringFields("createdAt_", "memoizedHashCode", "modifiedAt_")
       .isEqualTo(reply);
   }
 
-  // Just need this so we don't create a bunch of orphan accounts on the dev connector
-  private void deleteAccountByID(String accountId) {
-    final Headers httpRequestHeaders = new Headers.Builder()
-        .add(AUTHORIZATION, BASIC + SENDER_PASS_KEY)
-        .add(CONTENT_TYPE, org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
-        .add(ACCEPT, org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
-        .build();
+  private ImmutableJwtAuthSettings defaultAuthSettings(HttpUrl issuer) {
+    return JwtAuthSettings.builder()
+      .tokenIssuer(issuer)
+      .tokenSubject("foo")
+      .tokenAudience("bar")
+      .build();
+  }
 
-    String requestUrl = TESTNET_URI + ACCOUNT_URI + "/" + URLEncoder.encode(accountId);
+  private void resetJwks() throws JsonProcessingException {
+    jwtServer.resetKeyPairs();
+    WireMock.reset();
+    stubFor(get(urlEqualTo(WELL_KNOWN_JWKS_JSON))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(objectMapper.writeValueAsString(jwtServer.getJwks()))
+      ));
+  }
 
-    Request deleteRequest = new Request.Builder()
-        .headers(httpRequestHeaders)
-        .url(requestUrl)
-        .delete()
-        .build();
+  public static class TestConfig {
 
-    try {
-      accountGrpcHandler.okHttpClient.newCall(deleteRequest).execute();
-    } catch (IOException e) {
-      e.printStackTrace();
+    /**
+     * Overrides the adminClient bean for test purposes to connect to our Connector container
+     *
+     * @return a ConnectorAdminClient that can speak to the test container connector
+     */
+    @Bean
+    @Primary
+    public ConnectorAdminClient adminClient() {
+      return ConnectorAdminClient.construct(getInterledgerBaseUri(), template -> {
+        template.header(AUTHORIZATION, "Basic " + ADMIN_AUTH_TOKEN);
+      });
     }
   }
 }

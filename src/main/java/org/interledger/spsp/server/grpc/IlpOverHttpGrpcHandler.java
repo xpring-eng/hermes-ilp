@@ -4,7 +4,9 @@ import static okhttp3.CookieJar.NO_COOKIES;
 
 import org.interledger.codecs.ilp.InterledgerCodecContextFactory;
 import org.interledger.connector.accounts.AccountId;
+import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
+import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.core.InterledgerAddress;
 import org.interledger.core.SharedSecret;
 import org.interledger.link.Link;
@@ -14,7 +16,6 @@ import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.StreamConnectionDetails;
 import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
-import org.interledger.spsp.server.grpc.services.AccountsServiceImpl;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.stream.Denomination;
 import org.interledger.stream.SendMoneyRequest;
@@ -58,7 +59,7 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
   protected ObjectMapper objectMapper;
 
   @Autowired
-  protected AccountsServiceImpl accountService;
+  protected ConnectorAdminClient adminClient;
 
   @Override
   public void sendMoney(SendPaymentRequest request, StreamObserver<SendPaymentResponse> responseObserver) {
@@ -69,7 +70,8 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
       spspClient.getStreamConnectionDetails(PaymentPointer.of(request.getDestinationPaymentPointer()));
 
     String senderAccountId = request.getAccountId();
-    AccountSettings senderAccountSettings = accountService.getAccount(AccountId.of(senderAccountId));
+    AccountSettings senderAccountSettings = adminClient.findAccount(senderAccountId)
+      .orElseThrow(() -> new AccountNotFoundProblem(AccountId.of(senderAccountId)));
 
     final InterledgerAddress senderAddress =
       InterledgerAddress.of("jc.ilpv4.dev").with(senderAccountId);

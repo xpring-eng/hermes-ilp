@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class AccountRequestResponseConverter {
 
 
-  public static GetAccountResponse.Builder createGetAccountResponseFromAccountSettings(AccountSettings accountSettings) {
+  public static GetAccountResponse createGetAccountResponseFromAccountSettings(AccountSettings accountSettings) {
 
     long maxPacketAmount = accountSettings.maximumPacketAmount().isPresent() ?
       accountSettings.maximumPacketAmount().get().longValue() : 0L;
@@ -84,7 +84,8 @@ public class AccountRequestResponseConverter {
       .setIsChildAccount(accountSettings.isChildAccount())
       .setIsPeerAccount(accountSettings.isPeerAccount())
       .setIsPeerOrParentAccount(accountSettings.isPeerOrParentAccount())
-      .putAllCustomSettings(settingsMapToGrpcSettingsMap(accountSettings.customSettings()));
+      .putAllCustomSettings(settingsMapToGrpcSettingsMap(accountSettings.customSettings()))
+      .build();
   }
 
   public static CreateAccountResponse.Builder generateCreateAccountResponseFromAccountSettings(AccountSettings accountSettings) {
