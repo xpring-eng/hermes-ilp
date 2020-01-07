@@ -8,13 +8,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Feign;
 import feign.Headers;
 import feign.Param;
-import feign.RequestInterceptor;
 import feign.RequestLine;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import feign.optionals.OptionalDecoder;
 import okhttp3.HttpUrl;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -30,6 +28,7 @@ public interface ConnectorBalanceClient {
    *
    * @param connectorHttpUrl                     The {@link HttpUrl} of the Connector.
    *
+   *
    * @return A {@link ConnectorBalanceClient}.
    */
   static ConnectorBalanceClient construct(final HttpUrl connectorHttpUrl) {
@@ -44,8 +43,9 @@ public interface ConnectorBalanceClient {
 
   @RequestLine("GET /accounts/{id}/balance")
   @Headers( {
-    ACCEPT + APPLICATION_JSON
+    ACCEPT + APPLICATION_JSON,
+    "Authorization: {authorizationHeader}"
   })
-  Optional<ConnectorAccountBalance> getBalance(@Param(ID) AccountId accountId,
-                                               @RequestHeader(value = "Authorization") String authorizationHeader);
+  Optional<AccountBalanceResponse> getBalance(@Param("authorizationHeader") String authorizationHeader,
+                                                      @Param(ID) AccountId accountId);
 }

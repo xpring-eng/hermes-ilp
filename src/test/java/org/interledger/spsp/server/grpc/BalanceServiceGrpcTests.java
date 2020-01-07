@@ -1,18 +1,30 @@
 package org.interledger.spsp.server.grpc;
 
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
+import org.interledger.connector.jackson.ObjectMapperFactory;
 import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
+import org.interledger.link.http.ImmutableJwtAuthSettings;
 import org.interledger.link.http.IncomingLinkSettings;
+import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import feign.FeignException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.testing.GrpcCleanupRule;
@@ -31,9 +43,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.zalando.problem.ThrowableProblem;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,6 +62,8 @@ import java.util.Map;
 public class BalanceServiceGrpcTests {
   private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+  public static final String WELL_KNOWN_JWKS_JSON = "/.well-known/jwks.json";
+  public static final int WIRE_MOCK_PORT = 32456;
   public static final String ADMIN_AUTH_TOKEN = "YWRtaW46cGFzc3dvcmQ=";
   private static final Network network = Network.newNetwork();
   private static final int CONNECTOR_PORT = 8080;
@@ -58,6 +75,13 @@ public class BalanceServiceGrpcTests {
   @Rule
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(WIRE_MOCK_PORT);
+
+  static {
+    Testcontainers.exposeHostPorts(WIRE_MOCK_PORT);
+  }
+
   @ClassRule
   public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:nightly")
     .withExposedPorts(CONNECTOR_PORT)
@@ -68,35 +92,49 @@ public class BalanceServiceGrpcTests {
   BalanceServiceGrpc balanceServiceGrpc;
 
   private ConnectorAdminClient adminClient;
+  private JwksServer jwtServer;
+  private ObjectMapper objectMapper = ObjectMapperFactory.create();
+  HttpUrl issuer;
 
   @Before
-  public void setUp() {
+  public void setUp() throws JsonProcessingException {
+
+    jwtServer = new JwksServer();
+    resetJwks();
+    issuer = HttpUrl.parse("http://host.testcontainers.internal:" + wireMockRule.port());
+
     accountIdHermes = AccountId.of("hermes");
     this.adminClient = ConnectorAdminClient
       .construct(getInterledgerBaseUri(), template -> {
         template.header("Authorization", "Basic " + ADMIN_AUTH_TOKEN);
       });
 
+    JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
+
     Map<String, Object> customSettings = new HashMap<>();
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_HS_256);
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, accountIdHermes.value());
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_SHARED_SECRET, "enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=");
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, jwtAuthSettings.tokenIssuer().get().toString());
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, jwtAuthSettings.tokenAudience().get());
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, jwtAuthSettings.tokenSubject());
 
-    /*customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, "https://xpringsandbox.auth0.com/");
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, "0r1frZ59eylDsMH3acVeSJD5KI6puEho");
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, "github|4440345");*/
-
-    this.adminClient.createAccount(
-      AccountSettings.builder()
-        .accountId(accountIdHermes)
-        .assetCode("XRP")
-        .assetScale(9)
-        .linkType(IlpOverHttpLink.LINK_TYPE)
-        .accountRelationship(AccountRelationship.CHILD)
-        .customSettings(customSettings)
-        .build()
-    );
+    try {
+      this.adminClient.createAccount(
+        AccountSettings.builder()
+          .accountId(accountIdHermes)
+          .assetCode("XRP")
+          .assetScale(9)
+          .linkType(IlpOverHttpLink.LINK_TYPE)
+          .accountRelationship(AccountRelationship.CHILD)
+          .customSettings(customSettings)
+          .build()
+      );
+    } catch (FeignException e) {
+      if (e.status() != 409) {
+        throw e;
+      } else {
+        logger.info("Hermes account already exists. If you want to update the account, delete it and try again with new settings.");
+      }
+    }
   }
 
   /**
@@ -129,7 +167,9 @@ public class BalanceServiceGrpcTests {
       // Create a client channel and register for automatic graceful shutdown.
       grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
 
-    String jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImtpZCI6Ik1rTTJPRGMxUVRKR05qSXlRelJFUmtKQk5qRTNNMFpCTkRsRFJEQkVSVFF3UWpWRk5VSkNNdyJ9.eyJuaWNrbmFtZSI6Im5oYXJ0bmVyIiwibmFtZSI6Im5oYXJ0bmVyQGdtYWlsLmNvbSIsInBpY3R1cmUiOiJodHRwczovL2F2YXRhcnMwLmdpdGh1YnVzZXJjb250ZW50LmNvbS91LzQ0NDAzNDU_dj00IiwidXBkYXRlZF9hdCI6IjIwMTktMTItMjdUMTg6NTI6MDMuMTg1WiIsImVtYWlsIjoibmhhcnRuZXJAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOi8veHByaW5nc2FuZGJveC5hdXRoMC5jb20vIiwic3ViIjoiZ2l0aHVifDQ0NDAzNDUiLCJhdWQiOiIwcjFmclo1OWV5bERzTUgzYWNWZVNKRDVLSTZwdUVobyIsImlhdCI6MTU3NzQ3MjczMywiZXhwIjoxNjA3MjczNzA1fQ.vZWmkBxeMhdYBjMhuZrTstXy-4K6lcoND_p2zUTM_bo";
+    JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
+    String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
+
     GetBalanceResponse reply =
       blockingStub.getBalance(GetBalanceRequest.newBuilder()
         .setAccountId(accountIdHermes.value())
@@ -137,7 +177,30 @@ public class BalanceServiceGrpcTests {
         .build());
 
     logger.info("Reply: " + reply);
+    assertThat(reply.getAccountId()).isEqualTo("hermes");
+    assertThat(reply.getAssetCode()).isEqualTo("XRP");
+    assertThat(reply.getAssetScale()).isEqualTo(9);
+    assertThat(reply.getClearingBalance()).isEqualTo(0L);
+    assertThat(reply.getPrepaidAmount()).isEqualTo(0L);
     assertThat(reply.getNetBalance()).isZero();
+  }
+
+  private ImmutableJwtAuthSettings defaultAuthSettings(HttpUrl issuer) {
+    return JwtAuthSettings.builder()
+      .tokenIssuer(issuer)
+      .tokenSubject("foo")
+      .tokenAudience("bar")
+      .build();
+  }
+
+  private void resetJwks() throws JsonProcessingException {
+    jwtServer.resetKeyPairs();
+    WireMock.reset();
+    stubFor(get(urlEqualTo(WELL_KNOWN_JWKS_JSON))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(objectMapper.writeValueAsString(jwtServer.getJwks()))
+      ));
   }
 
   public static class TestConfig {

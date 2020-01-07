@@ -1,29 +1,26 @@
 package org.interledger.spsp.server.client;
 
 import org.interledger.connector.accounts.AccountId;
-import org.interledger.core.InterledgerAddress;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.primitives.UnsignedLong;
 import org.immutables.value.Value;
 
 import java.math.BigInteger;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableConnectorAccountBalance.class)
-@JsonDeserialize(as = ImmutableConnectorAccountBalance.class)
-public interface ConnectorAccountBalance {
+@JsonSerialize(as = ImmutableAccountBalance.class)
+@JsonDeserialize(as = ImmutableAccountBalance.class)
+public interface AccountBalance {
 
-  static ImmutableConnectorAccountBalance.Builder builder() {
-    return ImmutableConnectorAccountBalance.builder();
+  static ImmutableAccountBalance.Builder builder() {
+    return ImmutableAccountBalance.builder();
   }
 
   /**
-   * <p>A unique identifier for this account. For example, <tt>alice</tt> or <tt>123456789</tt>.
-   * Note that this is not an {@link InterledgerAddress} because an account's address is assigned when a connection is
-   * made, generally using information from the client and this identifier.</p>
+   * The {@link AccountId} for this account balance.
    *
+   * @return
    */
   AccountId accountId();
 
@@ -35,16 +32,11 @@ public interface ConnectorAccountBalance {
    *
    * @return An {@link BigInteger} representing the net clearingBalance of this account.
    */
-  BigInteger netBalance();
-
-  /**
-   * The number of units that the account holder has prepaid. This value is factored into the value returned by {@link
-   * #netBalance()}, and is generally never negative.
-   *
-   * @return An {@link UnsignedLong} representing the number of units the counterparty (i.e., owner of this account) has
-   * prepaid with this Connector.
-   */
-  UnsignedLong prepaidAmount();
+  @Value.Derived
+  default BigInteger netBalance() {
+    final BigInteger netBalance = BigInteger.valueOf(clearingBalance());
+    return netBalance.add(BigInteger.valueOf(prepaidAmount()));
+  }
 
   /**
    * The amount of units representing the clearing position this Connector operator holds with the account owner. A
@@ -52,7 +44,18 @@ public interface ConnectorAccountBalance {
    * account holder. A negative clearing balance represents an asset (i.e., the account holder owes money to the
    * operator).
    *
-   * @return An {@link UnsignedLong} representing the net clearing balance of this account.
+   * @return An {@link BigInteger} representing the net clearing balance of this account.
    */
-  UnsignedLong clearingBalance();
+  // TODO: Use UnsignedLong
+  long clearingBalance();
+
+  /**
+   * The number of units that the account holder has prepaid. This value is factored into the value returned by {@link
+   * #netBalance()}, and is generally never negative.
+   *
+   * @return An {@link BigInteger} representing the number of units the counterparty (i.e., owner of this account) has
+   * prepaid with this Connector.
+   */
+  // TODO: Use UnsignedLong
+  long prepaidAmount();
 }
