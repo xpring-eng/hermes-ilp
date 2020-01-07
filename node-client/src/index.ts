@@ -1,8 +1,6 @@
 import { IlpServiceClient } from "../generated/ilp_as_a_service_grpc_pb";
 import { credentials } from "grpc";
-import { GetBalanceRequest } from "../generated/get_balance_request_pb";
-import { CreateAccountRequest } from "../generated/create_account_request_pb";
-import {GetAccountRequest} from "../generated/get_account_request_pb";
+import { GetAccountRequest } from "../generated/get_account_request_pb";
 
 /* eslint-disable @typescript-eslint/no-floating-promises */
 /* eslint-disable no-console */
@@ -15,7 +13,7 @@ async function runILPGetBalanceTest(): Promise<void> {
   );
 
   const req = new GetAccountRequest();
-  req.setAccountid("connie");
+  req.setAccountId("connie");
   client.getAccount(req, (error, response): void => {
     if (error != null || response == null) {
       console.log("ERRORED :(");

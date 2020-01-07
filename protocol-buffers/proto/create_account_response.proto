@@ -8,39 +8,39 @@ package org.interledger.stream.proto;
 
 message CreateAccountResponse {
 
-  string accountRelationship = 1;
-  string assetCode = 2;
-  int32 assetScale = 3;
-  uint64 maximumPacketAmount = 4;
-  map<string, string> customSettings = 5; // TODO: What should protobuf :value type be?
-  string accountId = 6;
-  string createdAt = 7;
-  string modifiedAt = 8;
+  string account_relationship = 1;
+  string asset_code = 2;
+  int32 asset_scale = 3;
+  uint64 maximum_packet_amount = 4;
+  map<string, string> custom_settings = 5; // TODO: What should protobuf :value type be?
+  string account_id = 6;
+  string created_at = 7;
+  string modified_at = 8;
   string description = 9;
-  string linkType = 10;
-  bool isInternal = 11;
-  bool isConnectionInitiator = 12;
-  string ilpAddressSegment = 13;
-  bool isSendRoutes = 14;
-  bool isReceiveRoutes = 15;
-  BalanceSettings balanceSettings = 16;
-  int32 maxPacketsPerSecond = 17;
-  SettlementEngineDetails settlementEngineDetails = 18;
-  bool isParentAccount = 19;
-  bool isChildAccount = 20;
-  bool isPeerAccount = 21;
-  bool isPeerOrParentAccount = 22;
+  string link_type = 10;
+  bool is_internal = 11;
+  bool is_connectionInitiator = 12;
+  string ilp_address_segment = 13;
+  bool is_send_routes = 14;
+  bool is_receive_routes = 15;
+  BalanceSettings balance_settings = 16;
+  int32 max_packets_per_second = 17;
+  SettlementEngineDetails settlement_engine_details = 18;
+  bool is_parent_account = 19;
+  bool is_child_account = 20;
+  bool is_peer_account = 21;
+  bool is_peer_or_parent_account = 22;
 
   message SettlementEngineDetails {
-      string settlementEngineAccountId = 1;
-      string baseUrl = 2;
-      map<string, string> customSettings = 3;
+      string settlement_engine_account_id = 1;
+      string base_url = 2;
+      map<string, string> custom_settings = 3;
   }
 
   message BalanceSettings {
-    int64 minBalance = 1;
-    int64 settleThreshold = 2;
-    int64 settleTo = 3;
+    int64 min_balance = 1;
+    int64 settle_threshold = 2;
+    int64 settle_to = 3;
   }
 }
 

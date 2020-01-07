@@ -5,7 +5,7 @@ option java_package = "org.interledger.spsp.server.grpc";
 package org.interledger.stream.proto;
 
 message GetBalanceRequest {
-    string accountId = 1;
+    string account_id = 1;
 
     string jwt = 2;
 }

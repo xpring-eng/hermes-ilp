@@ -9,17 +9,17 @@ package org.interledger.stream.proto;
 message SendPaymentRequest {
 
     // The destination PP to pay.
-    string destinationPaymentPointer = 1;
+    string destination_payment_pointer = 1;
 
     // The amount of this payment in the units and scale of the account.
     uint64 amount = 2;
 
     // TODO: Should the client be able to specify this?
     // The number of seconds to wait for this payment to complete.
-    uint64 timeoutSeconds = 3;
+    uint64 timeout_seconds = 3;
 
     // Account Id of the sender
-    string accountId = 4;
+    string account_id = 4;
 
     string jwt = 5;
     //TODO: Enum for SenderAmount vs ReceiverAmount
