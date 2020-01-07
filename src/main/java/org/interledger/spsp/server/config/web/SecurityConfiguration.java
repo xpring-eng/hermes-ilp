@@ -1,12 +1,5 @@
 package org.interledger.spsp.server.config.web;
 
-import org.interledger.crypto.ByteArrayUtils;
-import org.interledger.crypto.Decryptor;
-import org.interledger.spsp.server.auth.BearerTokenSecurityContextRepository;
-import org.interledger.spsp.server.auth.IlpOverHttpAuthenticationProvider;
-import org.interledger.spsp.server.model.SpspServerSettings;
-
-import com.auth0.spring.security.api.JwtAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,28 +11,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 import org.zalando.problem.spring.web.advice.security.SecurityProblemSupport;
 
-import java.util.function.Supplier;
-
 @Configuration
 @EnableWebSecurity
 @Import(SecurityProblemSupport.class)
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
   @Autowired
-  Supplier<SpspServerSettings> serverSettingsSupplier;
-
-  @Autowired
   SecurityProblemSupport problemSupport;
-
-  @Autowired
-  Decryptor decryptor;
-
-  @Bean
-  IlpOverHttpAuthenticationProvider ilpOverHttpAuthenticationProvider() {
-    return new IlpOverHttpAuthenticationProvider(
-      serverSettingsSupplier, decryptor, serverSettingsSupplier.get().parentAccountSettings()
-    );
-  }
 
   /**
    * Required for auto-injection of {@link org.springframework.security.core.Authentication} into controllers.
@@ -54,12 +32,14 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
   @Override
   public void configure(final HttpSecurity http) throws Exception {
 
-    byte[] ephemeralBytes = ByteArrayUtils.generate32RandomBytes();
-
     // WARNING: Don't add `denyAll` here...it's taken care of after the JWT security below. To verify, turn on debugging
     // for Spring Security (e.g.,  org.springframework.security: DEBUG) and look at the security filter chain).
 
     http
+      .authorizeRequests()
+      .anyRequest().permitAll()
+      //.antMatchers(HttpMethod.GET, "/**").permitAll()
+      .and()
       //.httpBasic()
       //.and()
       //.authorizeRequests()
@@ -93,20 +73,6 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
       .exceptionHandling().authenticationEntryPoint(problemSupport).accessDeniedHandler(problemSupport);
 
     // @formatter:on
-  }
-
-  private HttpSecurity configureBearerTokenSecurity(HttpSecurity http, byte[] ephemeralBytes) throws Exception {
-    return http
-      .authenticationProvider(ilpOverHttpAuthenticationProvider())
-      .securityContext()
-      .securityContextRepository(new BearerTokenSecurityContextRepository(ephemeralBytes))
-      .and()
-      .exceptionHandling()
-      .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
-      .and()
-      .httpBasic().disable()
-      .csrf().disable()
-      .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and();
   }
 
 }

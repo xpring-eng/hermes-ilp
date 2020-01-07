@@ -1,28 +1,18 @@
 package org.interledger.spsp.server.config.ilp;
 
 import static okhttp3.CookieJar.NO_COOKIES;
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_SPSP_SERVER_PARENT_ACCOUNT;
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.LINK_TYPE;
-
-import org.interledger.link.http.IlpOverHttpLink;
-import org.interledger.link.http.IlpOverHttpLinkSettings;
-import org.interledger.spsp.server.model.ParentAccountSettings;
-import org.interledger.spsp.server.model.SpspServerSettings;
 
 import okhttp3.ConnectionPool;
 import okhttp3.ConnectionSpec;
 import okhttp3.OkHttpClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.OkHttp3ClientHttpRequestFactory;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 /**
  * <p>Configures ILP-over-HTTP, which provides a single Link-layer mechanism for this Connector's peers.</p>
@@ -31,13 +21,9 @@ import java.util.function.Supplier;
  * ILP-over-HTTP client links.</p>
  */
 @Configuration
-@ConditionalOnProperty(prefix = INTERLEDGER_SPSP_SERVER_PARENT_ACCOUNT, name = LINK_TYPE, havingValue = IlpOverHttpLink.LINK_TYPE_STRING)
 public class IlpOverHttpConfig {
 
   public static final String ILP_OVER_HTTP = "ILP-over-HTTP";
-
-  @Autowired
-  private Supplier<SpspServerSettings> serverSettingsSupplier;
 
   @Bean
   @Qualifier(ILP_OVER_HTTP)
@@ -72,9 +58,9 @@ public class IlpOverHttpConfig {
   @Qualifier(ILP_OVER_HTTP)
   protected OkHttpClient ilpOverHttpClient(
     @Qualifier(ILP_OVER_HTTP) final ConnectionPool ilpOverHttpConnectionPool,
-    @Value("${interledger.spspServer.ilpOverHttp.connectionDefaults.connectTimeoutMillis:1000}") final long defaultConnectTimeoutMillis,
-    @Value("${interledger.spspServer.ilpOverHttp.connectionDefaults.readTimeoutMillis:60000}") final long defaultReadTimeoutMillis,
-    @Value("${interledger.spspServer.ilpOverHttp.connectionDefaults.writeTimeoutMillis:60000}") final long defaultWriteTimeoutMillis
+    @Value("${interledger.sender.ilpOverHttp.connectionDefaults.connectTimeoutMillis:1000}") final long defaultConnectTimeoutMillis,
+    @Value("${interledger.sender.ilpOverHttp.connectionDefaults.readTimeoutMillis:60000}") final long defaultReadTimeoutMillis,
+    @Value("${interledger.sender.ilpOverHttp.connectionDefaults.writeTimeoutMillis:60000}") final long defaultWriteTimeoutMillis
   ) {
     OkHttpClient.Builder builder = new OkHttpClient.Builder();
     ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS).build();
@@ -104,12 +90,4 @@ public class IlpOverHttpConfig {
     return new OkHttp3ClientHttpRequestFactory(okHttpClient);
   }
 
-  @Bean
-  @Qualifier(ILP_OVER_HTTP)
-  protected IlpOverHttpLinkSettings ilpOverHttpLinkSettings() {
-    final ParentAccountSettings parentAccountSettings = serverSettingsSupplier.get().parentAccountSettings();
-    return IlpOverHttpLinkSettings
-      .fromCustomSettings(parentAccountSettings.customSettings())
-      .build();
-  }
 }
