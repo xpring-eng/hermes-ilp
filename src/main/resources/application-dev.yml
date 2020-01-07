@@ -2,49 +2,11 @@
 # See https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#common-application-properties
 spring:
   profiles:
-    include: h2, management, jks
+    include: h2, management
 
 interledger:
   connector:
-    connector-url: https://jc.ilpv4.dev
-#    admin-key:
-  spsp-server:
-    # Base64-encoded String of bytes.
-    server-secret: aQLR5IWAGV2vKnBhnFFsl2cXOCh9u0IWz3PiA64KlJ8=
-    parent-account:
-      id: alice
-      linkType: ILP_OVER_HTTP
-      asset-code: XRP
-      asset-scale: 9
-      maximum-packet-amount: 100001
-      #      settlement-engine-details:
-      #        url: "https://example.com"
-      #        settlement-engine-accountId: seAccount
-      #        custom-settings:
-      #          foo: bar1
-      #          boo: baz1
-      balance-settings:
-        min-balance: 1
-        max-balance: 2
-        settle-threshold: 10000001
-        settle-to: 3
-      custom-settings:
-        ilpOverHttp:
-          incoming:
-            auth_type: SIMPLE
-            simple:
-              token_subject: alice
-              # Represents the plaintext value of `shh`, encrypted.
-#              shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
-              auth_token: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
-          outgoing:
-            auth_type: SIMPLE
-            url: https://rs3.xpring.dev/ilp
-            simple:
-              token_subject: bob
-              # Represents the plaintext value of `shh`, encrypted.
-#              shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
-              auth_token: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
+    connector-url: http://localhost:18080
 
 grpc:
   port: 6565

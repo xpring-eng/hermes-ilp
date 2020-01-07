@@ -1,15 +1,9 @@
 package org.interledger.spsp.server;
 
-import org.interledger.ildcp.IldcpFetcher;
-import org.interledger.ildcp.IldcpRequest;
-import org.interledger.ildcp.IldcpResponse;
-import org.interledger.spsp.server.config.SpspServerConfig;
-import org.interledger.spsp.server.config.model.SpspServerSettingsFromPropertyFile;
-import org.interledger.spsp.server.model.SpspServerSettings;
+import org.interledger.spsp.server.config.ilp.IlpOverHttpConfig;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
@@ -17,16 +11,10 @@ import org.springframework.context.annotation.Import;
 import javax.annotation.PostConstruct;
 
 @SpringBootApplication
-@Import({SpspServerConfig.class})
+@Import(IlpOverHttpConfig.class)
 public class HermesServerApplication {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
-
-  @Autowired
-  private SpspServerSettings spspServerSettings;
-
-  @Autowired
-  private IldcpFetcher ildcpFetcher;
 
   public static void main(String[] args) {
     SpringApplication.run(HermesServerApplication.class, args);
