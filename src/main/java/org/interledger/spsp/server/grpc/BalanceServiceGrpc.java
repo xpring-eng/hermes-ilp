@@ -3,6 +3,8 @@ package org.interledger.spsp.server.grpc;
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -13,6 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @GRpcService
 public class BalanceServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
   Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -22,6 +27,9 @@ public class BalanceServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
 
   @Autowired
   protected OkHttpClient okHttpClient;
+
+  @Autowired
+  protected ObjectMapper objectMapper;
 
   @Override
   public void getBalance(GetBalanceRequest request, StreamObserver<GetBalanceResponse> responseObserver) {
@@ -47,7 +55,14 @@ public class BalanceServiceGrpc extends IlpServiceGrpc.IlpServiceImplBase {
       Status exceptionStatus;
       switch (e.status()) {
         case 401:
-          exceptionStatus = Status.PERMISSION_DENIED;
+          try {
+            Map<String, String > exceptionBody = objectMapper.readValue(new String(e.content()), HashMap.class);
+            String notFoundMessage = "Account not found for principal:";
+            exceptionStatus = exceptionBody.getOrDefault("detail", "").contains(notFoundMessage) ?
+              Status.NOT_FOUND : Status.PERMISSION_DENIED;
+          } catch (JsonProcessingException ex) {
+            exceptionStatus = Status.INTERNAL;
+          }
           break;
         case 404:
           exceptionStatus = Status.NOT_FOUND;

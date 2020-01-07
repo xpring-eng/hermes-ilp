@@ -3,7 +3,6 @@ package org.interledger.spsp.server.client;
 
 import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
 import org.interledger.connector.accounts.AccountId;
-import org.interledger.spsp.server.grpc.exceptions.FeignErrorDecoder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Feign;
@@ -39,7 +38,6 @@ public interface ConnectorBalanceClient {
       .encoder(new JacksonEncoder(objectMapper))
       .decode404()
       .decoder(new OptionalDecoder(new JacksonDecoder(objectMapper)))
-      .errorDecoder(new FeignErrorDecoder())
       .target(ConnectorBalanceClient.class, connectorHttpUrl.toString());
   }
 
