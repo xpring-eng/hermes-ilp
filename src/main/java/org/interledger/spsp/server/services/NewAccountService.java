@@ -69,11 +69,12 @@ public class NewAccountService {
     Map<String, Object> customSettings = new HashMap<>();
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN, "password");
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    customSettings.putAll(spspLinkSettings.toCustomSettingsMap());
 
     // Convert request to AccountSettings
     AccountSettings requestedAccountSettings = AccountSettings.builder()
       .accountId(AccountId.of("rainmaker"))
-      .accountRelationship(AccountRelationship.CHILD)
+      .accountRelationship(AccountRelationship.PEER)
       .customSettings(customSettings)
       .assetScale(9)
       .assetCode("XRP")
