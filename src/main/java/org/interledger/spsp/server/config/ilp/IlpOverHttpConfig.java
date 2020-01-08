@@ -2,8 +2,21 @@ package org.interledger.spsp.server.config.ilp;
 
 import static okhttp3.CookieJar.NO_COOKIES;
 
+import org.interledger.connector.accounts.AccountId;
+import org.interledger.connector.client.ConnectorAdminClient;
+import org.interledger.core.InterledgerAddressPrefix;
+import org.interledger.link.http.IlpOverHttpLinkSettings;
+import org.interledger.link.http.OutgoingLinkSettings;
+import org.interledger.link.http.SimpleAuthSettings;
+import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.services.GimmeMoneyService;
+import org.interledger.spsp.server.services.NewAccountService;
+import org.interledger.spsp.server.services.SendMoneyService;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.ConnectionPool;
 import okhttp3.ConnectionSpec;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 public class IlpOverHttpConfig {
 
   public static final String ILP_OVER_HTTP = "ILP-over-HTTP";
+
+  public static final String SPSP = "SPSP";
 
   @Bean
   @Qualifier(ILP_OVER_HTTP)
@@ -89,5 +104,52 @@ public class IlpOverHttpConfig {
   ) {
     return new OkHttp3ClientHttpRequestFactory(okHttpClient);
   }
+
+  @Bean
+  @Qualifier(SPSP)
+  protected HttpUrl spspReceiverUrl(@Value("${interledger.spsp.spsp-url}") String spspUrl) {
+    return HttpUrl.parse(spspUrl);
+  }
+
+  @Bean
+  @Qualifier(SPSP)
+  OutgoingLinkSettings spspSettings(@Qualifier(SPSP) HttpUrl receiverUrl,
+                                    @Value("${interledger.spsp.auth-token}") String spspAuthToken) {
+    return OutgoingLinkSettings.builder()
+      .authType(IlpOverHttpLinkSettings.AuthType.SIMPLE)
+      .url(receiverUrl.newBuilder().addPathSegment("ilp").build())
+      .simpleAuthSettings(SimpleAuthSettings.forAuthToken(spspAuthToken))
+      .build();
+  }
+
+  @Bean
+  @Qualifier(SPSP)
+  InterledgerAddressPrefix spspAddressPrefix(@Value("${interledger.spsp.address-prefix}") String spspAddressPrefix) {
+    return InterledgerAddressPrefix.of(spspAddressPrefix);
+  }
+
+  @Bean
+  public NewAccountService newAccountService(
+    ConnectorAdminClient adminClient,
+    ConnectorRoutesClient connectorRoutesClient,
+    @Qualifier(SPSP) OutgoingLinkSettings spspLinkSettings,
+    @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix
+  ) {
+    return new NewAccountService(adminClient, connectorRoutesClient, spspLinkSettings, spspAddressPrefix);
+  }
+
+  @Bean
+  public SendMoneyService sendMoneyService(@Value("${interledger.connector.connector-url}") String connectorUrl,
+                                           ObjectMapper objectMapper, ConnectorAdminClient adminClient) {
+    return new SendMoneyService(connectorUrl, objectMapper, adminClient);
+  }
+
+  @Bean
+  public GimmeMoneyService gimmeMoneyService(SendMoneyService sendMoneyService,
+                                             @Qualifier(SPSP) HttpUrl spspUrl) {
+    return new GimmeMoneyService(sendMoneyService, AccountId.of("rainmaker"), "password", spspUrl);
+  }
+
+
 
 }

@@ -8,6 +8,7 @@ import org.interledger.connector.accounts.SettlementEngineDetails;
 import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.IncomingLinkSettings;
+import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.GetAccountResponse;
@@ -156,7 +157,8 @@ public class AccountRequestResponseConverter {
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
   }
 
-  public static AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRequest createAccountRequest) {
+  public static AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRequest createAccountRequest,
+                                                                        OutgoingLinkSettings outgoingLinkSettings) {
     // Derive custom settings (auth) from jwt
     DecodedJWT jwt = JWT.decode(createAccountRequest.getJwt());
     Map<String, Object> customSettings = new HashMap<>();
@@ -164,6 +166,8 @@ public class AccountRequestResponseConverter {
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, jwt.getIssuer());
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, jwt.getAudience().get(0));
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, jwt.getSubject());
+
+    customSettings.putAll(outgoingLinkSettings.toCustomSettingsMap());
 
     return AccountSettings.builder()
       .accountId(AccountId.of(createAccountRequest.getAccountId()))

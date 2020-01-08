@@ -5,6 +5,7 @@ import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
+import org.interledger.spsp.server.services.NewAccountService;
 
 import feign.FeignException;
 import io.grpc.Status;
@@ -22,6 +23,9 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
 
   @Autowired
   protected ConnectorAdminClient adminClient;
+
+  @Autowired
+  protected NewAccountService newAccountService;
 
   @Override
   public void getAccount(GetAccountRequest request, StreamObserver<GetAccountResponse> responseObserver) {
@@ -51,17 +55,14 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
   public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
     Status grpcStatus;
     try {
-      // Convert request to AccountSettings
-      AccountSettings requestedAccountSettings = AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(request);
 
       // Create account on the connector
-      AccountSettings returnedAccountSettings = adminClient.createAccount(requestedAccountSettings);
+      AccountSettings returnedAccountSettings = newAccountService.createAccount(request);
 
       // Convert returned AccountSettings into Grpc response object
       final CreateAccountResponse.Builder replyBuilder =
         AccountRequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings);
 
-      logger.info("Account created successfully with accountId: " + request.getAccountId());
       responseObserver.onNext(replyBuilder.build());
       responseObserver.onCompleted();
       return;

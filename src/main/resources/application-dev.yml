@@ -7,6 +7,10 @@ spring:
 interledger:
   connector:
     connector-url: http://localhost:18080
+  spsp:
+    spsp-url: https://money.ilpv4.dev
+    auth-token: placeholder:c2ho
+    address-prefix: test.jc.money
 
 grpc:
   port: 6565

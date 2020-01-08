@@ -4,7 +4,7 @@ import org.interledger.connector.jackson.modules.AccountIdModule;
 import org.interledger.quilt.jackson.address.InterledgerAddressModule;
 import org.interledger.quilt.jackson.addressprefix.InterledgerAddressPrefixModule;
 import org.interledger.quilt.jackson.link.LinkIdModule;
-import org.interledger.quilt.jackson.link.LinkTypeModule;
+import org.interledger.quilt.jackson.sharedsecret.SharedSecretModule;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -37,7 +37,7 @@ public class ObjectMapperFactory {
       .registerModule(new AccountIdModule())
       .registerModule(new InterledgerAddressPrefixModule())
       .registerModule(new LinkIdModule())
-      .registerModule(new LinkTypeModule())
+      .registerModule(new SharedSecretModule())
       .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
       // Even though `false`` is the default setting for WRITE_NUMBERS_AS_STRINGS, we overtly set it here to alert
       // the reader that this value must be set this way in order to easily support Problems JSON, which per

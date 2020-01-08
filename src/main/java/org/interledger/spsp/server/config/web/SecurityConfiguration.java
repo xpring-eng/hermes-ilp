@@ -36,29 +36,12 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     // for Spring Security (e.g.,  org.springframework.security: DEBUG) and look at the security filter chain).
 
     http
+      .cors().and().csrf().disable()
       .authorizeRequests()
-      .anyRequest().permitAll()
+      .anyRequest()
+      .permitAll()
+      //.and().cors().disable()
       //.antMatchers(HttpMethod.GET, "/**").permitAll()
-      .and()
-      //.httpBasic()
-      //.and()
-      //.authorizeRequests()
-
-      // @formatter:off
-
-      ////////
-      // SPSP Endpoints
-      ////////
-
-      // Actuator URLs
-      //.antMatchers(HttpMethod.GET, "/**").permitAll()
-
-      // Everything else...
-      //.anyRequest().denyAll()
-
-      //.and()
-      .addFilter(securityContextHolderAwareRequestFilter())
-      .cors()
       .and()
       .formLogin().disable()
       .logout().disable()

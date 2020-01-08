@@ -2,9 +2,9 @@ package org.interledger.spsp.server.controllers;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
-import org.interledger.spsp.server.client.ConnectorBalanceClient;
+import org.interledger.spsp.server.services.GimmeMoneyService;
 
-import feign.FeignException;
+import com.google.common.primitives.UnsignedLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -17,15 +17,18 @@ import org.springframework.web.server.ResponseStatusException;
 import org.zalando.problem.spring.common.MediaTypes;
 
 
+/**
+ *
+ */
 @RestController
-public class BalanceController extends AbstractController {
+public class GimmeMoneyController extends AbstractController {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  private ConnectorBalanceClient balanceClient;
+  private final GimmeMoneyService gimmeMoneyService;
 
-  public BalanceController(ConnectorBalanceClient balanceClient) {
-    this.balanceClient = balanceClient;
+  public GimmeMoneyController(GimmeMoneyService gimmeMoneyService) {
+    this.gimmeMoneyService = gimmeMoneyService;
   }
 
   /**
@@ -35,16 +38,16 @@ public class BalanceController extends AbstractController {
    * @return balance for account
    */
   @RequestMapping(
-    value = "/accounts/{accountId}/balance", method = {RequestMethod.GET},
+    value = "/accounts/{accountId}/money", method = {RequestMethod.POST},
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
-  public AccountBalanceResponse getBalance(@PathVariable("accountId") String accountId) {
+  public UnsignedLong getBalance(@PathVariable("accountId") String accountId) {
     try {
-      return balanceClient.getBalance(getAuthorization(), AccountId.of(accountId))
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+      UnsignedLong amount = UnsignedLong.valueOf(100000);
+      return gimmeMoneyService.gimmeMoney(AccountId.of(accountId), amount);
     }
-    catch (FeignException e) {
-      throw new ResponseStatusException(HttpStatus.valueOf(e.status()), e.contentUTF8());
+    catch (Exception e) {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
     }
   }
 
