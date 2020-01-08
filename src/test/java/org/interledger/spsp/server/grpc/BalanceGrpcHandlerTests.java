@@ -71,7 +71,7 @@ public class BalanceGrpcHandlerTests {
    * Fields for our JWKS mock server
    */
   public static final String WELL_KNOWN_JWKS_JSON = "/.well-known/jwks.json";
-  public static final int WIRE_MOCK_PORT = 32456;
+  public static final int WIRE_MOCK_PORT = 32987;
   HttpUrl issuer;
 
   /**

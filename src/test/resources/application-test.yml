@@ -16,3 +16,6 @@ interledger:
     spsp-url: https://money.ilpv4.dev
     auth-token: placeholder:c2ho
     address-prefix: test.jc.money
+
+grpc:
+  port: ${random.int[3000,8000]}
