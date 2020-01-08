@@ -8,6 +8,7 @@ import org.interledger.core.InterledgerAddressPrefix;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.link.http.SimpleAuthSettings;
+import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.services.GimmeMoneyService;
 import org.interledger.spsp.server.services.NewAccountService;
@@ -150,6 +151,25 @@ public class IlpOverHttpConfig {
     return new GimmeMoneyService(sendMoneyService, AccountId.of("rainmaker"), "password", spspUrl);
   }
 
+  @Bean
+  public ConnectorBalanceClient balanceClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl) {
+    return ConnectorBalanceClient.construct(HttpUrl.parse(connectorHttpUrl));
+  }
 
+  @Bean
+  public ConnectorAdminClient adminClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl/*,
+                                          @Value("${interledger.connector.admin-key}") String adminKey*/) {
+    return ConnectorAdminClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
+      template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
+    });
+  }
+
+  @Bean
+  public ConnectorRoutesClient routesClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl,
+                                            @Value("${interledger.connector.admin-key}") String adminKey) {
+    return ConnectorRoutesClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
+      template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
+    });
+  }
 
 }

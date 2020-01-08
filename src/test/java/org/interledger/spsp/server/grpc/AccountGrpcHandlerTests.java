@@ -18,13 +18,19 @@ import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.connector.jackson.ObjectMapperFactory;
+import org.interledger.core.InterledgerAddressPrefix;
 import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.ImmutableJwtAuthSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
+import org.interledger.link.http.OutgoingLinkSettings;
+import org.interledger.link.http.SimpleAuthSettings;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
+import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.grpc.utils.Redactor;
+import org.interledger.spsp.server.services.NewAccountService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,6 +57,8 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -65,6 +73,7 @@ import java.net.URLEncoder;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @RunWith(SpringRunner.class)
@@ -134,6 +143,9 @@ public class AccountGrpcHandlerTests {
 
   @Autowired
   AccountGrpcHandler accountGrpcHandler;
+
+  @Autowired
+  private OutgoingLinkSettings outgoingLinkSettings;
 
   @Before
   public void setUp() throws IOException {
@@ -252,11 +264,18 @@ public class AccountGrpcHandlerTests {
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, jwtAuthSettings.tokenAudience().get());
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, jwtAuthSettings.tokenSubject());
 
+    customSettings.putAll(outgoingLinkSettings.toCustomSettingsMap()
+      .entrySet()
+      .stream()
+      .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()))
+    );
+    Redactor redactor = new Redactor();
+
     CreateAccountResponse expected = CreateAccountResponse.newBuilder()
       .setAccountRelationship("CHILD")
       .setAssetCode("XRP")
       .setAssetScale(9)
-      .putAllCustomSettings(customSettings)
+      .putAllCustomSettings(redactor.redact(customSettings))
       .setAccountId(accountID)
       .setDescription(accountDescription)
       .setLinkType(IlpOverHttpLink.LINK_TYPE_STRING)
@@ -312,6 +331,14 @@ public class AccountGrpcHandlerTests {
     public ConnectorAdminClient adminClient() {
       return ConnectorAdminClient.construct(getInterledgerBaseUri(), template -> {
         template.header(AUTHORIZATION, "Basic " + ADMIN_AUTH_TOKEN);
+      });
+    }
+
+    @Bean
+    @Primary
+    public ConnectorRoutesClient routesClient() {
+      return ConnectorRoutesClient.construct(getInterledgerBaseUri(), template -> {
+        template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
       });
     }
   }

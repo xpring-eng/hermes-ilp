@@ -72,10 +72,6 @@
             <artifactId>jwks-rsa</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.auth0</groupId>
-            <artifactId>auth0-spring-security-api</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
@@ -98,10 +94,6 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
         </dependency>
         <dependency>
             <groupId>com.github.tomakehurst</groupId>
@@ -175,19 +167,11 @@
         </dependency>
         <dependency>
             <groupId>org.interledger</groupId>
-            <artifactId>codecs-framework</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.interledger</groupId>
             <artifactId>codecs-ilp</artifactId>
         </dependency>
         <dependency>
             <groupId>org.interledger</groupId>
             <artifactId>codecs-ildcp</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.interledger</groupId>
-            <artifactId>codecs-stream</artifactId>
         </dependency>
         <dependency>
             <groupId>org.interledger</groupId>
@@ -240,16 +224,6 @@
         <dependency>
             <groupId>org.interledger.connector</groupId>
             <artifactId>connector-routing-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -347,17 +321,6 @@
                 <groupId>com.auth0</groupId>
                 <artifactId>jwks-rsa</artifactId>
                 <version>0.9.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.auth0</groupId>
-                <artifactId>auth0-spring-security-api</artifactId>
-                <version>1.2.6</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.github.ben-manes.caffeine</groupId>
-                <artifactId>caffeine</artifactId>
-                <version>2.8.0</version>
             </dependency>
             <dependency>
                 <groupId>com.github.tomakehurst</groupId>

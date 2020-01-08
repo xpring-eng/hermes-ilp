@@ -4,6 +4,7 @@ import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
+import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.spsp.server.services.NewAccountService;
 
@@ -26,6 +27,9 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
 
   @Autowired
   protected NewAccountService newAccountService;
+
+  @Autowired
+  protected ConnectorRoutesClient routesClient;
 
   @Override
   public void getAccount(GetAccountRequest request, StreamObserver<GetAccountResponse> responseObserver) {
