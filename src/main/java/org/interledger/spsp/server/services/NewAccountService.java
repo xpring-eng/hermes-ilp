@@ -85,25 +85,7 @@ public class NewAccountService {
       .linkType(IlpOverHttpLink.LINK_TYPE)
       .build();
 
-    // Create account on the connector
-    AccountSettings returnedAccountSettings = adminClient.createAccount(requestedAccountSettings);
-
-    logger.info("Account created successfully with accountId: " + requestedAccountSettings.accountId());
-
-    try {
-      InterledgerAddressPrefix routePrefix = spspAddressPrefix.with(returnedAccountSettings.accountId().value());
-      connectorRoutesClient.createStaticRoute(
-        routePrefix.getValue(),
-        StaticRoute.builder()
-          .routePrefix(routePrefix)
-          .nextHopAccountId(returnedAccountSettings.accountId())
-          .build()
-      );
-    } catch (Exception e) {
-      logger.warn("Failed to create route", e);
-    }
-
-    return returnedAccountSettings;
+    return createAccount(requestedAccountSettings);
   }
 
 
