@@ -4,9 +4,6 @@ spring:
   profiles:
     include: h2, management
 
-server:
-  port: 8000
-
 interledger:
   connector:
     connector-url: http://localhost:8080
