@@ -4,9 +4,12 @@ spring:
   profiles:
     include: h2, management
 
+server:
+  port: 8000
+
 interledger:
   connector:
-    connector-url: http://localhost:18080
+    connector-url: http://localhost:8080
   spsp:
     spsp-url: https://money.ilpv4.dev
     auth-token: placeholder:c2ho

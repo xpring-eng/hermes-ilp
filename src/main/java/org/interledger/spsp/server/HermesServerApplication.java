@@ -20,26 +20,4 @@ public class HermesServerApplication {
     SpringApplication.run(HermesServerApplication.class, args);
   }
 
-  @PostConstruct
-  public void init() {
-    /*final IldcpResponse ildcpResponse = ildcpFetcher.fetch(IldcpRequest.builder().build());
-
-    final SpspServerSettingsFromPropertyFile modifiableSpspServerSettings =
-      ((SpspServerSettingsFromPropertyFile) this.spspServerSettings);
-
-    //////////////////////////////////
-    // Update the Account Settings with data returned by IL-DCP!
-    //////////////////////////////////
-    modifiableSpspServerSettings.setOperatorAddress(ildcpResponse.getClientAddress());
-
-    modifiableSpspServerSettings.parentAccountSettings().setAssetCode(ildcpResponse.getAssetCode());
-    modifiableSpspServerSettings.parentAccountSettings().setAssetScale(ildcpResponse.getAssetScale());
-
-    logger.info(
-      "IL-DCP Succeeded! operatorAddress={} assetCode={} assetScale={}",
-      modifiableSpspServerSettings.operatorAddress().getValue(),
-      modifiableSpspServerSettings.parentAccountSettings().assetCode(),
-      modifiableSpspServerSettings.parentAccountSettings().assetScale()
-    );*/
-  }
 }
