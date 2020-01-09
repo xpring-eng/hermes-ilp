@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,9 +40,11 @@ public class AccountController extends AbstractController {
     value = "/accounts", method = {RequestMethod.POST},
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
-  public AccountSettings createAccount(@RequestBody CreateAccountRestRequest createAccountRequest) {
+  public AccountSettings createAccount(@RequestHeader("Authorization") String jwt,
+                                       @RequestBody CreateAccountRestRequest createAccountRequest) {
     try {
-      return newAccountService.createAccount(createAccountRequest);
+      String jwtNoBearer = jwt.substring(7);
+      return newAccountService.createAccount(jwtNoBearer, createAccountRequest);
     }
     catch (FeignException e) {
       throw new ResponseStatusException(HttpStatus.valueOf(e.status()), e.contentUTF8());

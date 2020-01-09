@@ -19,7 +19,4 @@ public interface CreateAccountRestRequest {
 
   String description();
 
-  // No need to authenticate user in Hermes, just need jwt to set up accounts
-  String jwt();
-
 }

@@ -53,9 +53,9 @@ public class NewAccountService {
     return createAccount(requestedAccountSettings);
   }
 
-  public AccountSettings createAccount(CreateAccountRestRequest request) {
+  public AccountSettings createAccount(String jwt, CreateAccountRestRequest request) {
     AccountSettings populatedAccountSettings =
-      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(request, spspLinkSettings);
+      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(jwt, request, spspLinkSettings);
 
     return createAccount(populatedAccountSettings);
   }

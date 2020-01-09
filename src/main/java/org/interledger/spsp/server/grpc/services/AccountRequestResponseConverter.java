@@ -172,8 +172,9 @@ public class AccountRequestResponseConverter {
       .build();
   }
 
-  public static AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRestRequest createAccountRequest,
-                                                                 OutgoingLinkSettings outgoingLinkSettings) {
+  public static AccountSettings accountSettingsFromCreateAccountRequest(String jwt,
+                                                                        CreateAccountRestRequest createAccountRequest,
+                                                                        OutgoingLinkSettings outgoingLinkSettings) {
 
     return AccountSettings.builder()
       .accountId(AccountId.of(createAccountRequest.accountId()))
@@ -182,7 +183,7 @@ public class AccountRequestResponseConverter {
       .description(createAccountRequest.description())
       .accountRelationship(AccountRelationship.CHILD)
       .linkType(IlpOverHttpLink.LINK_TYPE)
-      .customSettings(customSettingsFromJwt(createAccountRequest.jwt(), outgoingLinkSettings))
+      .customSettings(customSettingsFromJwt(jwt, outgoingLinkSettings))
       .build();
   }
 
