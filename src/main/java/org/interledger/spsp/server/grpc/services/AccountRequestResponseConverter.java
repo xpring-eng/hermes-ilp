@@ -13,6 +13,7 @@ import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.GetAccountResponse;
 import org.interledger.spsp.server.grpc.SendPaymentResponse;
+import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.stream.SendMoneyResult;
 
 import com.auth0.jwt.JWT;
@@ -159,15 +160,6 @@ public class AccountRequestResponseConverter {
 
   public static AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRequest createAccountRequest,
                                                                         OutgoingLinkSettings outgoingLinkSettings) {
-    // Derive custom settings (auth) from jwt
-    DecodedJWT jwt = JWT.decode(createAccountRequest.getJwt());
-    Map<String, Object> customSettings = new HashMap<>();
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, jwt.getIssuer());
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, jwt.getAudience().get(0));
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, jwt.getSubject());
-
-    customSettings.putAll(outgoingLinkSettings.toCustomSettingsMap());
 
     return AccountSettings.builder()
       .accountId(AccountId.of(createAccountRequest.getAccountId()))
@@ -176,8 +168,37 @@ public class AccountRequestResponseConverter {
       .description(createAccountRequest.getDescription())
       .accountRelationship(AccountRelationship.CHILD)
       .linkType(IlpOverHttpLink.LINK_TYPE)
-      .customSettings(customSettings)
+      .customSettings(customSettingsFromJwt(createAccountRequest.getJwt(), outgoingLinkSettings))
       .build();
+  }
+
+  public static AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRestRequest createAccountRequest,
+                                                                 OutgoingLinkSettings outgoingLinkSettings) {
+
+    return AccountSettings.builder()
+      .accountId(AccountId.of(createAccountRequest.accountId()))
+      .assetCode(createAccountRequest.assetCode())
+      .assetScale(createAccountRequest.assetScale())
+      .description(createAccountRequest.description())
+      .accountRelationship(AccountRelationship.CHILD)
+      .linkType(IlpOverHttpLink.LINK_TYPE)
+      .customSettings(customSettingsFromJwt(createAccountRequest.jwt(), outgoingLinkSettings))
+      .build();
+  }
+
+  private static Map<String, Object> customSettingsFromJwt(String encodedJwt, OutgoingLinkSettings outgoingLinkSettings) {
+    // Derive custom settings (auth) from jwt
+    DecodedJWT decodedJwt = JWT.decode(encodedJwt);
+
+    Map<String, Object> customSettings = new HashMap<>();
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, decodedJwt.getIssuer());
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, decodedJwt.getAudience().get(0));
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, decodedJwt.getSubject());
+
+    customSettings.putAll(outgoingLinkSettings.toCustomSettingsMap());
+
+    return customSettings;
   }
 
   public static SendPaymentResponse sendPaymentResponseFromSendMoneyResult(SendMoneyResult result) {

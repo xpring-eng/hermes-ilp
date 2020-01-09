@@ -13,7 +13,10 @@ import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
+import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +35,10 @@ public class NewAccountService {
 
   private final InterledgerAddressPrefix spspAddressPrefix;
 
-  public NewAccountService(ConnectorAdminClient adminClient, ConnectorRoutesClient connectorRoutesClient, OutgoingLinkSettings spspLinkSettings, InterledgerAddressPrefix spspAddressPrefix) {
+  public NewAccountService(ConnectorAdminClient adminClient,
+                           ConnectorRoutesClient connectorRoutesClient,
+                           OutgoingLinkSettings spspLinkSettings,
+                           InterledgerAddressPrefix spspAddressPrefix) {
     this.adminClient = adminClient;
     this.connectorRoutesClient = connectorRoutesClient;
     this.spspLinkSettings = spspLinkSettings;
@@ -45,6 +51,13 @@ public class NewAccountService {
       AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(request, spspLinkSettings);
 
     return createAccount(requestedAccountSettings);
+  }
+
+  public AccountSettings createAccount(CreateAccountRestRequest request) {
+    AccountSettings populatedAccountSettings =
+      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(request, spspLinkSettings);
+
+    return createAccount(populatedAccountSettings);
   }
 
   public AccountSettings createAccount(AccountSettings request) {
@@ -87,6 +100,4 @@ public class NewAccountService {
 
     return createAccount(requestedAccountSettings);
   }
-
-
 }

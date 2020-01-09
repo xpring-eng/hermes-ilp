@@ -2,6 +2,7 @@ package org.interledger.spsp.server.controllers;
 
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.spsp.server.grpc.CreateAccountRequest;
+import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
 
 import com.auth0.jwt.interfaces.Claim;
@@ -11,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,18 +35,9 @@ public class AccountController extends AbstractController {
     value = "/accounts", method = {RequestMethod.POST},
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
-  public AccountSettings createAccount() {
-    // FIXME get accountId, assetCode, scale, etc from request object
-    DecodedJWT jwt = getJwt();
-    Claim nickname = jwt.getClaim("nickname");
+  public AccountSettings createAccount(@RequestBody CreateAccountRestRequest createAccountRequest) {
     try {
-      return newAccountService.createAccount(CreateAccountRequest.newBuilder()
-        .setJwt(getBearerToken())
-        .setAssetScale(9)
-        .setAccountId(nickname.asString())
-        .setAssetCode("XRP")
-        .setDescription("account")
-        .build());
+      return newAccountService.createAccount(createAccountRequest);
     }
     catch (FeignException e) {
       throw new ResponseStatusException(HttpStatus.valueOf(e.status()), e.contentUTF8());
