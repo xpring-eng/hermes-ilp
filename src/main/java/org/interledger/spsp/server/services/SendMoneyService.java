@@ -1,7 +1,5 @@
 package org.interledger.spsp.server.services;
 
-import static okhttp3.CookieJar.NO_COOKIES;
-
 import org.interledger.codecs.ilp.InterledgerCodecContextFactory;
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountNotFoundProblem;
@@ -15,6 +13,7 @@ import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.PaymentPointerResolver;
 import org.interledger.spsp.StreamConnectionDetails;
 import org.interledger.spsp.client.SimpleSpspClient;
+import org.interledger.spsp.client.SpspClient;
 import org.interledger.stream.Denomination;
 import org.interledger.stream.SendMoneyRequest;
 import org.interledger.stream.SendMoneyResult;
@@ -24,25 +23,21 @@ import org.interledger.stream.sender.SimpleStreamSender;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.primitives.UnsignedLong;
-import okhttp3.ConnectionPool;
-import okhttp3.ConnectionSpec;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 
 public class SendMoneyService {
 
   public static final int SEND_TIMEOUT = 5;
-  private final SimpleSpspClient spspClient;
+  private final SpspClient spspClient;
 
-  private final String connectorUrl;
+  private final HttpUrl connectorUrl;
 
   private final ObjectMapper objectMapper;
 
@@ -50,13 +45,13 @@ public class SendMoneyService {
   private OkHttpClient okHttpClient;
   private final ExecutorService executorService;
 
-  public SendMoneyService(String connectorUrl, ObjectMapper objectMapper, ConnectorAdminClient adminClient) {
+  public SendMoneyService(HttpUrl connectorUrl, ObjectMapper objectMapper, ConnectorAdminClient adminClient, OkHttpClient okHttpClient, SpspClient spspClient) {
     this.connectorUrl = connectorUrl;
     this.objectMapper = objectMapper;
     this.adminClient = adminClient;
-    this.okHttpClient = newHttpClient();
+    this.okHttpClient = okHttpClient;
     this.executorService = Executors.newFixedThreadPool(50);
-    this.spspClient = new SimpleSpspClient(okHttpClient, PaymentPointerResolver.defaultResolver(), objectMapper);
+    this.spspClient = spspClient;
   }
 
   @PreDestroy
@@ -104,9 +99,18 @@ public class SendMoneyService {
   }
 
   private IlpOverHttpLink newIlpOverHttpLink(InterledgerAddress senderAddress, AccountId senderAccountId, String bearerToken) {
+    HttpUrl ilpHttpUrl = new HttpUrl.Builder()
+      .scheme(connectorUrl.scheme())
+      .host(connectorUrl.host())
+      .port(connectorUrl.port())
+      .addPathSegment("accounts")
+      .addPathSegment(senderAccountId.value())
+      .addPathSegment("ilp")
+      .build();
+
     IlpOverHttpLink link = new IlpOverHttpLink(
       () -> senderAddress,
-      HttpUrl.parse(connectorUrl + "/accounts/" +  senderAccountId + "/ilp"),
+      ilpHttpUrl,
       okHttpClient,
       objectMapper,
       InterledgerCodecContextFactory.oer(),
@@ -114,17 +118,5 @@ public class SendMoneyService {
     );
     link.setLinkId(LinkId.of(senderAccountId.value()));
     return link;
-  }
-
-  private static OkHttpClient newHttpClient() {
-    ConnectionPool connectionPool = new ConnectionPool(10, 5, TimeUnit.MINUTES);
-    ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS).build();
-    OkHttpClient.Builder builder = new OkHttpClient.Builder()
-      .connectionSpecs(Arrays.asList(spec, ConnectionSpec.CLEARTEXT))
-      .cookieJar(NO_COOKIES)
-      .connectTimeout(5000, TimeUnit.MILLISECONDS)
-      .readTimeout(30, TimeUnit.SECONDS)
-      .writeTimeout(30, TimeUnit.SECONDS);
-    return builder.connectionPool(connectionPool).build();
   }
 }

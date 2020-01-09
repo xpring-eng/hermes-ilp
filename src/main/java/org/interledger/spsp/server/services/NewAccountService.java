@@ -44,10 +44,14 @@ public class NewAccountService {
     AccountSettings requestedAccountSettings =
       AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(request, spspLinkSettings);
 
-    // Create account on the connector
-    AccountSettings returnedAccountSettings = adminClient.createAccount(requestedAccountSettings);
+    return createAccount(requestedAccountSettings);
+  }
 
-    logger.info("Account created successfully with accountId: " + request.getAccountId());
+  public AccountSettings createAccount(AccountSettings request) {
+    // Create account on the connector
+    AccountSettings returnedAccountSettings = adminClient.createAccount(request);
+
+    logger.info("Account created successfully with accountId: " + request.accountId());
 
     try {
       InterledgerAddressPrefix routePrefix = spspAddressPrefix.with(returnedAccountSettings.accountId().value());

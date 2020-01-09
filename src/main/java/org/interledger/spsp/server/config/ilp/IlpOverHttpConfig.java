@@ -8,6 +8,9 @@ import org.interledger.core.InterledgerAddressPrefix;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.link.http.SimpleAuthSettings;
+import org.interledger.spsp.PaymentPointerResolver;
+import org.interledger.spsp.client.SimpleSpspClient;
+import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.services.GimmeMoneyService;
@@ -130,6 +133,16 @@ public class IlpOverHttpConfig {
   }
 
   @Bean
+  SpspClient spspClient(OkHttpClient okHttpClient, PaymentPointerResolver paymentPointerResolver, ObjectMapper objectMapper) {
+    return new SimpleSpspClient(okHttpClient, paymentPointerResolver, objectMapper);
+  }
+
+  @Bean
+  PaymentPointerResolver paymentPointerResolver() {
+    return PaymentPointerResolver.defaultResolver();
+  }
+
+  @Bean
   public NewAccountService newAccountService(
     ConnectorAdminClient adminClient,
     ConnectorRoutesClient connectorRoutesClient,
@@ -141,8 +154,11 @@ public class IlpOverHttpConfig {
 
   @Bean
   public SendMoneyService sendMoneyService(@Value("${interledger.connector.connector-url}") String connectorUrl,
-                                           ObjectMapper objectMapper, ConnectorAdminClient adminClient) {
-    return new SendMoneyService(connectorUrl, objectMapper, adminClient);
+                                           ObjectMapper objectMapper,
+                                           ConnectorAdminClient adminClient,
+                                           OkHttpClient okHttpClient,
+                                           SpspClient spspClient) {
+    return new SendMoneyService(HttpUrl.parse(connectorUrl), objectMapper, adminClient, okHttpClient, spspClient);
   }
 
   @Bean
@@ -165,8 +181,7 @@ public class IlpOverHttpConfig {
   }
 
   @Bean
-  public ConnectorRoutesClient routesClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl,
-                                            @Value("${interledger.connector.admin-key}") String adminKey) {
+  public ConnectorRoutesClient routesClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl) {
     return ConnectorRoutesClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
       template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
     });

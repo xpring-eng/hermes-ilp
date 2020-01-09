@@ -181,6 +181,11 @@ public class AccountRequestResponseConverter {
   }
 
   public static SendPaymentResponse sendPaymentResponseFromSendMoneyResult(SendMoneyResult result) {
-    return null;
+    return SendPaymentResponse.newBuilder()
+      .setOriginalAmount(result.originalAmount().longValue())
+      .setAmountDelivered(result.amountDelivered().longValue())
+      .setAmountSent(result.amountSent().longValue())
+      .setSuccessfulPayment(result.successfulPayment())
+      .build();
   }
 }

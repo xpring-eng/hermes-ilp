@@ -35,6 +35,7 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
         PaymentPointer.of(request.getDestinationPaymentPointer()));
     } catch (InterruptedException | ExecutionException e) {
       responseObserver.onError(e);
+      return;
     }
 
     SendPaymentResponse sendPaymentResponse = AccountRequestResponseConverter.sendPaymentResponseFromSendMoneyResult(result);
