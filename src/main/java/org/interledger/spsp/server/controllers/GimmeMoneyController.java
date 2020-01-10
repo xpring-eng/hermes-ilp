@@ -27,7 +27,7 @@ public class GimmeMoneyController extends AbstractController {
 
   private final GimmeMoneyService gimmeMoneyService;
 
-  private final long ONE_XRP_IN_SCALE_9 = 100_000_000;
+  private final long ONE_XRP_IN_SCALE_9 = 1_000_000_000;
 
   public GimmeMoneyController(GimmeMoneyService gimmeMoneyService) {
     this.gimmeMoneyService = gimmeMoneyService;
