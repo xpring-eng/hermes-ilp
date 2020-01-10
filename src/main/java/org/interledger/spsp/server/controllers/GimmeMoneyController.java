@@ -27,6 +27,8 @@ public class GimmeMoneyController extends AbstractController {
 
   private final GimmeMoneyService gimmeMoneyService;
 
+  private final long ONE_XRP_IN_SCALE_9 = 100_000_000;
+
   public GimmeMoneyController(GimmeMoneyService gimmeMoneyService) {
     this.gimmeMoneyService = gimmeMoneyService;
   }
@@ -43,7 +45,8 @@ public class GimmeMoneyController extends AbstractController {
   )
   public UnsignedLong getBalance(@PathVariable("accountId") String accountId) {
     try {
-      UnsignedLong amount = UnsignedLong.valueOf(100000);
+
+      UnsignedLong amount = UnsignedLong.valueOf(ONE_XRP_IN_SCALE_9 * 10);
       return gimmeMoneyService.gimmeMoney(AccountId.of(accountId), amount);
     }
     catch (Exception e) {

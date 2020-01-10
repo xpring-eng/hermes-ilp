@@ -166,7 +166,7 @@ public class AccountRequestResponseConverter {
       .assetCode(createAccountRequest.getAssetCode())
       .assetScale(createAccountRequest.getAssetScale())
       .description(createAccountRequest.getDescription())
-      .accountRelationship(AccountRelationship.CHILD)
+      .accountRelationship(AccountRelationship.PEER)
       .linkType(IlpOverHttpLink.LINK_TYPE)
       .customSettings(customSettingsFromJwt(createAccountRequest.getJwt(), outgoingLinkSettings))
       .build();
@@ -181,7 +181,7 @@ public class AccountRequestResponseConverter {
       .assetCode(createAccountRequest.assetCode())
       .assetScale(createAccountRequest.assetScale())
       .description(createAccountRequest.description())
-      .accountRelationship(AccountRelationship.CHILD)
+      .accountRelationship(AccountRelationship.PEER)
       .linkType(IlpOverHttpLink.LINK_TYPE)
       .customSettings(customSettingsFromJwt(jwt, outgoingLinkSettings))
       .build();
