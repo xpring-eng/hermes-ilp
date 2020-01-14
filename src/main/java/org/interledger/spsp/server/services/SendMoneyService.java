@@ -10,9 +10,7 @@ import org.interledger.core.SharedSecret;
 import org.interledger.link.LinkId;
 import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.spsp.PaymentPointer;
-import org.interledger.spsp.PaymentPointerResolver;
 import org.interledger.spsp.StreamConnectionDetails;
-import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.stream.Denomination;
 import org.interledger.stream.SendMoneyRequest;
@@ -34,7 +32,7 @@ import javax.annotation.PreDestroy;
 
 public class SendMoneyService {
 
-  public static final int SEND_TIMEOUT = 5;
+  public static final int SEND_TIMEOUT = 30;
   private final SpspClient spspClient;
 
   private final HttpUrl connectorUrl;
@@ -50,7 +48,7 @@ public class SendMoneyService {
     this.objectMapper = objectMapper;
     this.adminClient = adminClient;
     this.okHttpClient = okHttpClient;
-    this.executorService = Executors.newFixedThreadPool(50);
+    this.executorService = Executors.newCachedThreadPool();
     this.spspClient = spspClient;
   }
 

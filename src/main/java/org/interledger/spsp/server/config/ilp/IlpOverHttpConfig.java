@@ -20,6 +20,7 @@ import org.interledger.spsp.server.services.SendMoneyService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.ConnectionPool;
 import okhttp3.ConnectionSpec;
+import okhttp3.Dispatcher;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -47,12 +48,12 @@ public class IlpOverHttpConfig {
   @Bean
   @Qualifier(ILP_OVER_HTTP)
   protected ConnectionPool ilpOverHttpConnectionPool(
-    @Value("${interledger.spspServer.ilpOverHttp.connectionDefaults.maxIdleConnections:5}") final int defaultMaxIdleConnections,
-    @Value("${interledger.spspServer.ilpOverHttp.connectionDefaults.keepAliveMinutes:1}") final long defaultConnectionKeepAliveMinutes
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.maxIdleConnections:10}") final int defaultMaxIdleConnections,
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.keepAliveSeconds:30}") final long defaultKeepAliveSeconds
   ) {
     return new ConnectionPool(
       defaultMaxIdleConnections,
-      defaultConnectionKeepAliveMinutes, TimeUnit.MINUTES
+      defaultKeepAliveSeconds, TimeUnit.SECONDS
     );
   }
 
@@ -70,6 +71,8 @@ public class IlpOverHttpConfig {
    * @param defaultWriteTimeoutMillis   Applied to individual write IO operations. A value of 0 means no timeout,
    *                                    otherwise values must be between 1 and {@link Integer#MAX_VALUE} when converted
    *                                    to milliseconds. If unspecified, defaults to 60000.
+   * @param maxRequests                 Maximum numbers of concurrent http requests (across all hosts).
+   * @param maxRequestsPerHost          Maximum numbers of concurrent http requests per host.
    *
    * @return A {@link OkHttp3ClientHttpRequestFactory}.
    */
@@ -77,13 +80,18 @@ public class IlpOverHttpConfig {
   @Qualifier(ILP_OVER_HTTP)
   protected OkHttpClient ilpOverHttpClient(
     @Qualifier(ILP_OVER_HTTP) final ConnectionPool ilpOverHttpConnectionPool,
-    @Value("${interledger.sender.ilpOverHttp.connectionDefaults.connectTimeoutMillis:1000}") final long defaultConnectTimeoutMillis,
-    @Value("${interledger.sender.ilpOverHttp.connectionDefaults.readTimeoutMillis:60000}") final long defaultReadTimeoutMillis,
-    @Value("${interledger.sender.ilpOverHttp.connectionDefaults.writeTimeoutMillis:60000}") final long defaultWriteTimeoutMillis
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.connectTimeoutMillis:1000}") final long defaultConnectTimeoutMillis,
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.readTimeoutMillis:60000}") final long defaultReadTimeoutMillis,
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.writeTimeoutMillis:60000}") final long defaultWriteTimeoutMillis,
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.maxRequests:100}") final int maxRequests,
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.maxRequestsPerHost:50}") final int maxRequestsPerHost
   ) {
     OkHttpClient.Builder builder = new OkHttpClient.Builder();
     ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS).build();
-
+    Dispatcher dispatcher = new Dispatcher();
+    dispatcher.setMaxRequests(maxRequests);
+    dispatcher.setMaxRequestsPerHost(maxRequestsPerHost);
+    builder.dispatcher(dispatcher);
     builder.connectionSpecs(Arrays.asList(spec, ConnectionSpec.CLEARTEXT));
     builder.cookieJar(NO_COOKIES);
 
@@ -139,7 +147,14 @@ public class IlpOverHttpConfig {
 
   @Bean
   PaymentPointerResolver paymentPointerResolver() {
-    return PaymentPointerResolver.defaultResolver();
+    return (paymentPointer) -> {
+      if (paymentPointer.host().contains("cluster.local")) {
+        return HttpUrl.parse("http://" + paymentPointer.host() + paymentPointer.path());
+      }
+      else {
+        return HttpUrl.parse("https://" + paymentPointer.host() + paymentPointer.path());
+      }
+    };
   }
 
   @Bean
