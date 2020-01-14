@@ -8,24 +8,14 @@ spring:
       enabled: ALWAYS
 
 interledger:
-  spsp-server:
-    # Base64-encoded String of bytes.
-    server-secret: aQLR5IWAGV2vKnBhnFFsl2cXOCh9u0IWz3PiA64KlJ8=
-    parent-account:
-      id: alice
-      linkType: ILP_OVER_HTTP
-      asset-code: XRP
-      asset-scale: 9
-      custom-settings:
-        ilpOverHttp:
-          incoming:
-            auth_type: SIMPLE
-            token_subject: alice
-            # Represents the plaintext value of `shh`, encrypted.
-            shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
-          outgoing:
-            auth_type: SIMPLE
-            token_subject: bob
-            # Represents the plaintext value of `shh`, encrypted.
-            shared_secret: enc:JKS:crypto.p12:secret0:1:aes_gcm:AAAADKZPmASojt1iayb2bPy4D-Toq7TGLTN95HzCQAeJtz0=
-            url: http://localhost:8080/
+  connector:
+    connector-url: http://localhost:8080
+    #    admin-key:
+
+  spsp:
+    spsp-url: https://money.ilpv4.dev
+    auth-token: placeholder:c2ho
+    address-prefix: test.jc.money
+
+grpc:
+  port: ${random.int[3000,8000]}

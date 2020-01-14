@@ -1,6 +1,6 @@
 package org.interledger.spsp.server.services;
 
-import org.interledger.spsp.server.model.AccountId;
+import org.interledger.connector.accounts.AccountId;
 
 import java.math.BigInteger;
 

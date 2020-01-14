@@ -1,24 +1,17 @@
 package org.interledger.spsp.server.config.web;
 
-import static org.interledger.connector.core.ConfigConstants.ENABLED_PROTOCOLS;
-import static org.interledger.connector.core.ConfigConstants.ILP_OVER_HTTP_ENABLED;
 import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_SPSP_SERVER_PARENT_ACCOUNT;
 import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.LINK_TYPE;
 import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM;
 
-import org.interledger.encoding.asn.framework.CodecContext;
 import org.interledger.link.http.IlpOverHttpLink;
-import org.interledger.spsp.server.config.ilp.CodecContextConfig;
 import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
-import org.interledger.spsp.server.controllers.converters.OerPreparePacketHttpMessageConverter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -47,20 +40,11 @@ public class SpringSpspServerWebMvc implements WebMvcConfigurer {
   // TODO: Configure HTTP/2
 
   @Autowired
-  @Qualifier(CodecContextConfig.ILP)
-  private CodecContext ilpCodecContext;
-
-  @Autowired
   private ObjectMapper objectMapper;
 
   ////////////////////////
   // HttpMessageConverters
   ////////////////////////
-
-  @Bean
-  OerPreparePacketHttpMessageConverter oerPreparePacketHttpMessageConverter() {
-    return new OerPreparePacketHttpMessageConverter(ilpCodecContext);
-  }
 
   @Override
   public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
@@ -71,7 +55,6 @@ public class SpringSpspServerWebMvc implements WebMvcConfigurer {
 
     converters.add(constructProblemsJsonConverter()); // For ProblemsJson only.
     converters.add(new MappingJackson2HttpMessageConverter(objectMapper)); // For any JSON payloads.
-    converters.add(oerPreparePacketHttpMessageConverter());
   }
 
   @Override

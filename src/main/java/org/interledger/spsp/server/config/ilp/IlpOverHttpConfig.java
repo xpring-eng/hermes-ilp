@@ -1,28 +1,36 @@
 package org.interledger.spsp.server.config.ilp;
 
 import static okhttp3.CookieJar.NO_COOKIES;
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_SPSP_SERVER_PARENT_ACCOUNT;
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.LINK_TYPE;
 
-import org.interledger.link.http.IlpOverHttpLink;
+import org.interledger.connector.accounts.AccountId;
+import org.interledger.connector.client.ConnectorAdminClient;
+import org.interledger.core.InterledgerAddressPrefix;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
-import org.interledger.spsp.server.model.ParentAccountSettings;
-import org.interledger.spsp.server.model.SpspServerSettings;
+import org.interledger.link.http.OutgoingLinkSettings;
+import org.interledger.link.http.SimpleAuthSettings;
+import org.interledger.spsp.PaymentPointerResolver;
+import org.interledger.spsp.client.SimpleSpspClient;
+import org.interledger.spsp.client.SpspClient;
+import org.interledger.spsp.server.client.ConnectorBalanceClient;
+import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.services.GimmeMoneyService;
+import org.interledger.spsp.server.services.NewAccountService;
+import org.interledger.spsp.server.services.SendMoneyService;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.ConnectionPool;
 import okhttp3.ConnectionSpec;
+import okhttp3.Dispatcher;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.OkHttp3ClientHttpRequestFactory;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 /**
  * <p>Configures ILP-over-HTTP, which provides a single Link-layer mechanism for this Connector's peers.</p>
@@ -31,23 +39,21 @@ import java.util.function.Supplier;
  * ILP-over-HTTP client links.</p>
  */
 @Configuration
-@ConditionalOnProperty(prefix = INTERLEDGER_SPSP_SERVER_PARENT_ACCOUNT, name = LINK_TYPE, havingValue = IlpOverHttpLink.LINK_TYPE_STRING)
 public class IlpOverHttpConfig {
 
   public static final String ILP_OVER_HTTP = "ILP-over-HTTP";
 
-  @Autowired
-  private Supplier<SpspServerSettings> serverSettingsSupplier;
+  public static final String SPSP = "SPSP";
 
   @Bean
   @Qualifier(ILP_OVER_HTTP)
   protected ConnectionPool ilpOverHttpConnectionPool(
-    @Value("${interledger.spspServer.ilpOverHttp.connectionDefaults.maxIdleConnections:5}") final int defaultMaxIdleConnections,
-    @Value("${interledger.spspServer.ilpOverHttp.connectionDefaults.keepAliveMinutes:1}") final long defaultConnectionKeepAliveMinutes
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.maxIdleConnections:10}") final int defaultMaxIdleConnections,
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.keepAliveSeconds:30}") final long defaultKeepAliveSeconds
   ) {
     return new ConnectionPool(
       defaultMaxIdleConnections,
-      defaultConnectionKeepAliveMinutes, TimeUnit.MINUTES
+      defaultKeepAliveSeconds, TimeUnit.SECONDS
     );
   }
 
@@ -65,6 +71,8 @@ public class IlpOverHttpConfig {
    * @param defaultWriteTimeoutMillis   Applied to individual write IO operations. A value of 0 means no timeout,
    *                                    otherwise values must be between 1 and {@link Integer#MAX_VALUE} when converted
    *                                    to milliseconds. If unspecified, defaults to 60000.
+   * @param maxRequests                 Maximum numbers of concurrent http requests (across all hosts).
+   * @param maxRequestsPerHost          Maximum numbers of concurrent http requests per host.
    *
    * @return A {@link OkHttp3ClientHttpRequestFactory}.
    */
@@ -72,13 +80,18 @@ public class IlpOverHttpConfig {
   @Qualifier(ILP_OVER_HTTP)
   protected OkHttpClient ilpOverHttpClient(
     @Qualifier(ILP_OVER_HTTP) final ConnectionPool ilpOverHttpConnectionPool,
-    @Value("${interledger.spspServer.ilpOverHttp.connectionDefaults.connectTimeoutMillis:1000}") final long defaultConnectTimeoutMillis,
-    @Value("${interledger.spspServer.ilpOverHttp.connectionDefaults.readTimeoutMillis:60000}") final long defaultReadTimeoutMillis,
-    @Value("${interledger.spspServer.ilpOverHttp.connectionDefaults.writeTimeoutMillis:60000}") final long defaultWriteTimeoutMillis
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.connectTimeoutMillis:1000}") final long defaultConnectTimeoutMillis,
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.readTimeoutMillis:60000}") final long defaultReadTimeoutMillis,
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.writeTimeoutMillis:60000}") final long defaultWriteTimeoutMillis,
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.maxRequests:100}") final int maxRequests,
+    @Value("${interledger.connector.ilpOverHttp.connectionDefaults.maxRequestsPerHost:50}") final int maxRequestsPerHost
   ) {
     OkHttpClient.Builder builder = new OkHttpClient.Builder();
     ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS).build();
-
+    Dispatcher dispatcher = new Dispatcher();
+    dispatcher.setMaxRequests(maxRequests);
+    dispatcher.setMaxRequestsPerHost(maxRequestsPerHost);
+    builder.dispatcher(dispatcher);
     builder.connectionSpecs(Arrays.asList(spec, ConnectionSpec.CLEARTEXT));
     builder.cookieJar(NO_COOKIES);
 
@@ -105,11 +118,88 @@ public class IlpOverHttpConfig {
   }
 
   @Bean
-  @Qualifier(ILP_OVER_HTTP)
-  protected IlpOverHttpLinkSettings ilpOverHttpLinkSettings() {
-    final ParentAccountSettings parentAccountSettings = serverSettingsSupplier.get().parentAccountSettings();
-    return IlpOverHttpLinkSettings
-      .fromCustomSettings(parentAccountSettings.customSettings())
+  @Qualifier(SPSP)
+  protected HttpUrl spspReceiverUrl(@Value("${interledger.spsp.spsp-url}") String spspUrl) {
+    return HttpUrl.parse(spspUrl);
+  }
+
+  @Bean
+  @Qualifier(SPSP)
+  OutgoingLinkSettings spspSettings(@Qualifier(SPSP) HttpUrl receiverUrl,
+                                    @Value("${interledger.spsp.auth-token}") String spspAuthToken) {
+    return OutgoingLinkSettings.builder()
+      .authType(IlpOverHttpLinkSettings.AuthType.SIMPLE)
+      .url(receiverUrl.newBuilder().addPathSegment("ilp").build())
+      .simpleAuthSettings(SimpleAuthSettings.forAuthToken(spspAuthToken))
       .build();
   }
+
+  @Bean
+  @Qualifier(SPSP)
+  InterledgerAddressPrefix spspAddressPrefix(@Value("${interledger.spsp.address-prefix}") String spspAddressPrefix) {
+    return InterledgerAddressPrefix.of(spspAddressPrefix);
+  }
+
+  @Bean
+  SpspClient spspClient(OkHttpClient okHttpClient, PaymentPointerResolver paymentPointerResolver, ObjectMapper objectMapper) {
+    return new SimpleSpspClient(okHttpClient, paymentPointerResolver, objectMapper);
+  }
+
+  @Bean
+  PaymentPointerResolver paymentPointerResolver() {
+    return (paymentPointer) -> {
+      if (paymentPointer.host().contains("cluster.local")) {
+        return HttpUrl.parse("http://" + paymentPointer.host() + paymentPointer.path());
+      }
+      else {
+        return HttpUrl.parse("https://" + paymentPointer.host() + paymentPointer.path());
+      }
+    };
+  }
+
+  @Bean
+  public NewAccountService newAccountService(
+    ConnectorAdminClient adminClient,
+    ConnectorRoutesClient connectorRoutesClient,
+    @Qualifier(SPSP) OutgoingLinkSettings spspLinkSettings,
+    @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix
+  ) {
+    return new NewAccountService(adminClient, connectorRoutesClient, spspLinkSettings, spspAddressPrefix);
+  }
+
+  @Bean
+  public SendMoneyService sendMoneyService(@Value("${interledger.connector.connector-url}") String connectorUrl,
+                                           ObjectMapper objectMapper,
+                                           ConnectorAdminClient adminClient,
+                                           OkHttpClient okHttpClient,
+                                           SpspClient spspClient) {
+    return new SendMoneyService(HttpUrl.parse(connectorUrl), objectMapper, adminClient, okHttpClient, spspClient);
+  }
+
+  @Bean
+  public GimmeMoneyService gimmeMoneyService(SendMoneyService sendMoneyService,
+                                             @Qualifier(SPSP) HttpUrl spspUrl) {
+    return new GimmeMoneyService(sendMoneyService, AccountId.of("rainmaker"), "password", spspUrl);
+  }
+
+  @Bean
+  public ConnectorBalanceClient balanceClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl) {
+    return ConnectorBalanceClient.construct(HttpUrl.parse(connectorHttpUrl));
+  }
+
+  @Bean
+  public ConnectorAdminClient adminClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl/*,
+                                          @Value("${interledger.connector.admin-key}") String adminKey*/) {
+    return ConnectorAdminClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
+      template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
+    });
+  }
+
+  @Bean
+  public ConnectorRoutesClient routesClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl) {
+    return ConnectorRoutesClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
+      template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
+    });
+  }
+
 }

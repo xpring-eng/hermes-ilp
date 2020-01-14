@@ -42,7 +42,8 @@
         <skipUTs>${skipTests}</skipUTs>
 
         <java.version>1.8</java.version>
-        <quilt.version>1.0.2</quilt.version>
+<!--        <quilt.version>1.0.2</quilt.version>-->
+        <quilt.version>HEAD-SNAPSHOT</quilt.version>  <!--FIXME: Revert-->
         <ilp-connector.version>HEAD-SNAPSHOT</ilp-connector.version>
         <problem.version>0.23.0</problem.version>
         <problem-spring-web.version>0.25.2</problem-spring-web.version>
@@ -51,6 +52,8 @@
         <!-- NOTE: This should align with connector-crypto until that module is no longer a dependency -->
         <grpc.version>1.23.0</grpc.version>
         <protobuf.version>3.11.1</protobuf.version>
+        <feign.version>10.7.0</feign.version>
+        <testcontainers.version>1.12.1</testcontainers.version>
     </properties>
 
     <scm>
@@ -67,10 +70,6 @@
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>jwks-rsa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.auth0</groupId>
-            <artifactId>auth0-spring-security-api</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -97,8 +96,9 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-jre8</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -117,8 +117,8 @@
             <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -154,12 +154,16 @@
             <artifactId>connector-accounts</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.interledger</groupId>
-            <artifactId>jackson-datatypes</artifactId>
+            <groupId>org.interledger.connector</groupId>
+            <artifactId>connector-admin-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.interledger.connector</groupId>
+            <artifactId>connector-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>org.interledger</groupId>
-            <artifactId>codecs-framework</artifactId>
+            <artifactId>jackson-datatypes</artifactId>
         </dependency>
         <dependency>
             <groupId>org.interledger</groupId>
@@ -168,10 +172,6 @@
         <dependency>
             <groupId>org.interledger</groupId>
             <artifactId>codecs-ildcp</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.interledger</groupId>
-            <artifactId>codecs-stream</artifactId>
         </dependency>
         <dependency>
             <groupId>org.interledger</groupId>
@@ -226,16 +226,6 @@
             <artifactId>connector-routing-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
@@ -272,6 +262,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.zalando</groupId>
             <artifactId>jackson-datatype-problem</artifactId>
         </dependency>
@@ -283,6 +278,36 @@
             <groupId>org.zalando</groupId>
             <artifactId>problem-violations</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.github.lognet</groupId>
+            <artifactId>grpc-spring-boot-starter</artifactId>
+            <!--<exclusions>
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-services</artifactId>
+                </exclusion>
+            </exclusions>-->
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-testing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-jackson</artifactId>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.grpc</groupId>-->
+<!--            <artifactId>grpc-services</artifactId>-->
+<!--        </dependency>-->
     </dependencies>
 
     <dependencyManagement>
@@ -298,19 +323,31 @@
                 <version>0.9.0</version>
             </dependency>
             <dependency>
-                <groupId>com.auth0</groupId>
-                <artifactId>auth0-spring-security-api</artifactId>
-                <version>1.2.6</version>
-            </dependency>
-            <dependency>
-                <groupId>com.github.ben-manes.caffeine</groupId>
-                <artifactId>caffeine</artifactId>
-                <version>2.8.0</version>
+                <groupId>com.github.tomakehurst</groupId>
+                <artifactId>wiremock-jre8</artifactId>
+                <version>2.24.1</version>
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>junit</artifactId>
+                        <groupId>junit</groupId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
                 <version>${protobuf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.openfeign</groupId>
+                <artifactId>feign-core</artifactId>
+                <version>${feign.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.openfeign</groupId>
+                <artifactId>feign-jackson</artifactId>
+                <version>${feign.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.squareup.okhttp3</groupId>
@@ -320,6 +357,11 @@
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-api</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>
@@ -365,6 +407,16 @@
             </dependency>
             <dependency>
                 <groupId>org.interledger.connector</groupId>
+                <artifactId>connector-admin-client</artifactId>
+                <version>${ilp-connector.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.interledger.connector</groupId>
+                <artifactId>connector-jackson</artifactId>
+                <version>${ilp-connector.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.interledger.connector</groupId>
                 <artifactId>connector-core</artifactId>
                 <version>${ilp-connector.version}</version>
             </dependency>
@@ -394,6 +446,12 @@
                 <version>${ilp-connector.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers</artifactId>
+                <version>${testcontainers.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.zalando</groupId>
                 <artifactId>jackson-datatype-problem</artifactId>
                 <version>${problem.version}</version>
@@ -407,6 +465,21 @@
                 <groupId>org.zalando</groupId>
                 <artifactId>problem-violations</artifactId>
                 <version>${problem-spring-web.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.lognet</groupId>
+                <artifactId>grpc-spring-boot-starter</artifactId>
+                <version>3.5.1</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-testing</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-services</artifactId>
+                <version>${grpc.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -476,7 +549,6 @@
                     </protocArtifact>
                     <pluginId>grpc-java</pluginId>
                     <pluginArtifact>
-                        <!-- TODO: Fix in Xpring4j? -->
                         io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
                     </pluginArtifact>
                 </configuration>
