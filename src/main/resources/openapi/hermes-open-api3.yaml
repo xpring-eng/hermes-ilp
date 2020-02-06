@@ -1,0 +1,120 @@
+openapi: 3.0.2
+info:
+  title: ILPv4 Hermes Gateway
+  version: 1.0.0
+  description: A gateway facilitating RESTful calls to an ILPv4 connector
+  termsOfService: 'http://swagger.io/terms/'
+  contact:
+    name: Interledger.org Team
+    url: 'https://interledger.org'
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
+servers:
+  -
+    url: 'https://localhost:8080'
+    description: The default server
+    variables:
+      domain:
+        default: localhost
+      port:
+        default: '8080'
+        description: The default port for a running Hermes Gateway
+paths:
+  '/accounts/{account_id}/balance':
+    summary: Account balance
+    get:
+      tags:
+        - Balances
+      parameters:
+        - name: account_id
+          description: ID of account to fetch balances
+          schema:
+            format: uuid
+            type: string
+          in: path
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountBalanceResponse'
+#              examples:
+#                A sample account:
+#                  value:
+#                    assetCode: "USD"
+#                    assetScale: 2
+#                    accountBalance:
+#                      accountId: "bob"
+#                      netBalance: 100
+#                      clearingBalance: 100
+#                      prepaidAmount: 0
+          description: .
+#        '404':
+#          content:
+#            application/json:
+#              examples:
+#                Balance not found.:
+#                  value:
+#                    accountId: foo
+#                    type: 'https://errors.interledger.org/accounts/account-not-found'
+#                    title: Account Not Found (`foo`)
+#                    status: 404
+#          description: Account not found
+      security:
+        - BASIC: []
+      operationId: getAccountBalance
+      summary: Individual Account Balance
+      description: 'Get the balance identified by :account_id.'
+components:
+  schemas:
+    AccountBalanceResponse:
+      title: Type for retrieving balances
+      description: Wrapper for balance information
+      required:
+        - assetCode
+        - assetScale
+      type: object
+      properties:
+        assetCode:
+          type: string
+        assetScale:
+          type: number
+        accountBalance:
+          type: object
+      example: |-
+        {
+            "assetCode": "USD",
+            "assetScale": 2
+            "accountBalance": {
+              "accountId": "bob",
+              "netBalance": 100,
+              "clearingBalance": 100,
+              "prepaidAmount": 0,
+            }
+        }
+    AccountBalance:
+      title: Type for balance details
+      description: Wrapper for balance details
+      required:
+        - accountId
+        - clearingBalance
+        - prepaidAmount
+      type: object
+      properties:
+        accountId:
+          type: string
+        clearingBalance:
+          type: number
+        netBalance:
+          type: object
+        prepaidAmount:
+          type: number
+      example: |-
+          "accountBalance": {
+            "accountId": "bob",
+            "netBalance": 100,
+            "clearingBalance": 100,
+            "prepaidAmount": 0,
+          }

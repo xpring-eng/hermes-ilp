@@ -1,14 +1,14 @@
 package org.interledger.spsp.server.config.model;
 
-import org.interledger.connector.settings.ConnectorKey;
+import org.interledger.crypto.CryptoKey;
 
 import java.util.Objects;
 import java.util.StringJoiner;
 
 /**
- * An implementation of {@link ConnectorKey} that can be used by Spring Boot to load these properties from a YAML file.
+ * An implementation of {@link CryptoKey} that can be used by Spring Boot to load these properties from a YAML file.
  */
-public class CryptoKeyFromPropertyFile implements ConnectorKey {
+public class CryptoKeyFromPropertyFile implements CryptoKey {
 
   private String alias;
 
@@ -37,10 +37,10 @@ public class CryptoKeyFromPropertyFile implements ConnectorKey {
     if (this == o) {
       return true;
     }
-    if (o == null || !(o instanceof ConnectorKey)) {
+    if (o == null || !(o instanceof CryptoKey)) {
       return false;
     }
-    ConnectorKey that = (ConnectorKey) o;
+    CryptoKey that = (CryptoKey) o;
     return alias.equals(that.alias()) &&
       version.equals(that.version());
   }
