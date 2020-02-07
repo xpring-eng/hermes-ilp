@@ -575,14 +575,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.openapitools</groupId>
-                <artifactId>openapi-generator-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>io.swagger</groupId>
-                <artifactId>swagger-codegen-maven-plugin</artifactId>
-            </plugin>
         </plugins>
         <pluginManagement>
             <plugins>
@@ -643,58 +635,6 @@
                                         <outputDirectory>${project.build.directory}</outputDirectory>
                                     </artifactItem>
                                 </artifactItems>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.openapitools</groupId>
-                    <artifactId>openapi-generator-maven-plugin</artifactId>
-                    <version>4.2.3</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>generate</goal>
-                            </goals>
-                            <configuration>
-                                <inputSpec>${project.basedir}/src/main/resources/openapi/hermes-open-api3.yaml</inputSpec>
-                                <generatorName>java</generatorName>
-                                <configOptions>
-                                    <sourceFolder>src/gen/java/main</sourceFolder>
-                                </configOptions>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>io.swagger</groupId>
-                    <artifactId>swagger-codegen-maven-plugin</artifactId>
-                    <version>3.0.0-rc1</version>
-                    <executions>
-<!--                        <execution>-->
-<!--                            <id>java-gen</id>-->
-<!--                            <goals>-->
-<!--                                <goal>generate</goal>-->
-<!--                            </goals>-->
-<!--                            <configuration>-->
-<!--                                <inputSpec>${project.basedir}/src/main/resources/openapi/hermes-open-api3.yaml</inputSpec>-->
-<!--                                <language>java</language>-->
-<!--                                <configOptions>-->
-<!--                                    <sourceFolder>src/swagger/java/main</sourceFolder>-->
-<!--                                </configOptions>-->
-<!--                            </configuration>-->
-<!--                        </execution>-->
-                        <execution>
-                            <id>swift5-gen</id>
-                            <goals>
-                                <goal>generate</goal>
-                            </goals>
-                            <configuration>
-                                <inputSpec>${project.basedir}/src/main/resources/openapi/hermes-open-api3.yaml</inputSpec>
-                                <language>swift4</language>
-                                <configOptions>
-                                    <sourceFolder>src/swagger/swift5/main</sourceFolder>
-                                </configOptions>
                             </configuration>
                         </execution>
                     </executions>
