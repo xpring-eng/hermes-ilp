@@ -5,6 +5,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.interledger.spsp.server.config.ilp.IlpOverHttpConfig.SPSP;
 import static org.junit.Assert.fail;
 
@@ -23,6 +24,8 @@ import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.grpc.jwt.IlpJwtCallCredentials;
+import org.interledger.spsp.server.grpc.utils.InterceptedService;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
 
@@ -62,7 +65,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
@@ -157,8 +159,14 @@ public class IlpHttpGrpcTests {
     String serverName = InProcessServerBuilder.generateName();
 
     // Create a server, add service, start, and register for automatic graceful shutdown.
-    grpcCleanup.register(InProcessServerBuilder
-        .forName(serverName).directExecutor().addService(ilpOverHttpGrpcHandler).build().start());
+    grpcCleanup.register(
+      InProcessServerBuilder
+        .forName(serverName)
+        .directExecutor()
+        .addService(InterceptedService.of(ilpOverHttpGrpcHandler))
+        .build()
+        .start()
+    );
 
     blockingStub = IlpOverHttpServiceGrpc.newBlockingStub(
         // Create a client channel and register for automatic graceful shutdown.
@@ -224,7 +232,9 @@ public class IlpHttpGrpcTests {
       .setJwt(aliceJwt)
       .build();
 
-    SendPaymentResponse response = blockingStub.sendMoney(sendMoneyRequest);
+    SendPaymentResponse response = blockingStub
+      .withCallCredentials(IlpJwtCallCredentials.build(aliceJwt))
+      .sendMoney(sendMoneyRequest);
     if (!response.getSuccessfulPayment()) {
       fail();
     }

@@ -2,6 +2,7 @@ package org.interledger.spsp.server.grpc;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.PaymentPointer;
+import org.interledger.spsp.server.grpc.jwt.JwtContext;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.spsp.server.services.SendMoneyService;
 import org.interledger.stream.SendMoneyResult;
@@ -29,8 +30,9 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
     SendMoneyResult result = null;
 
     try {
+      String jwt = JwtContext.getToken();
       result = sendMoneyService.sendMoney(AccountId.of(request.getAccountId()),
-        request.getJwt(),
+        jwt.substring("Bearer ".length()),
         UnsignedLong.valueOf(request.getAmount()),
         PaymentPointer.of(request.getDestinationPaymentPointer()));
     } catch (InterruptedException | ExecutionException e) {

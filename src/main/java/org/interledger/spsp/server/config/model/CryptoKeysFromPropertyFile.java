@@ -1,25 +1,25 @@
 package org.interledger.spsp.server.config.model;
 
 
-import org.interledger.connector.settings.ConnectorKey;
-import org.interledger.connector.settings.ConnectorKeys;
+import org.interledger.crypto.CryptoKey;
+import org.interledger.crypto.CryptoKeys;
 
 import java.util.Objects;
 import java.util.StringJoiner;
 
 /**
- * An implementation of {@link ConnectorKeys} that can be used by Spring Boot to load these properties from a YAML
+ * An implementation of {@link CryptoKeys} that can be used by Spring Boot to load these properties from a YAML
  * file.
  */
 @SuppressWarnings("unused")
-public class CryptoKeysFromPropertyFile implements ConnectorKeys {
+public class CryptoKeysFromPropertyFile implements CryptoKeys {
 
   private CryptoKeyFromPropertyFile secret0;
 
   private CryptoKeyFromPropertyFile accountSettings;
 
   @Override
-  public ConnectorKey secret0() {
+  public CryptoKey secret0() {
     return secret0;
   }
 
@@ -28,7 +28,7 @@ public class CryptoKeysFromPropertyFile implements ConnectorKeys {
   }
 
   @Override
-  public ConnectorKey accountSettings() {
+  public CryptoKey accountSettings() {
     return accountSettings;
   }
 
@@ -41,10 +41,10 @@ public class CryptoKeysFromPropertyFile implements ConnectorKeys {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof ConnectorKeys)) {
+    if (!(o instanceof CryptoKeys)) {
       return false;
     }
-    ConnectorKeys that = (ConnectorKeys) o;
+    CryptoKeys that = (CryptoKeys) o;
     return secret0.equals(that.secret0()) &&
       accountSettings.equals(that.accountSettings());
   }

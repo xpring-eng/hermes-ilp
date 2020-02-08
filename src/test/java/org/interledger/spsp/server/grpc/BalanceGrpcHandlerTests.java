@@ -19,6 +19,8 @@ import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
+import org.interledger.spsp.server.grpc.jwt.IlpJwtCallCredentials;
+import org.interledger.spsp.server.grpc.utils.InterceptedService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -175,8 +177,14 @@ public class BalanceGrpcHandlerTests {
     String serverName = InProcessServerBuilder.generateName();
 
     // Create a server, add service, start, and register for automatic graceful shutdown.
-    grpcCleanup.register(InProcessServerBuilder
-      .forName(serverName).directExecutor().addService(balanceGrpcHandler).build().start());
+    grpcCleanup.register(
+      InProcessServerBuilder
+        .forName(serverName)
+        .directExecutor()
+        .addService(InterceptedService.of(balanceGrpcHandler))
+        .build()
+        .start()
+    );
 
     blockingStub = BalanceServiceGrpc.newBlockingStub(
       // Create a client channel and register for automatic graceful shutdown.
@@ -208,10 +216,14 @@ public class BalanceGrpcHandlerTests {
     String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
 
     GetBalanceResponse reply =
-      blockingStub.getBalance(GetBalanceRequest.newBuilder()
-        .setAccountId(accountIdHermes.value())
-        .setJwt(jwt)
-        .build());
+      blockingStub
+        .withCallCredentials(IlpJwtCallCredentials.build(jwt))
+        .getBalance(
+          GetBalanceRequest.newBuilder()
+          .setAccountId(accountIdHermes.value())
+          .setJwt(jwt)
+          .build()
+        );
 
     logger.info("Balance: " + reply);
     assertThat(reply.getAccountId()).isEqualTo("hermes");
@@ -233,10 +245,14 @@ public class BalanceGrpcHandlerTests {
     expectedException.expect(StatusRuntimeException.class);
     expectedException.expectMessage(Status.PERMISSION_DENIED.getCode().name());
 
-    blockingStub.getBalance(GetBalanceRequest.newBuilder()
-      .setAccountId(accountIdHermes.value())
-      .setJwt("thisIsNotAValidJwt")
-      .build());
+    blockingStub
+      .withCallCredentials(IlpJwtCallCredentials.build("thisIsNotAValidJwt"))
+      .getBalance(
+        GetBalanceRequest.newBuilder()
+          .setAccountId(accountIdHermes.value())
+          .setJwt("thisIsNotAValidJwt")
+          .build()
+      );
   }
 
   /**
@@ -253,10 +269,14 @@ public class BalanceGrpcHandlerTests {
     JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
     String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
 
-    blockingStub.getBalance(GetBalanceRequest.newBuilder()
-      .setAccountId("thisAccountDoesntExist")
-      .setJwt(jwt)
-      .build());
+    blockingStub
+      .withCallCredentials(IlpJwtCallCredentials.build(jwt))
+      .getBalance(
+        GetBalanceRequest.newBuilder()
+          .setAccountId("thisAccountDoesntExist")
+          .setJwt(jwt)
+          .build()
+      );
   }
 
   private ImmutableJwtAuthSettings defaultAuthSettings(HttpUrl issuer) {

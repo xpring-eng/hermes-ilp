@@ -2,6 +2,7 @@ package org.interledger.spsp.server.grpc;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
+import org.interledger.spsp.server.grpc.jwt.JwtContext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,7 +10,6 @@ import feign.FeignException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import okhttp3.OkHttpClient;
 import org.lognet.springboot.grpc.GRpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,8 @@ public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBas
   @Override
   public void getBalance(GetBalanceRequest request, StreamObserver<GetBalanceResponse> responseObserver) {
     try {
-      balanceClient.getBalance("Bearer " + request.getJwt(), AccountId.of(request.getAccountId()))
+      String jwt = JwtContext.getToken();
+      balanceClient.getBalance(jwt, AccountId.of(request.getAccountId()))
         .ifPresent(balanceResponse -> {
           final GetBalanceResponse reply = GetBalanceResponse.newBuilder()
             .setAssetScale(balanceResponse.assetScale())

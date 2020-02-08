@@ -28,13 +28,13 @@ public class JwtContextInterceptor implements ServerInterceptor {
                                                                ServerCallHandler<ReqT, RespT> next) {
     String bearer = headers.get(Metadata.Key.of(HttpHeaders.AUTHORIZATION, Metadata.ASCII_STRING_MARSHALLER));
     AtomicReference<Context> context = new AtomicReference(Context.current());
-    if (!bearer.startsWith("Bearer ")) {
-      LOGGER.warn("Received an authorization header to GRPC that was not a bearer token");
-    }
-    else {
-      String jwt = bearer.substring("Bearer ".length());
-      context.set(Context.current().withValue(Context.key("ILP_JWT"), jwt));
-    }
+//    if (!bearer.startsWith("Bearer ")) {
+//      LOGGER.warn("Received an authorization header to GRPC that was not a bearer token");
+//    }
+//    else {
+//      String jwt = bearer.substring("Bearer ".length());
+      context.set(Context.current().withValue(GrpcConstants.JWT_KEY, bearer));
+//    }
     return Contexts.interceptCall(context.get(), call, headers, next);
   }
 }
