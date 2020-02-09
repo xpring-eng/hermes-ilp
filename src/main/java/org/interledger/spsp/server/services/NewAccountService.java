@@ -15,16 +15,13 @@ import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 
 public class NewAccountService {
 
@@ -58,6 +55,7 @@ public class NewAccountService {
 
   public AccountSettings createAccount(Optional<String> authToken, Optional<CreateAccountRestRequest> request) {
 
+    // Generate a random alpha-numeric string as a simple auth token
     String credentials = authToken.orElse(generateSimpleAuthCredentials());
 
     AccountSettings populatedAccountSettings =
@@ -134,19 +132,33 @@ public class NewAccountService {
     return createAccount(requestedAccountSettings);
   }
 
+  /**
+   * Generates a random alphanumeric string of length 13 to be used as credentials
+   *
+   * TODO: Use a library that generates more secure tokens
+   * @return Random alphanumeric simple auth token with 13 characters
+   */
   private String generateSimpleAuthCredentials() {
     return RandomStringUtils.randomAlphanumeric(13);
   }
 
+  /**
+   * If the request isnt empty, just return it, otherwise create a default account with a generated accountID
+   * @param createAccountRequest
+   * @return a CreateAccountRestRequest (either given or generated)
+   */
   private CreateAccountRestRequest generateFullCreateAccountRequest(Optional<CreateAccountRestRequest> createAccountRequest) {
     if (createAccountRequest.isPresent()) {
-
       return createAccountRequest.get();
     } else {
       return newDefaultCreateAccountRequest();
     }
   }
 
+  /**
+   * Generates a {@link CreateAccountRestRequest} if none is given
+   * @return a {@link CreateAccountRestRequest} with a generated accountId
+   */
   private CreateAccountRestRequest newDefaultCreateAccountRequest() {
     return CreateAccountRestRequest.builder()
       .accountId(generateAccountId())
@@ -156,7 +168,11 @@ public class NewAccountService {
       .build();
   }
 
+  /**
+   * Generates an account ID with format user_{random 8 alphanumeric characters}
+   * @return A String representing a generated account ID
+   */
   private String generateAccountId() {
-    return "user_" + RandomStringUtils.randomAlphanumeric(13);
+    return "user_" + RandomStringUtils.randomAlphanumeric(8);
   }
 }

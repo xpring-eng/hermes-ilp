@@ -1,6 +1,5 @@
 package org.interledger.spsp.server.config.jackson;
 
-import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.PaymentPointer;
 
 import com.fasterxml.jackson.core.Version;

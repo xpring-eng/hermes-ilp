@@ -58,12 +58,13 @@ public class AccountController extends AbstractController {
                                        @RequestBody Optional<CreateAccountRestRequest> createAccountRequest) {
 
     try {
-      // Developer has the choice of passing in their own auth (JWT), or having Hermes generate a Simple token
+      // Give a choice of passing in a JWT or simple auth token, or having Hermes generate a Simple token
       StringBuilder maybeAuthToken = new StringBuilder();
       authToken.ifPresent(token -> {
         maybeAuthToken.append(token.substring(token.indexOf(" ") + 1)); // Get rid of "Bearer " or "Basic "
       });
 
+      // If a token is passed in, use it.  Otherwise newAccountService will generate one
       Optional<String> credentials = maybeAuthToken.toString().isEmpty() ?
         Optional.empty() : Optional.of(maybeAuthToken.toString());
 
