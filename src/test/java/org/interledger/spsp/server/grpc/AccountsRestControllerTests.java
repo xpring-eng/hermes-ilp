@@ -15,7 +15,9 @@ import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.ImmutableJwtAuthSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
+import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.HermesServerApplication;
+import org.interledger.spsp.server.client.AccountSettingsResponse;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.controllers.AccountController;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
@@ -96,8 +98,19 @@ public class AccountsRestControllerTests {
   @Autowired
   private AccountController accountController;
 
+  private String paymentPointerBase;
+
+  @Autowired
+  HttpUrl spspReceiverUrl;
+
   @Before
   public void setUp() throws JsonProcessingException {
+
+    paymentPointerBase = "$" + spspReceiverUrl.host();
+    if (spspReceiverUrl.port() != 80 && spspReceiverUrl.port() != 443) {
+      paymentPointerBase += ":" + spspReceiverUrl.port();
+    }
+
     // Set up the JWKS server
     jwtServer = new JwksServer();
     resetJwks();
@@ -127,12 +140,13 @@ public class AccountsRestControllerTests {
       .authType(IlpOverHttpLinkSettings.AuthType.SIMPLE)
       .build();
 
-    AccountSettings response = accountController.createAccount(Optional.of("Bearer password"), Optional.of(request));
+    AccountSettingsResponse response = accountController.createAccount(Optional.of("Bearer password"), Optional.of(request));
     assertThat(response.accountId()).isEqualTo(AccountId.of("foo"));
     assertThat(response.assetCode()).isEqualTo("USD");
     assertThat(response.assetScale()).isEqualTo(6);
     assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
     assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).isEqualTo("password");
+    assertThat(response.paymentPointer()).isEqualTo(PaymentPointer.of(paymentPointerBase + "/foo"));
   }
 
   /**
@@ -140,10 +154,11 @@ public class AccountsRestControllerTests {
    */
   @Test
   public void testCreateAccountWithTokenButNoRequest() {
-    AccountSettings response = accountController.createAccount(Optional.of("password"), Optional.empty());
+    AccountSettingsResponse response = accountController.createAccount(Optional.of("password"), Optional.empty());
     assertThat(response.accountId().value()).startsWith("user_");
     assertThat(response.assetCode()).isEqualTo("XRP");
     assertThat(response.assetScale()).isEqualTo(9);
+    assertThat(response.paymentPointer()).isEqualTo(PaymentPointer.of(paymentPointerBase + "/" + response.accountId()));
     assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
     assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo("password");
   }
@@ -153,10 +168,11 @@ public class AccountsRestControllerTests {
    */
   @Test
   public void testCreateAccountWithNoTokenAndNoRequest() {
-    AccountSettings response = accountController.createAccount(Optional.empty(), Optional.empty());
+    AccountSettingsResponse response = accountController.createAccount(Optional.empty(), Optional.empty());
     assertThat(response.accountId().value()).startsWith("user_");
     assertThat(response.assetCode()).isEqualTo("XRP");
     assertThat(response.assetScale()).isEqualTo(9);
+    assertThat(response.paymentPointer()).isEqualTo(PaymentPointer.of(paymentPointerBase + "/" + response.accountId()));
     assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
     assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().doesNotStartWith("enc:jks");
   }
@@ -181,7 +197,8 @@ public class AccountsRestControllerTests {
       .authType(IlpOverHttpLinkSettings.AuthType.JWT_RS_256)
       .build();
 
-    AccountSettings createdAccountSettings = accountController.createAccount(Optional.of(jwt), Optional.of(request));
+    AccountSettingsResponse createdAccountSettings = accountController.createAccount(Optional.of(jwt), Optional.of(request));
+    assertThat(createdAccountSettings.paymentPointer()).isEqualTo(PaymentPointer.of(paymentPointerBase + "/" + createdAccountSettings.accountId()));
     assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
     assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER)).isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());
     assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE)).isEqualTo(jwtAuthSettings.tokenAudience().get());

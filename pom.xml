@@ -141,6 +141,10 @@
             <artifactId>grpc-stub</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
@@ -216,10 +220,6 @@
         <dependency>
             <groupId>org.interledger.connector</groupId>
             <artifactId>connector-crypto</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.interledger.connector</groupId>
-            <artifactId>connector-model</artifactId>
         </dependency>
         <dependency>
             <groupId>org.interledger.connector</groupId>
@@ -380,6 +380,11 @@
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.9</version>
+            </dependency>
+            <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
                 <version>${spring-cloud.version}</version>
@@ -423,11 +428,6 @@
             <dependency>
                 <groupId>org.interledger.connector</groupId>
                 <artifactId>connector-crypto</artifactId>
-                <version>${ilp-connector.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.interledger.connector</groupId>
-                <artifactId>connector-model</artifactId>
                 <version>${ilp-connector.version}</version>
             </dependency>
             <dependency>

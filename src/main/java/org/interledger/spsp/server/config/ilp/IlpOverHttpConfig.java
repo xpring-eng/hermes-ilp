@@ -8,6 +8,7 @@ import org.interledger.core.InterledgerAddressPrefix;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.link.http.SimpleAuthSettings;
+import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.PaymentPointerResolver;
 import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
