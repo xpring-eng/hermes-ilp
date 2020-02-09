@@ -1,7 +1,5 @@
 package org.interledger.spsp.server.model;
 
-import org.interledger.link.http.IlpOverHttpLinkSettings;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
