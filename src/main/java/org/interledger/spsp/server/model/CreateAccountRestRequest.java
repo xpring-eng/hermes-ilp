@@ -1,5 +1,7 @@
 package org.interledger.spsp.server.model;
 
+import org.interledger.link.http.IlpOverHttpLinkSettings;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
@@ -17,6 +19,11 @@ public interface CreateAccountRestRequest {
 
   int assetScale();
 
-  String description();
+  @Value.Default
+  default String description() {
+    return "";
+  };
+
+  IlpOverHttpLinkSettings.AuthType authType();
 
 }

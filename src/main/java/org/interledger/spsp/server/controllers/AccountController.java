@@ -4,6 +4,8 @@ import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
+import org.interledger.link.http.IlpOverHttpLinkSettings;
+import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
 
@@ -20,6 +22,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.zalando.problem.spring.common.MediaTypes;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+import java.util.Random;
+import javax.swing.text.html.Option;
 
 
 @RestController
@@ -40,11 +47,20 @@ public class AccountController extends AbstractController {
     value = "/accounts", method = {RequestMethod.POST},
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
-  public AccountSettings createAccount(@RequestHeader("Authorization") String jwt,
-                                       @RequestBody CreateAccountRestRequest createAccountRequest) {
+  public AccountSettings createAccount(@RequestHeader("Authorization") Optional<String> authToken,
+                                       @RequestBody Optional<CreateAccountRestRequest> createAccountRequest) {
+
     try {
-      String jwtNoBearer = jwt.substring(7);
-      return newAccountService.createAccount(jwtNoBearer, createAccountRequest);
+      // Developer has the choice of passing in their own auth (JWT), or having Hermes generate a Simple token
+      StringBuilder maybeAuthToken = new StringBuilder();
+      authToken.ifPresent(token -> {
+        maybeAuthToken.append(token.substring(token.indexOf(" ") + 1)); // Get rid of "Bearer " or "Basic "
+      });
+
+      Optional<String> credentials = maybeAuthToken.toString().isEmpty() ?
+        Optional.empty() : Optional.of(maybeAuthToken.toString());
+
+      return newAccountService.createAccount(credentials, createAccountRequest);
     }
     catch (FeignException e) {
       throw new ResponseStatusException(HttpStatus.valueOf(e.status()), e.contentUTF8());
@@ -79,5 +95,4 @@ public class AccountController extends AbstractController {
       throw new ResponseStatusException(HttpStatus.valueOf(e.status()), e.contentUTF8());
     }
   }
-
 }

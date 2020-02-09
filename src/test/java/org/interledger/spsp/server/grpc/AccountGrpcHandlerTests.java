@@ -290,7 +290,7 @@ public class AccountGrpcHandlerTests {
       .setAssetCode("XRP")
       .setAssetScale(9)
       .setDescription(accountDescription)
-      .setJwt(jwt);
+      .setAuthToken(jwt);
 
     CreateAccountResponse reply = blockingStub.createAccount(request.build());
     System.out.println(reply);

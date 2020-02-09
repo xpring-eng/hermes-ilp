@@ -161,6 +161,10 @@ public class AccountRequestResponseConverter {
   public static AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRequest createAccountRequest,
                                                                         OutgoingLinkSettings outgoingLinkSettings) {
 
+    Map<String, Object> customSettings = customSettingsFromAuthToken(createAccountRequest.getAuthToken(),
+      IlpOverHttpLinkSettings.AuthType.valueOf(createAccountRequest.getAuthType()),
+      outgoingLinkSettings);
+
     return AccountSettings.builder()
       .accountId(AccountId.of(createAccountRequest.getAccountId()))
       .assetCode(createAccountRequest.getAssetCode())
@@ -168,11 +172,11 @@ public class AccountRequestResponseConverter {
       .description(createAccountRequest.getDescription())
       .accountRelationship(AccountRelationship.PEER)
       .linkType(IlpOverHttpLink.LINK_TYPE)
-      .customSettings(customSettingsFromJwt(createAccountRequest.getJwt(), outgoingLinkSettings))
+      .customSettings(customSettings)
       .build();
   }
 
-  public static AccountSettings accountSettingsFromCreateAccountRequest(String jwt,
+  public static AccountSettings accountSettingsFromCreateAccountRequest(String authToken,
                                                                         CreateAccountRestRequest createAccountRequest,
                                                                         OutgoingLinkSettings outgoingLinkSettings) {
 
@@ -183,11 +187,33 @@ public class AccountRequestResponseConverter {
       .description(createAccountRequest.description())
       .accountRelationship(AccountRelationship.PEER)
       .linkType(IlpOverHttpLink.LINK_TYPE)
-      .customSettings(customSettingsFromJwt(jwt, outgoingLinkSettings))
+      .customSettings(customSettingsFromAuthToken(authToken, createAccountRequest.authType(), outgoingLinkSettings))
       .build();
   }
 
-  private static Map<String, Object> customSettingsFromJwt(String encodedJwt, OutgoingLinkSettings outgoingLinkSettings) {
+  private static Map<String, Object> customSettingsFromAuthToken(String authToken,
+                                                                 IlpOverHttpLinkSettings.AuthType authType,
+                                                                 OutgoingLinkSettings outgoingLinkSettings) {
+    Map<String, Object> customSettings;
+    if (authType.equals(IlpOverHttpLinkSettings.AuthType.JWT_RS_256)) {
+      customSettings = customSettingsFromJwt(authToken);
+    } else {
+      customSettings = customSettingsFromSimpleToken(authToken);
+    }
+
+    customSettings.putAll(outgoingLinkSettings.toCustomSettingsMap());
+    return customSettings;
+  }
+
+  private static Map<String, Object> customSettingsFromSimpleToken(String simpleAuthToken) {
+    Map<String, Object> customSettings = new HashMap<>();
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.SIMPLE);
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN, simpleAuthToken);
+
+    return customSettings;
+  }
+
+  private static Map<String, Object> customSettingsFromJwt(String encodedJwt) {
     // Derive custom settings (auth) from jwt
     DecodedJWT decodedJwt = JWT.decode(encodedJwt);
 
@@ -196,8 +222,6 @@ public class AccountRequestResponseConverter {
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, decodedJwt.getIssuer());
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, decodedJwt.getAudience().get(0));
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, decodedJwt.getSubject());
-
-    customSettings.putAll(outgoingLinkSettings.toCustomSettingsMap());
 
     return customSettings;
   }

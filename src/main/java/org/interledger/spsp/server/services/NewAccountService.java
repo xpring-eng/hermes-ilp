@@ -15,13 +15,16 @@ import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.DecodedJWT;
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
 
 public class NewAccountService {
 
@@ -53,11 +56,41 @@ public class NewAccountService {
     return createAccount(requestedAccountSettings);
   }
 
-  public AccountSettings createAccount(String jwt, CreateAccountRestRequest request) {
-    AccountSettings populatedAccountSettings =
-      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(jwt, request, spspLinkSettings);
+  public AccountSettings createAccount(Optional<String> authToken, Optional<CreateAccountRestRequest> request) {
 
-    return createAccount(populatedAccountSettings);
+    String credentials = authToken.orElse(generateSimpleAuthCredentials());
+
+    AccountSettings populatedAccountSettings =
+      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(credentials,
+        generateFullCreateAccountRequest(request),
+        spspLinkSettings);
+
+    AccountSettings returnedAccountSettings = createAccount(populatedAccountSettings);
+
+    if (returnedAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE) .equals(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString())) {
+      String simpleAuthToken = populatedAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN).toString();
+      Map<String, Object> customSettingsUnencrypted = revertSimpleAuthTokenCustomSetting(returnedAccountSettings.customSettings(), simpleAuthToken);
+
+      returnedAccountSettings = AccountSettings.builder()
+        .from(returnedAccountSettings)
+        .customSettings(customSettingsUnencrypted)
+        .build();
+    }
+
+    return returnedAccountSettings;
+  }
+
+  private Map<String, Object> revertSimpleAuthTokenCustomSetting(Map<String, Object> encryptedCustomSettings, String simpleAuthToken) {
+    Map<String, Object> newCustomSettings = new HashMap<>();
+    encryptedCustomSettings.forEach((k, v) -> {
+      if (k.equals(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)) {
+        newCustomSettings.put(k, simpleAuthToken);
+      } else {
+        newCustomSettings.put(k, v);
+      }
+    });
+
+    return newCustomSettings;
   }
 
   public AccountSettings createAccount(AccountSettings request) {
@@ -99,5 +132,31 @@ public class NewAccountService {
       .build();
 
     return createAccount(requestedAccountSettings);
+  }
+
+  private String generateSimpleAuthCredentials() {
+    return RandomStringUtils.randomAlphanumeric(13);
+  }
+
+  private CreateAccountRestRequest generateFullCreateAccountRequest(Optional<CreateAccountRestRequest> createAccountRequest) {
+    if (createAccountRequest.isPresent()) {
+
+      return createAccountRequest.get();
+    } else {
+      return newDefaultCreateAccountRequest();
+    }
+  }
+
+  private CreateAccountRestRequest newDefaultCreateAccountRequest() {
+    return CreateAccountRestRequest.builder()
+      .accountId(generateAccountId())
+      .assetCode("XRP")
+      .assetScale(9)
+      .authType(IlpOverHttpLinkSettings.AuthType.SIMPLE)
+      .build();
+  }
+
+  private String generateAccountId() {
+    return "user_" + RandomStringUtils.randomAlphanumeric(13);
   }
 }
