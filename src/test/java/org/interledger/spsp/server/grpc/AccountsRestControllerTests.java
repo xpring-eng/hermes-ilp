@@ -98,10 +98,10 @@ public class AccountsRestControllerTests {
   @Autowired
   private AccountController accountController;
 
-  private String paymentPointerBase;
+    private String paymentPointerBase;
 
-  @Autowired
-  HttpUrl spspReceiverUrl;
+    @Autowired
+    HttpUrl spspReceiverUrl;
 
   @Before
   public void setUp() throws JsonProcessingException {

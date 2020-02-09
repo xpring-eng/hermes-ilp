@@ -30,6 +30,7 @@ message CreateAccountResponse {
   bool is_child_account = 20;
   bool is_peer_account = 21;
   bool is_peer_or_parent_account = 22;
+  string paymentPointer = 23;
 
   message SettlementEngineDetails {
       string settlement_engine_account_id = 1;

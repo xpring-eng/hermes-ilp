@@ -12,6 +12,7 @@ import feign.FeignException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import okhttp3.HttpUrl;
 import org.lognet.springboot.grpc.GRpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +32,15 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
   @Autowired
   protected ConnectorRoutesClient routesClient;
 
+  @Autowired
+  protected HttpUrl spspReceiverUrl;
+
   @Override
   public void getAccount(GetAccountRequest request, StreamObserver<GetAccountResponse> responseObserver) {
     Status grpcStatus;
     try {
       GetAccountResponse accountResponse = adminClient.findAccount(request.getAccountId())
-        .map(AccountRequestResponseConverter::createGetAccountResponseFromAccountSettings)
+        .map(account -> AccountRequestResponseConverter.createGetAccountResponseFromAccountSettings(account, spspReceiverUrl))
         .orElseThrow(() -> new AccountNotFoundProblem(AccountId.of(request.getAccountId())));
 
       responseObserver.onNext(accountResponse);
@@ -65,7 +69,7 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
 
       // Convert returned AccountSettings into Grpc response object
       final CreateAccountResponse.Builder replyBuilder =
-        AccountRequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings);
+        AccountRequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings, spspReceiverUrl);
 
       responseObserver.onNext(replyBuilder.build());
       responseObserver.onCompleted();

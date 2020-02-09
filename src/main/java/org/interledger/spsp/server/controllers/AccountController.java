@@ -1,5 +1,7 @@
 package org.interledger.spsp.server.controllers;
 
+import static org.interledger.spsp.server.services.HermesUtils.paymentPointerFromSpspUrl;
+
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
@@ -110,15 +112,5 @@ public class AccountController extends AbstractController {
     catch (FeignException e) {
       throw new ResponseStatusException(HttpStatus.valueOf(e.status()), e.contentUTF8());
     }
-  }
-
-  private PaymentPointer paymentPointerFromSpspUrl(HttpUrl spspUrl, AccountId accountId) {
-    String host = spspUrl.host();
-
-    // Don't need port if a no non-default is specified
-    if (spspUrl.port() != 80 && spspUrl.port() != 443) {
-      host += ":" + spspUrl.port();
-    }
-    return PaymentPointer.of("$" + host + "/" + accountId.value());
   }
 }

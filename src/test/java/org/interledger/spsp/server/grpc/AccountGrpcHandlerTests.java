@@ -147,8 +147,19 @@ public class AccountGrpcHandlerTests {
   @Autowired
   private OutgoingLinkSettings outgoingLinkSettings;
 
+  private String paymentPointerBase;
+
+  @Autowired
+  HttpUrl spspReceiverUrl;
+
   @Before
   public void setUp() throws IOException {
+
+    paymentPointerBase = "$" + spspReceiverUrl.host();
+    if (spspReceiverUrl.port() != 80 && spspReceiverUrl.port() != 443) {
+      paymentPointerBase += ":" + spspReceiverUrl.port();
+    }
+
     // Set up the JWKS server
     jwtServer = new JwksServer();
     resetJwks();
@@ -228,6 +239,7 @@ public class AccountGrpcHandlerTests {
     assertThat(reply.getAssetCode()).isEqualTo("XRP");
     assertThat(reply.getLinkType()).isEqualTo(IlpOverHttpLink.LINK_TYPE.value());
     assertThat(reply.getAccountRelationship()).isEqualTo(AccountRelationship.CHILD.toString());
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + accountIdHermes.value());
   }
 
   /**
@@ -289,6 +301,7 @@ public class AccountGrpcHandlerTests {
       .setIsParentAccount(false)
       .setIsPeerAccount(true)
       .setIsPeerOrParentAccount(true)
+      .setPaymentPointer(paymentPointerBase + "/AccountServiceGRPCTest")
       .build();
 
     CreateAccountRequest.Builder request = CreateAccountRequest.newBuilder()

@@ -1,5 +1,7 @@
 package org.interledger.spsp.server.grpc.services;
 
+import static org.interledger.spsp.server.services.HermesUtils.paymentPointerFromSpspUrl;
+
 import org.interledger.connector.accounts.AccountBalanceSettings;
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
@@ -14,10 +16,13 @@ import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.GetAccountResponse;
 import org.interledger.spsp.server.grpc.SendPaymentResponse;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
+import org.interledger.spsp.server.services.HermesUtils;
 import org.interledger.stream.SendMoneyResult;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import okhttp3.HttpUrl;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,8 +31,7 @@ import java.util.stream.Collectors;
 
 public class AccountRequestResponseConverter {
 
-
-  public static GetAccountResponse createGetAccountResponseFromAccountSettings(AccountSettings accountSettings) {
+  public static GetAccountResponse createGetAccountResponseFromAccountSettings(AccountSettings accountSettings, HttpUrl spspReceiverUrl) {
 
     long maxPacketAmount = accountSettings.maximumPacketAmount().isPresent() ?
       accountSettings.maximumPacketAmount().get().longValue() : 0L;
@@ -50,7 +54,8 @@ public class AccountRequestResponseConverter {
       .setIsConnectionInitiator(accountSettings.isConnectionInitiator())
       .setIlpAddressSegment(accountSettings.ilpAddressSegment())
       .setIsSendRoutes(accountSettings.isSendRoutes())
-      .setIsReceiveRoutes(accountSettings.isReceiveRoutes());
+      .setIsReceiveRoutes(accountSettings.isReceiveRoutes())
+      .setPaymentPointer(paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()).toString());
 
 
     GetAccountResponse.BalanceSettings.Builder balanceSettingsBuilder = GetAccountResponse.BalanceSettings.newBuilder()
@@ -90,7 +95,8 @@ public class AccountRequestResponseConverter {
       .build();
   }
 
-  public static CreateAccountResponse.Builder generateCreateAccountResponseFromAccountSettings(AccountSettings accountSettings) {
+  public static CreateAccountResponse.Builder generateCreateAccountResponseFromAccountSettings(AccountSettings accountSettings,
+                                                                                               HttpUrl spspReceiverUrl) {
 
     long maxPacketAmount = accountSettings.maximumPacketAmount().isPresent() ?
       accountSettings.maximumPacketAmount().get().longValue() : 0L;
@@ -113,7 +119,8 @@ public class AccountRequestResponseConverter {
       .setIsConnectionInitiator(accountSettings.isConnectionInitiator())
       .setIlpAddressSegment(accountSettings.ilpAddressSegment())
       .setIsSendRoutes(accountSettings.isSendRoutes())
-      .setIsReceiveRoutes(accountSettings.isReceiveRoutes());
+      .setIsReceiveRoutes(accountSettings.isReceiveRoutes())
+      .setPaymentPointer(HermesUtils.paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()).toString());
 
 
     CreateAccountResponse.BalanceSettings.Builder balanceSettingsBuilder = CreateAccountResponse.BalanceSettings.newBuilder()
