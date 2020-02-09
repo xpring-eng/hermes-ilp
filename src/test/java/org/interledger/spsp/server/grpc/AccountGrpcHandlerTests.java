@@ -122,7 +122,7 @@ public class AccountGrpcHandlerTests {
    *  Start up a connector from the nightly docker image
    */
   @ClassRule
-  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:nightly")
+  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:0.2.0")
     .withExposedPorts(CONNECTOR_PORT)
     .withNetwork(network);
 
@@ -272,7 +272,7 @@ public class AccountGrpcHandlerTests {
     Redactor redactor = new Redactor();
 
     CreateAccountResponse expected = CreateAccountResponse.newBuilder()
-      .setAccountRelationship("CHILD")
+      .setAccountRelationship("PEER")
       .setAssetCode("XRP")
       .setAssetScale(9)
       .putAllCustomSettings(redactor.redact(customSettings))
@@ -290,6 +290,7 @@ public class AccountGrpcHandlerTests {
       .setAssetCode("XRP")
       .setAssetScale(9)
       .setDescription(accountDescription)
+      .setAuthType(IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString())
       .setAuthToken(jwt);
 
     CreateAccountResponse reply = blockingStub.createAccount(request.build());

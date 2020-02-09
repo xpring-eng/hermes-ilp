@@ -11,17 +11,14 @@ import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.connector.jackson.ObjectMapperFactory;
-import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.ImmutableJwtAuthSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
-import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.controllers.AccountController;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
-import org.interledger.spsp.server.services.NewAccountService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,15 +44,14 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
 @SpringBootTest(
-  classes = {HermesServerApplication.class, NewAccountServiceTests.TestConfig.class},
+  classes = {HermesServerApplication.class, AccountsRestControllerTests.TestConfig.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
   properties = {"spring.main.allow-bean-definition-overriding=true"})
-public class NewAccountServiceTests {
+public class AccountsRestControllerTests {
   /**
    * Fields for our JWKS mock server
    */

@@ -116,7 +116,7 @@ public class BalanceGrpcHandlerTests {
    *  Start up a connector from the nightly docker image
    */
   @ClassRule
-  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:nightly")
+  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:0.2.0")
     .withExposedPorts(CONNECTOR_PORT)
     .withNetwork(network);
 
