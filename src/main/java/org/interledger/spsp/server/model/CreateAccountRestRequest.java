@@ -15,9 +15,15 @@ public interface CreateAccountRestRequest {
 
   String accountId();
 
-  String assetCode();
+  @Value.Default
+  default String assetCode() {
+    return "XRP";
+  };
 
-  int assetScale();
+  @Value.Default
+  default int assetScale() {
+    return 9;
+  };
 
   @Value.Default
   default String description() {

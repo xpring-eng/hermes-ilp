@@ -269,20 +269,26 @@ public class AccountGrpcHandlerTests {
       .stream()
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()))
     );
-    Redactor redactor = new Redactor();
 
     CreateAccountResponse expected = CreateAccountResponse.newBuilder()
       .setAccountRelationship("PEER")
       .setAssetCode("XRP")
       .setAssetScale(9)
-      .putAllCustomSettings(redactor.redact(customSettings))
+      .putAllCustomSettings(customSettings)
       .setAccountId(accountID)
       .setDescription(accountDescription)
       .setLinkType(IlpOverHttpLink.LINK_TYPE_STRING)
       .setIsConnectionInitiator(true)
       .setIlpAddressSegment(accountID)
       .setBalanceSettings(CreateAccountResponse.BalanceSettings.newBuilder().build())
-      .setIsChildAccount(true)
+      .setIsChildAccount(false)
+      .setIsInternal(false)
+      .setIsSendRoutes(true)
+      .setIsReceiveRoutes(true)
+      .setMaxPacketsPerSecond(0)
+      .setIsParentAccount(false)
+      .setIsPeerAccount(true)
+      .setIsPeerOrParentAccount(true)
       .build();
 
     CreateAccountRequest.Builder request = CreateAccountRequest.newBuilder()
@@ -297,9 +303,11 @@ public class AccountGrpcHandlerTests {
     System.out.println(reply);
 
     assertThat(expected)
-      .usingRecursiveComparison()
-      .ignoringFields("createdAt_", "memoizedHashCode", "modifiedAt_")
-      .isEqualTo(reply);
+      .isEqualToIgnoringGivenFields(reply, "customSettings_", "createdAt_", "memoizedHashCode", "modifiedAt_");
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER)).isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE)).isEqualTo(jwtAuthSettings.tokenAudience().get());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT)).isEqualTo(jwtAuthSettings.tokenSubject());
   }
 
   private ImmutableJwtAuthSettings defaultAuthSettings(HttpUrl issuer) {
