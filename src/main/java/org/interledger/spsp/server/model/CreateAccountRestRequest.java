@@ -30,6 +30,4 @@ public interface CreateAccountRestRequest {
     return "";
   };
 
-  IlpOverHttpLinkSettings.AuthType authType();
-
 }

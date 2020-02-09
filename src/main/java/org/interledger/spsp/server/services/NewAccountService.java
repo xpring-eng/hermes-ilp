@@ -60,7 +60,7 @@ public class NewAccountService {
 
     AccountSettings populatedAccountSettings =
       AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(credentials,
-        generateFullCreateAccountRequest(request),
+        fillInCreateAccountRestRequest(request),
         spspLinkSettings);
 
     AccountSettings returnedAccountSettings = createAccount(populatedAccountSettings);
@@ -147,7 +147,7 @@ public class NewAccountService {
    * @param createAccountRequest
    * @return a CreateAccountRestRequest (either given or generated)
    */
-  private CreateAccountRestRequest generateFullCreateAccountRequest(Optional<CreateAccountRestRequest> createAccountRequest) {
+  private CreateAccountRestRequest fillInCreateAccountRestRequest(Optional<CreateAccountRestRequest> createAccountRequest) {
     if (createAccountRequest.isPresent()) {
       return createAccountRequest.get();
     } else {
@@ -164,7 +164,6 @@ public class NewAccountService {
       .accountId(generateAccountId())
       .assetCode("XRP")
       .assetScale(9)
-      .authType(IlpOverHttpLinkSettings.AuthType.SIMPLE)
       .build();
   }
 

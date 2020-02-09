@@ -20,8 +20,11 @@ import org.interledger.spsp.server.services.HermesUtils;
 import org.interledger.stream.SendMoneyResult;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import okhttp3.HttpUrl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
@@ -30,6 +33,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class AccountRequestResponseConverter {
+
+  private static Logger logger = LoggerFactory.getLogger(AccountRequestResponseConverter.class);
 
   public static GetAccountResponse createGetAccountResponseFromAccountSettings(AccountSettings accountSettings, HttpUrl spspReceiverUrl) {
 
@@ -168,9 +173,7 @@ public class AccountRequestResponseConverter {
   public static AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRequest createAccountRequest,
                                                                         OutgoingLinkSettings outgoingLinkSettings) {
 
-    Map<String, Object> customSettings = customSettingsFromAuthToken(createAccountRequest.getAuthToken(),
-      IlpOverHttpLinkSettings.AuthType.valueOf(createAccountRequest.getAuthType()),
-      outgoingLinkSettings);
+    Map<String, Object> customSettings = customSettingsFromAuthToken(createAccountRequest.getAuthToken(), outgoingLinkSettings);
 
     return AccountSettings.builder()
       .accountId(AccountId.of(createAccountRequest.getAccountId()))
@@ -194,17 +197,18 @@ public class AccountRequestResponseConverter {
       .description(createAccountRequest.description())
       .accountRelationship(AccountRelationship.PEER)
       .linkType(IlpOverHttpLink.LINK_TYPE)
-      .customSettings(customSettingsFromAuthToken(authToken, createAccountRequest.authType(), outgoingLinkSettings))
+      .customSettings(customSettingsFromAuthToken(authToken, outgoingLinkSettings))
       .build();
   }
 
   private static Map<String, Object> customSettingsFromAuthToken(String authToken,
-                                                                 IlpOverHttpLinkSettings.AuthType authType,
                                                                  OutgoingLinkSettings outgoingLinkSettings) {
     Map<String, Object> customSettings;
-    if (authType.equals(IlpOverHttpLinkSettings.AuthType.JWT_RS_256)) {
-      customSettings = customSettingsFromJwt(authToken);
-    } else {
+    try {
+      DecodedJWT maybeDecodedJwt = JWT.decode(authToken);
+      customSettings = customSettingsFromJwt(maybeDecodedJwt);
+    } catch (JWTDecodeException e) {
+      logger.info("Unable to decode auth token as JWT. Treating auth token as SIMPLE.");
       customSettings = customSettingsFromSimpleToken(authToken);
     }
 
@@ -220,9 +224,7 @@ public class AccountRequestResponseConverter {
     return customSettings;
   }
 
-  private static Map<String, Object> customSettingsFromJwt(String encodedJwt) {
-    // Derive custom settings (auth) from jwt
-    DecodedJWT decodedJwt = JWT.decode(encodedJwt);
+  private static Map<String, Object> customSettingsFromJwt(DecodedJWT decodedJwt) {
 
     Map<String, Object> customSettings = new HashMap<>();
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);

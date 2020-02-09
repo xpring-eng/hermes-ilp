@@ -136,7 +136,6 @@ public class AccountsRestControllerTests {
       .accountId("foo")
       .assetCode("USD")
       .assetScale(6)
-      .authType(IlpOverHttpLinkSettings.AuthType.SIMPLE)
       .build();
 
     AccountSettingsResponse response = accountController.createAccount(Optional.of("Bearer password"), Optional.of(request));
@@ -193,7 +192,6 @@ public class AccountsRestControllerTests {
       .assetCode("XRP")
       .assetScale(9)
       .description(accountDescription)
-      .authType(IlpOverHttpLinkSettings.AuthType.JWT_RS_256)
       .build();
 
     AccountSettingsResponse createdAccountSettings = accountController.createAccount(Optional.of(jwt), Optional.of(request));
