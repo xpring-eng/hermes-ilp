@@ -13,6 +13,7 @@ import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.services.AccountGeneratorService;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContextImpl;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
@@ -166,9 +167,10 @@ public class IlpOverHttpConfig {
     ConnectorAdminClient adminClient,
     ConnectorRoutesClient connectorRoutesClient,
     @Qualifier(SPSP) OutgoingLinkSettings spspLinkSettings,
-    @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix
+    @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix,
+    AccountGeneratorService accountGeneratorService
   ) {
-    return new NewAccountService(adminClient, connectorRoutesClient, spspLinkSettings, spspAddressPrefix);
+    return new NewAccountService(adminClient, connectorRoutesClient, spspLinkSettings, spspAddressPrefix, accountGeneratorService);
   }
 
   @Bean

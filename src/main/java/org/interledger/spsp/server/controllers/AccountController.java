@@ -60,6 +60,7 @@ public class AccountController extends AbstractController {
       // Give a choice of passing in a JWT or simple auth token, or having Hermes generate a Simple token
       AccountSettings accountSettings = newAccountService
         .createAccount(OptionalAuthToken.of(authToken), createAccountRequest);
+
       // Add a payment pointer to the response
       return AccountSettingsResponse.builder()
         .from(accountSettings)
