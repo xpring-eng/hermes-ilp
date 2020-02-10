@@ -33,7 +33,7 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
     SendMoneyResult result = null;
 
     try {
-      String jwt = ilpGrpcAuthContext.getToken();
+      String jwt = ilpGrpcAuthContext.getAuthorizationHeader();
       result = sendMoneyService.sendMoney(AccountId.of(request.getAccountId()),
         jwt.substring("Bearer ".length()),
         UnsignedLong.valueOf(request.getAmount()),

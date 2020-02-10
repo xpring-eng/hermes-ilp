@@ -70,7 +70,7 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
     try {
       // Create account on the connector
       AccountSettings returnedAccountSettings = newAccountService
-        .createAccount(OptionalAuthToken.of(ilpGrpcAuthContext.getToken()), request);
+        .createAccount(OptionalAuthToken.of(ilpGrpcAuthContext.getAuthorizationHeader()), request);
 
       // Convert returned AccountSettings into Grpc response object
       final CreateAccountResponse.Builder replyBuilder =

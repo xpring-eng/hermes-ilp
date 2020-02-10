@@ -15,6 +15,8 @@ import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContextImpl;
+import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
+import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReaderImpl;
 import org.interledger.spsp.server.services.GimmeMoneyService;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
@@ -207,6 +209,11 @@ public class IlpOverHttpConfig {
   @Bean
   public IlpGrpcAuthContext ilpGrpcAuthContext() {
     return new IlpGrpcAuthContextImpl();
+  }
+
+  @Bean
+  public IlpGrpcMetadataReader ilpGrpcMetadataReader() {
+    return new IlpGrpcMetadataReaderImpl();
   }
 
 }

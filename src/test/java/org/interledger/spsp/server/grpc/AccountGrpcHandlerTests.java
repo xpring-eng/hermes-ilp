@@ -8,6 +8,7 @@ import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -24,7 +25,8 @@ import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
-import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
+import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
+import org.interledger.spsp.server.grpc.utils.InterceptedService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -139,7 +141,7 @@ public class AccountGrpcHandlerTests {
   HttpUrl spspReceiverUrl;
 
   @Autowired
-  IlpGrpcAuthContext ilpGrpcAuthContext;
+  IlpGrpcMetadataReader ilpGrpcMetadataReader;
 
   @Before
   public void setUp() throws IOException {
@@ -195,8 +197,7 @@ public class AccountGrpcHandlerTests {
     grpcCleanup.register(InProcessServerBuilder
       .forName(serverName)
       .directExecutor()
-//      .addService(InterceptedService.of(accountGrpcHandler))
-      .addService(accountGrpcHandler)
+      .addService(InterceptedService.of(accountGrpcHandler, ilpGrpcMetadataReader))
       .build()
       .start()
     );
@@ -256,7 +257,7 @@ public class AccountGrpcHandlerTests {
 
   @Test
   public void createAccountWithTokenButNoRequest() {
-    when(ilpGrpcAuthContext.getToken()).thenReturn("password");
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Basic password");
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .build();
 
@@ -287,7 +288,7 @@ public class AccountGrpcHandlerTests {
 
   @Test
   public void createAccountWithSimpleAuthAndFullRequest() {
-    when(ilpGrpcAuthContext.getToken()).thenReturn("password");
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Basic password");
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .setAccountId("foo")
       .setAssetCode("USD")
@@ -356,7 +357,7 @@ public class AccountGrpcHandlerTests {
       .setAssetScale(9)
       .setDescription(accountDescription);
 
-    when(ilpGrpcAuthContext.getToken()).thenReturn(jwt);
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + jwt);
 
     CreateAccountResponse reply = blockingStub.createAccount(request.build());
     logger.info(reply.toString());
@@ -412,8 +413,8 @@ public class AccountGrpcHandlerTests {
 
     @Bean
     @Primary
-    public IlpGrpcAuthContext ilpGrpcAuthContext() {
-      return mock(IlpGrpcAuthContext.class);
+    public IlpGrpcMetadataReader ilpGrpcMetadataReader() {
+      return mock(IlpGrpcMetadataReader.class);
     }
   }
 }

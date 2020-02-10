@@ -1,6 +1,5 @@
 package org.interledger.spsp.server.grpc.auth;
 
-import com.google.common.net.HttpHeaders;
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
@@ -16,16 +15,19 @@ public class AuthContextInterceptor implements ServerInterceptor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AuthContextInterceptor.class);
 
-  public AuthContextInterceptor() {
+  private final IlpGrpcMetadataReader ilpGrpcMetadataReader;
+
+  public AuthContextInterceptor(IlpGrpcMetadataReader ilpGrpcMetadataReader) {
     LOGGER.info("JwtContextInterceptor started for GRPC");
+    this.ilpGrpcMetadataReader = ilpGrpcMetadataReader;
   }
 
   @Override
   public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
                                                                Metadata headers,
                                                                ServerCallHandler<ReqT, RespT> next) {
-    String bearer = headers.get(Metadata.Key.of(HttpHeaders.AUTHORIZATION, Metadata.ASCII_STRING_MARSHALLER));
-    Context context = Context.current().withValue(IlpGrpcAuthConstants.AUTH_KEY, bearer);
+    String authorization = ilpGrpcMetadataReader.authorization(headers);
+    Context context = Context.current().withValue(IlpGrpcAuthConstants.AUTH_KEY, authorization);
     return Contexts.interceptCall(context, call, headers, next);
   }
 }

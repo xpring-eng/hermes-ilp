@@ -34,7 +34,7 @@ public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBas
   @Override
   public void getBalance(GetBalanceRequest request, StreamObserver<GetBalanceResponse> responseObserver) {
     try {
-      String jwt = ilpGrpcAuthContext.getToken();
+      String jwt = ilpGrpcAuthContext.getAuthorizationHeader();
       balanceClient.getBalance(jwt, AccountId.of(request.getAccountId()))
         .ifPresent(balanceResponse -> {
           final GetBalanceResponse reply = GetBalanceResponse.newBuilder()
