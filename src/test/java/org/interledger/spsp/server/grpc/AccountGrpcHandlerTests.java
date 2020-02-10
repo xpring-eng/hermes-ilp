@@ -292,11 +292,10 @@ public class AccountGrpcHandlerTests {
       .setAssetCode("XRP")
       .setAssetScale(9)
       .setDescription(accountDescription)
-      .setAuthType(IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString())
       .setAuthToken(jwt);
 
     CreateAccountResponse reply = blockingStub.createAccount(request.build());
-    System.out.println(reply);
+    logger.info(reply.toString());
 
     assertThat(expected)
       .isEqualToIgnoringGivenFields(reply, "customSettings_", "createdAt_", "memoizedHashCode", "modifiedAt_");
@@ -304,6 +303,12 @@ public class AccountGrpcHandlerTests {
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER)).isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE)).isEqualTo(jwtAuthSettings.tokenAudience().get());
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT)).isEqualTo(jwtAuthSettings.tokenSubject());
+  }
+
+  @Test
+  public void createAccountWithNoRequest() {
+    CreateAccountResponse reply = blockingStub.createAccount(null);
+    logger.info(reply.toString());
   }
 
   private ImmutableJwtAuthSettings defaultAuthSettings(HttpUrl issuer) {

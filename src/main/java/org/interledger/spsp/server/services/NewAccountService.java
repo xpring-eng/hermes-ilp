@@ -45,12 +45,17 @@ public class NewAccountService {
     this.spspAddressPrefix = spspAddressPrefix;
   }
 
-  public AccountSettings createAccount(CreateAccountRequest request) {
-    // Convert request to AccountSettings
-    AccountSettings requestedAccountSettings =
-      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(request, spspLinkSettings);
+  public AccountSettings createAccount(Optional<String> authToken, CreateAccountRequest request) {
+    // Generate a random alpha-numeric string as a simple auth token
+    String credentials = authToken.orElse(generateSimpleAuthCredentials());
 
-    return createAccount(requestedAccountSettings);
+    // Convert request to AccountSettings
+    AccountSettings populatedAccountSettings =
+      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(credentials,
+        fillInCreateAccountRequest(request),
+        spspLinkSettings);
+
+    return revertSimpleAuthTokenUnencrypted(populatedAccountSettings, createAccount(populatedAccountSettings));
   }
 
   public AccountSettings createAccount(Optional<String> authToken, Optional<CreateAccountRestRequest> request) {
@@ -60,16 +65,18 @@ public class NewAccountService {
 
     AccountSettings populatedAccountSettings =
       AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(credentials,
-        fillInCreateAccountRestRequest(request),
+        fillInCreateAccountRequest(request),
         spspLinkSettings);
 
-    AccountSettings returnedAccountSettings = createAccount(populatedAccountSettings);
+    return revertSimpleAuthTokenUnencrypted(populatedAccountSettings, createAccount(populatedAccountSettings));
+  }
 
-    if (returnedAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE) .equals(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString())) {
+  private AccountSettings revertSimpleAuthTokenUnencrypted(AccountSettings populatedAccountSettings, AccountSettings returnedAccountSettings) {
+    if (returnedAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE).equals(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString())) {
       String simpleAuthToken = populatedAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN).toString();
       Map<String, Object> customSettingsUnencrypted = revertSimpleAuthTokenCustomSetting(returnedAccountSettings.customSettings(), simpleAuthToken);
 
-      returnedAccountSettings = AccountSettings.builder()
+      return AccountSettings.builder()
         .from(returnedAccountSettings)
         .customSettings(customSettingsUnencrypted)
         .build();
@@ -144,15 +151,32 @@ public class NewAccountService {
 
   /**
    * If the request isnt empty, just return it, otherwise create a default account with a generated accountID
-   * @param createAccountRequest
+   * @param createAccountRequest a {@link Optional<CreateAccountRestRequest>} from a REST controller
    * @return a CreateAccountRestRequest (either given or generated)
    */
-  private CreateAccountRestRequest fillInCreateAccountRestRequest(Optional<CreateAccountRestRequest> createAccountRequest) {
+  private CreateAccountRestRequest fillInCreateAccountRequest(Optional<CreateAccountRestRequest> createAccountRequest) {
     if (createAccountRequest.isPresent()) {
       return createAccountRequest.get();
     } else {
       return newDefaultCreateAccountRequest();
     }
+  }
+
+  /**
+   * If the request isnt empty, just return it, otherwise create a default account with a generated accountID
+   * @param createAccountRequest a {@link CreateAccountRequest} from a GRPC handler.
+   * @return a CreateAccountRestRequest (either given or filled in by this method)
+   */
+  private CreateAccountRequest fillInCreateAccountRequest(CreateAccountRequest createAccountRequest) {
+
+    // Purposely not setting auth token in proto object, as an auth token may be generated outside the proto object.
+    // This will allow us to get rid of authToken from the proto object and instead pass it as an Authorization header
+    return CreateAccountRequest.newBuilder()
+      .setAccountId(createAccountRequest.getAccountId().isEmpty() ? generateAccountId() : createAccountRequest.getAccountId())
+      .setAssetCode(createAccountRequest.getAssetCode().isEmpty() ? "XRP" : createAccountRequest.getAssetCode())
+      .setAssetScale(createAccountRequest.getAssetScale() == 0 ? 9 : createAccountRequest.getAssetScale())
+      .setDescription(createAccountRequest.getDescription())
+      .build();
   }
 
   /**

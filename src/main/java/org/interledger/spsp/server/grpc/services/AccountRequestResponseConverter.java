@@ -169,10 +169,9 @@ public class AccountRequestResponseConverter {
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
   }
 
-  public static AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRequest createAccountRequest,
+  public static AccountSettings accountSettingsFromCreateAccountRequest(String authToken,
+                                                                        CreateAccountRequest createAccountRequest,
                                                                         OutgoingLinkSettings outgoingLinkSettings) {
-
-    Map<String, Object> customSettings = customSettingsFromAuthToken(createAccountRequest.getAuthToken(), outgoingLinkSettings);
 
     return AccountSettings.builder()
       .accountId(AccountId.of(createAccountRequest.getAccountId()))
@@ -181,7 +180,7 @@ public class AccountRequestResponseConverter {
       .description(createAccountRequest.getDescription())
       .accountRelationship(AccountRelationship.PEER)
       .linkType(IlpOverHttpLink.LINK_TYPE)
-      .customSettings(customSettings)
+      .customSettings(customSettingsFromAuthToken(authToken, outgoingLinkSettings))
       .build();
   }
 
