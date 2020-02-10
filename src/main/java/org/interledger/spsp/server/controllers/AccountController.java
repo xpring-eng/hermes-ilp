@@ -9,6 +9,7 @@ import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
+import org.interledger.spsp.server.util.OptionalAuthToken;
 
 import feign.FeignException;
 import okhttp3.HttpUrl;
@@ -56,7 +57,9 @@ public class AccountController extends AbstractController {
                                        @RequestBody Optional<CreateAccountRestRequest> createAccountRequest) {
 
     try {
-      AccountSettings accountSettings = newAccountService.createAccount(authToken, createAccountRequest);
+      // Give a choice of passing in a JWT or simple auth token, or having Hermes generate a Simple token
+      AccountSettings accountSettings = newAccountService
+        .createAccount(OptionalAuthToken.of(authToken), createAccountRequest);
 
       // Add a payment pointer to the response
       return AccountSettingsResponse.builder()

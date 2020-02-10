@@ -6,6 +6,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
@@ -19,6 +22,9 @@ import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
+import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
+import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
+import org.interledger.spsp.server.grpc.utils.InterceptedService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -101,6 +107,9 @@ public class BalanceGrpcHandlerTests {
   @Autowired
   BalanceGrpcHandler balanceGrpcHandler;
 
+  @Autowired
+  IlpGrpcMetadataReader ilpGrpcMetadataReader;
+
   /**
    * This starts up a mock JWKS server
    */
@@ -175,8 +184,14 @@ public class BalanceGrpcHandlerTests {
     String serverName = InProcessServerBuilder.generateName();
 
     // Create a server, add service, start, and register for automatic graceful shutdown.
-    grpcCleanup.register(InProcessServerBuilder
-      .forName(serverName).directExecutor().addService(balanceGrpcHandler).build().start());
+    grpcCleanup.register(
+      InProcessServerBuilder
+        .forName(serverName)
+        .directExecutor()
+        .addService(InterceptedService.of(balanceGrpcHandler, ilpGrpcMetadataReader))
+        .build()
+        .start()
+    );
 
     blockingStub = BalanceServiceGrpc.newBlockingStub(
       // Create a client channel and register for automatic graceful shutdown.
@@ -206,12 +221,16 @@ public class BalanceGrpcHandlerTests {
 
     JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
     String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + jwt);
 
     GetBalanceResponse reply =
-      blockingStub.getBalance(GetBalanceRequest.newBuilder()
-        .setAccountId(accountIdHermes.value())
-        .setJwt(jwt)
-        .build());
+      blockingStub
+        .withCallCredentials(IlpCallCredentials.build(jwt))
+        .getBalance(
+          GetBalanceRequest.newBuilder()
+          .setAccountId(accountIdHermes.value())
+          .build()
+        );
 
     logger.info("Balance: " + reply);
     assertThat(reply.getAccountId()).isEqualTo("hermes");
@@ -233,10 +252,15 @@ public class BalanceGrpcHandlerTests {
     expectedException.expect(StatusRuntimeException.class);
     expectedException.expectMessage(Status.PERMISSION_DENIED.getCode().name());
 
-    blockingStub.getBalance(GetBalanceRequest.newBuilder()
-      .setAccountId(accountIdHermes.value())
-      .setJwt("thisIsNotAValidJwt")
-      .build());
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("thisIsNotAValidJwt");
+
+    blockingStub
+      .withCallCredentials(IlpCallCredentials.build("thisIsNotAValidJwt"))
+      .getBalance(
+        GetBalanceRequest.newBuilder()
+          .setAccountId(accountIdHermes.value())
+          .build()
+      );
   }
 
   /**
@@ -253,10 +277,15 @@ public class BalanceGrpcHandlerTests {
     JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
     String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
 
-    blockingStub.getBalance(GetBalanceRequest.newBuilder()
-      .setAccountId("thisAccountDoesntExist")
-      .setJwt(jwt)
-      .build());
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + jwt);
+
+    blockingStub
+      .withCallCredentials(IlpCallCredentials.build(jwt))
+      .getBalance(
+        GetBalanceRequest.newBuilder()
+          .setAccountId("thisAccountDoesntExist")
+          .build()
+      );
   }
 
   private ImmutableJwtAuthSettings defaultAuthSettings(HttpUrl issuer) {
@@ -288,6 +317,12 @@ public class BalanceGrpcHandlerTests {
     @Primary
     public ConnectorBalanceClient balanceClient() {
       return ConnectorBalanceClient.construct(getInterledgerBaseUri());
+    }
+
+    @Bean
+    @Primary
+    public IlpGrpcMetadataReader ilpGrpcMetadataReader() {
+      return mock(IlpGrpcMetadataReader.class);
     }
   }
 }

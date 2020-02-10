@@ -8,6 +8,9 @@ import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
@@ -20,9 +23,10 @@ import org.interledger.link.http.ImmutableJwtAuthSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
-import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
+import org.interledger.spsp.server.grpc.utils.InterceptedService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -136,6 +140,9 @@ public class AccountGrpcHandlerTests {
   @Autowired
   HttpUrl spspReceiverUrl;
 
+  @Autowired
+  IlpGrpcMetadataReader ilpGrpcMetadataReader;
+
   @Before
   public void setUp() throws IOException {
 
@@ -188,7 +195,12 @@ public class AccountGrpcHandlerTests {
 
     // Create a server, add service, start, and register for automatic graceful shutdown.
     grpcCleanup.register(InProcessServerBuilder
-      .forName(serverName).directExecutor().addService(accountGrpcHandler).build().start());
+      .forName(serverName)
+      .directExecutor()
+      .addService(InterceptedService.of(accountGrpcHandler, ilpGrpcMetadataReader))
+      .build()
+      .start()
+    );
 
     blockingStub = AccountServiceGrpc.newBlockingStub(
       // Create a client channel and register for automatic graceful shutdown.
@@ -245,8 +257,8 @@ public class AccountGrpcHandlerTests {
 
   @Test
   public void createAccountWithTokenButNoRequest() {
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Basic password");
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
-      .setAuthToken("password")
       .build();
 
     CreateAccountResponse reply = blockingStub.createAccount(request);
@@ -276,11 +288,11 @@ public class AccountGrpcHandlerTests {
 
   @Test
   public void createAccountWithSimpleAuthAndFullRequest() {
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Basic password");
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .setAccountId("foo")
       .setAssetCode("USD")
       .setAssetScale(4)
-      .setAuthToken("password")
       .build();
 
     CreateAccountResponse reply = blockingStub.createAccount(request);
@@ -343,8 +355,9 @@ public class AccountGrpcHandlerTests {
       .setAccountId(accountID)
       .setAssetCode("XRP")
       .setAssetScale(9)
-      .setDescription(accountDescription)
-      .setAuthToken(jwt);
+      .setDescription(accountDescription);
+
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + jwt);
 
     CreateAccountResponse reply = blockingStub.createAccount(request.build());
     logger.info(reply.toString());
@@ -396,6 +409,12 @@ public class AccountGrpcHandlerTests {
       return ConnectorRoutesClient.construct(getInterledgerBaseUri(), template -> {
         template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
       });
+    }
+
+    @Bean
+    @Primary
+    public IlpGrpcMetadataReader ilpGrpcMetadataReader() {
+      return mock(IlpGrpcMetadataReader.class);
     }
   }
 }
