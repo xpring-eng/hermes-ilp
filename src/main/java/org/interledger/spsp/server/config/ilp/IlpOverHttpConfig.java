@@ -14,6 +14,7 @@ import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.services.AccountGeneratorService;
 import org.interledger.spsp.server.services.GimmeMoneyService;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
@@ -163,9 +164,10 @@ public class IlpOverHttpConfig {
     ConnectorAdminClient adminClient,
     ConnectorRoutesClient connectorRoutesClient,
     @Qualifier(SPSP) OutgoingLinkSettings spspLinkSettings,
-    @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix
+    @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix,
+    AccountGeneratorService accountGeneratorService
   ) {
-    return new NewAccountService(adminClient, connectorRoutesClient, spspLinkSettings, spspAddressPrefix);
+    return new NewAccountService(adminClient, connectorRoutesClient, spspLinkSettings, spspAddressPrefix, accountGeneratorService);
   }
 
   @Bean

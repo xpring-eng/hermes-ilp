@@ -6,8 +6,6 @@ import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
-import org.interledger.link.http.OutgoingLinkSettings;
-import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
@@ -58,17 +56,8 @@ public class AccountController extends AbstractController {
                                        @RequestBody Optional<CreateAccountRestRequest> createAccountRequest) {
 
     try {
-      // Give a choice of passing in a JWT or simple auth token, or having Hermes generate a Simple token
-      StringBuilder maybeAuthToken = new StringBuilder();
-      authToken.ifPresent(token -> {
-        maybeAuthToken.append(token.substring(token.indexOf(" ") + 1)); // Get rid of "Bearer " or "Basic "
-      });
+      AccountSettings accountSettings = newAccountService.createAccount(authToken, createAccountRequest);
 
-      // If a token is passed in, use it.  Otherwise newAccountService will generate one
-      Optional<String> credentials = maybeAuthToken.toString().isEmpty() ?
-        Optional.empty() : Optional.of(maybeAuthToken.toString());
-
-      AccountSettings accountSettings = newAccountService.createAccount(credentials, createAccountRequest);
       // Add a payment pointer to the response
       return AccountSettingsResponse.builder()
         .from(accountSettings)

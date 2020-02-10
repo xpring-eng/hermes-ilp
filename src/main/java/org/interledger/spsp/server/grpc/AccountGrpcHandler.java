@@ -65,17 +65,12 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
   public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
     Status grpcStatus;
     try {
-      String requestedToken = request.getAuthToken();
-      StringBuilder maybeAuthToken = new StringBuilder();
-      if (requestedToken != null && !requestedToken.isEmpty()) {
-        maybeAuthToken.append(requestedToken.substring(requestedToken.indexOf(" ") + 1));
-      }
-
-      Optional<String> credentials = maybeAuthToken.toString().isEmpty() ?
-        Optional.empty() : Optional.of(maybeAuthToken.toString());
 
       // Create account on the connector
-      AccountSettings returnedAccountSettings = newAccountService.createAccount(credentials, request);
+      // Make auth token an Optional so newAccountService can deal with it
+      AccountSettings returnedAccountSettings = newAccountService.createAccount(
+        request.getAuthToken().isEmpty() ? Optional.empty() : Optional.of(request.getAuthToken()),
+        request);
 
       // Convert returned AccountSettings into Grpc response object
       final CreateAccountResponse.Builder replyBuilder =
