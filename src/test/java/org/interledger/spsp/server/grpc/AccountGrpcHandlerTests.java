@@ -318,7 +318,7 @@ public class AccountGrpcHandlerTests {
     );
 
     CreateAccountResponse expected = CreateAccountResponse.newBuilder()
-      .setAccountRelationship("PEER")
+      .setAccountRelationship("CHILD")
       .setAssetCode("XRP")
       .setAssetScale(9)
       .putAllCustomSettings(customSettings)
@@ -328,14 +328,14 @@ public class AccountGrpcHandlerTests {
       .setIsConnectionInitiator(true)
       .setIlpAddressSegment(accountID)
       .setBalanceSettings(CreateAccountResponse.BalanceSettings.newBuilder().build())
-      .setIsChildAccount(false)
+      .setIsChildAccount(true)
       .setIsInternal(false)
       .setIsSendRoutes(true)
-      .setIsReceiveRoutes(true)
+      .setIsReceiveRoutes(false)
       .setMaxPacketsPerSecond(0)
       .setIsParentAccount(false)
-      .setIsPeerAccount(true)
-      .setIsPeerOrParentAccount(true)
+      .setIsPeerAccount(false)
+      .setIsPeerOrParentAccount(false)
       .setPaymentPointer(paymentPointerBase + "/AccountServiceGRPCTest")
       .build();
 

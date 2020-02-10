@@ -178,7 +178,7 @@ public class AccountRequestResponseConverter {
       .assetCode(createAccountRequest.getAssetCode())
       .assetScale(createAccountRequest.getAssetScale())
       .description(createAccountRequest.getDescription())
-      .accountRelationship(AccountRelationship.PEER)
+      .accountRelationship(AccountRelationship.CHILD)
       .linkType(IlpOverHttpLink.LINK_TYPE)
       .customSettings(customSettingsFromAuthToken(authToken, outgoingLinkSettings))
       .build();
@@ -193,7 +193,7 @@ public class AccountRequestResponseConverter {
       .assetCode(createAccountRequest.assetCode())
       .assetScale(createAccountRequest.assetScale())
       .description(createAccountRequest.description())
-      .accountRelationship(AccountRelationship.PEER)
+      .accountRelationship(AccountRelationship.CHILD)
       .linkType(IlpOverHttpLink.LINK_TYPE)
       .customSettings(customSettingsFromAuthToken(authToken, outgoingLinkSettings))
       .build();
@@ -206,7 +206,7 @@ public class AccountRequestResponseConverter {
       DecodedJWT maybeDecodedJwt = JWT.decode(authToken);
       customSettings = customSettingsFromJwt(maybeDecodedJwt);
     } catch (JWTDecodeException e) {
-      logger.info("Unable to decode auth token as JWT. Treating auth token as SIMPLE.");
+      logger.debug("Unable to decode auth token as JWT. Treating auth token as SIMPLE.");
       customSettings = customSettingsFromSimpleToken(authToken);
     }
 
