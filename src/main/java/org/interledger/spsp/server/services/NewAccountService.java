@@ -51,7 +51,7 @@ public class NewAccountService {
   public AccountSettings createAccount(Optional<String> authToken, CreateAccountRequest request) {
     // Generate a random alpha-numeric string as a simple auth token,
     // after removing the token prefix from a possibly present auth token
-    String credentials = accountGeneratorService.removeMaybeAuthTokenPrefix(authToken).orElse(accountGeneratorService.generateSimpleAuthCredentials());
+    String credentials = authToken.orElse(accountGeneratorService.generateSimpleAuthCredentials());
 
     // Convert request to AccountSettings
     AccountSettings populatedAccountSettings =
@@ -66,7 +66,7 @@ public class NewAccountService {
 
     // Generate a random alpha-numeric string as a simple auth token
     // after removing the token prefix from a possibly present auth token
-    String credentials = accountGeneratorService.removeMaybeAuthTokenPrefix(authToken).orElse(accountGeneratorService.generateSimpleAuthCredentials());
+    String credentials = authToken.orElse(accountGeneratorService.generateSimpleAuthCredentials());
 
     AccountSettings populatedAccountSettings =
       AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(credentials,

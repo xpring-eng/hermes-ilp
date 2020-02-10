@@ -14,17 +14,7 @@ import java.util.Optional;
  */
 @Service
 public class AccountGeneratorService {
-
-
-  /**
-   * Utility method that removes auth token prefixes like "Bearer " and "Basic "
-   * @param authToken: An {@link Optional<String>} representing a simple or JWT token
-   * @return If #authToken is present, the authToken without a possible prefix.  Otherwise, Optional.empty().
-   */
-  public Optional<String> removeMaybeAuthTokenPrefix(Optional<String> authToken) {
-    return authToken.map(t -> t.substring(t.indexOf(" ") + 1));
-  }
-
+  
   /**
    * Generates a random alphanumeric string of length 13 to be used as credentials
    *
