@@ -20,6 +20,7 @@ import org.interledger.link.http.ImmutableJwtAuthSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
+import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
 
@@ -230,7 +231,7 @@ public class AccountGrpcHandlerTests {
    */
   @Test
   public void getAccountFooFailsAccountNotFound() {
-    AccountId accountId = AccountId.of("foo");
+    AccountId accountId = AccountId.of("imaginary friend");
 
     try {
       GetAccountResponse reply =
@@ -242,11 +243,62 @@ public class AccountGrpcHandlerTests {
     }
   }
 
+  @Test
+  public void createAccountWithTokenButNoRequest() {
+    CreateAccountRequest request = CreateAccountRequest.newBuilder()
+      .setAuthToken("password")
+      .build();
+
+    CreateAccountResponse reply = blockingStub.createAccount(request);
+    logger.info(reply.toString());
+
+    assertThat(reply.getAccountId()).startsWith("user_");
+    assertThat(reply.getAssetCode()).isEqualTo("XRP");
+    assertThat(reply.getAssetScale()).isEqualTo(9);
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + reply.getAccountId());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo("password");
+  }
+
+  @Test
+  public void createAccountWithNoTokenAndNoRequest() {
+    CreateAccountResponse reply = blockingStub.createAccount(null);
+    logger.info(reply.toString());
+
+    assertThat(reply.getAccountId()).startsWith("user_");
+    assertThat(reply.getAssetCode()).isEqualTo("XRP");
+    assertThat(reply.getAssetScale()).isEqualTo(9);
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + reply.getAccountId());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isNotEmpty();
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().doesNotStartWith("enc:jks");
+  }
+
+  @Test
+  public void createAccountWithSimpleAuthAndFullRequest() {
+    CreateAccountRequest request = CreateAccountRequest.newBuilder()
+      .setAccountId("foo")
+      .setAssetCode("USD")
+      .setAssetScale(4)
+      .setAuthToken("password")
+      .build();
+
+    CreateAccountResponse reply = blockingStub.createAccount(request);
+    logger.info(reply.toString());
+
+    assertThat(reply.getAccountId()).isEqualTo("foo");
+    assertThat(reply.getAssetCode()).isEqualTo("USD");
+    assertThat(reply.getAssetScale()).isEqualTo(4);
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + reply.getAccountId());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo("password");
+  }
+
   /**
    * Creates an account through Hermes Grpc
-    */
+   */
   @Test
-  public void createAccountTest() {
+  public void createAccountTestWithJwtTokenAndFullRequest() {
     String accountID = "AccountServiceGRPCTest";
     String accountDescription = "Noah's test account";
 
@@ -303,12 +355,6 @@ public class AccountGrpcHandlerTests {
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER)).isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE)).isEqualTo(jwtAuthSettings.tokenAudience().get());
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT)).isEqualTo(jwtAuthSettings.tokenSubject());
-  }
-
-  @Test
-  public void createAccountWithNoRequest() {
-    CreateAccountResponse reply = blockingStub.createAccount(null);
-    logger.info(reply.toString());
   }
 
   private ImmutableJwtAuthSettings defaultAuthSettings(HttpUrl issuer) {
