@@ -10,12 +10,12 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 
 /**
- * Jackson deserializer for {@link AccountId}.
+ * Jackson deserializer for {@link PaymentPointer}.
  */
 public class PaymentPointerDeserializer extends StdDeserializer<PaymentPointer> {
 
   protected PaymentPointerDeserializer() {
-    super(AccountId.class);
+    super(PaymentPointer.class);
   }
 
   @Override

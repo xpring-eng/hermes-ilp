@@ -1,6 +1,5 @@
 package org.interledger.spsp.server.config.jackson;
 
-import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.PaymentPointer;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -10,12 +9,12 @@ import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
 import java.io.IOException;
 
 /**
- * Jackson serializer {@link AccountId}.
+ * Jackson serializer {@link PaymentPointer}.
  */
 public class PaymentPointerSerializer extends StdScalarSerializer<PaymentPointer> {
 
   public PaymentPointerSerializer() {
-    super(AccountId.class, false);
+    super(PaymentPointer.class, false);
   }
 
   @Override
