@@ -4,33 +4,25 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.google.common.net.HttpHeaders.ACCEPT;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.verify;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.connector.jackson.ObjectMapperFactory;
-import org.interledger.core.InterledgerAddressPrefix;
 import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.ImmutableJwtAuthSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
-import org.interledger.link.http.SimpleAuthSettings;
+import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.HermesServerApplication;
-import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
-import org.interledger.spsp.server.grpc.utils.Redactor;
-import org.interledger.spsp.server.services.NewAccountService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,23 +34,16 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.testing.GrpcCleanupRule;
-import okhttp3.Headers;
 import okhttp3.HttpUrl;
-import okhttp3.Request;
-import org.assertj.core.api.Assertions;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -69,7 +54,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -122,7 +106,7 @@ public class AccountGrpcHandlerTests {
    *  Start up a connector from the nightly docker image
    */
   @ClassRule
-  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:nightly")
+  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:0.2.0")
     .withExposedPorts(CONNECTOR_PORT)
     .withNetwork(network);
 
@@ -147,8 +131,19 @@ public class AccountGrpcHandlerTests {
   @Autowired
   private OutgoingLinkSettings outgoingLinkSettings;
 
+  private String paymentPointerBase;
+
+  @Autowired
+  HttpUrl spspReceiverUrl;
+
   @Before
   public void setUp() throws IOException {
+
+    paymentPointerBase = "$" + spspReceiverUrl.host();
+    if (spspReceiverUrl.port() != 80 && spspReceiverUrl.port() != 443) {
+      paymentPointerBase += ":" + spspReceiverUrl.port();
+    }
+
     // Set up the JWKS server
     jwtServer = new JwksServer();
     resetJwks();
@@ -228,6 +223,7 @@ public class AccountGrpcHandlerTests {
     assertThat(reply.getAssetCode()).isEqualTo("XRP");
     assertThat(reply.getLinkType()).isEqualTo(IlpOverHttpLink.LINK_TYPE.value());
     assertThat(reply.getAccountRelationship()).isEqualTo(AccountRelationship.CHILD.toString());
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + accountIdHermes.value());
   }
 
   /**
@@ -235,7 +231,7 @@ public class AccountGrpcHandlerTests {
    */
   @Test
   public void getAccountFooFailsAccountNotFound() {
-    AccountId accountId = AccountId.of("foo");
+    AccountId accountId = AccountId.of("imaginary friend");
 
     try {
       GetAccountResponse reply =
@@ -247,11 +243,62 @@ public class AccountGrpcHandlerTests {
     }
   }
 
+  @Test
+  public void createAccountWithTokenButNoRequest() {
+    CreateAccountRequest request = CreateAccountRequest.newBuilder()
+      .setAuthToken("password")
+      .build();
+
+    CreateAccountResponse reply = blockingStub.createAccount(request);
+    logger.info(reply.toString());
+
+    assertThat(reply.getAccountId()).startsWith("user_");
+    assertThat(reply.getAssetCode()).isEqualTo("XRP");
+    assertThat(reply.getAssetScale()).isEqualTo(9);
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + reply.getAccountId());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo("password");
+  }
+
+  @Test
+  public void createAccountWithNoTokenAndNoRequest() {
+    CreateAccountResponse reply = blockingStub.createAccount(null);
+    logger.info(reply.toString());
+
+    assertThat(reply.getAccountId()).startsWith("user_");
+    assertThat(reply.getAssetCode()).isEqualTo("XRP");
+    assertThat(reply.getAssetScale()).isEqualTo(9);
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + reply.getAccountId());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isNotEmpty();
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().doesNotStartWith("enc:jks");
+  }
+
+  @Test
+  public void createAccountWithSimpleAuthAndFullRequest() {
+    CreateAccountRequest request = CreateAccountRequest.newBuilder()
+      .setAccountId("foo")
+      .setAssetCode("USD")
+      .setAssetScale(4)
+      .setAuthToken("password")
+      .build();
+
+    CreateAccountResponse reply = blockingStub.createAccount(request);
+    logger.info(reply.toString());
+
+    assertThat(reply.getAccountId()).isEqualTo("foo");
+    assertThat(reply.getAssetCode()).isEqualTo("USD");
+    assertThat(reply.getAssetScale()).isEqualTo(4);
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + reply.getAccountId());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo("password");
+  }
+
   /**
    * Creates an account through Hermes Grpc
-    */
+   */
   @Test
-  public void createAccountTest() {
+  public void createAccountTestWithJwtTokenAndFullRequest() {
     String accountID = "AccountServiceGRPCTest";
     String accountDescription = "Noah's test account";
 
@@ -269,13 +316,12 @@ public class AccountGrpcHandlerTests {
       .stream()
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()))
     );
-    Redactor redactor = new Redactor();
 
     CreateAccountResponse expected = CreateAccountResponse.newBuilder()
       .setAccountRelationship("CHILD")
       .setAssetCode("XRP")
       .setAssetScale(9)
-      .putAllCustomSettings(redactor.redact(customSettings))
+      .putAllCustomSettings(customSettings)
       .setAccountId(accountID)
       .setDescription(accountDescription)
       .setLinkType(IlpOverHttpLink.LINK_TYPE_STRING)
@@ -283,6 +329,14 @@ public class AccountGrpcHandlerTests {
       .setIlpAddressSegment(accountID)
       .setBalanceSettings(CreateAccountResponse.BalanceSettings.newBuilder().build())
       .setIsChildAccount(true)
+      .setIsInternal(false)
+      .setIsSendRoutes(true)
+      .setIsReceiveRoutes(false)
+      .setMaxPacketsPerSecond(0)
+      .setIsParentAccount(false)
+      .setIsPeerAccount(false)
+      .setIsPeerOrParentAccount(false)
+      .setPaymentPointer(paymentPointerBase + "/AccountServiceGRPCTest")
       .build();
 
     CreateAccountRequest.Builder request = CreateAccountRequest.newBuilder()
@@ -290,15 +344,17 @@ public class AccountGrpcHandlerTests {
       .setAssetCode("XRP")
       .setAssetScale(9)
       .setDescription(accountDescription)
-      .setJwt(jwt);
+      .setAuthToken(jwt);
 
     CreateAccountResponse reply = blockingStub.createAccount(request.build());
-    System.out.println(reply);
+    logger.info(reply.toString());
 
     assertThat(expected)
-      .usingRecursiveComparison()
-      .ignoringFields("createdAt_", "memoizedHashCode", "modifiedAt_")
-      .isEqualTo(reply);
+      .isEqualToIgnoringGivenFields(reply, "customSettings_", "createdAt_", "memoizedHashCode", "modifiedAt_");
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER)).isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE)).isEqualTo(jwtAuthSettings.tokenAudience().get());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT)).isEqualTo(jwtAuthSettings.tokenSubject());
   }
 
   private ImmutableJwtAuthSettings defaultAuthSettings(HttpUrl issuer) {

@@ -38,6 +38,7 @@ public class ObjectMapperFactory {
       .registerModule(new InterledgerAddressPrefixModule())
       .registerModule(new LinkIdModule())
       .registerModule(new SharedSecretModule())
+      .registerModule(new PaymentPointerModule())
       .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
       // Even though `false`` is the default setting for WRITE_NUMBERS_AS_STRINGS, we overtly set it here to alert
       // the reader that this value must be set this way in order to easily support Problems JSON, which per

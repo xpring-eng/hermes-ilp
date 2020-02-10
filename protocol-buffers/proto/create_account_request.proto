@@ -15,7 +15,8 @@ message CreateAccountRequest {
     string description = 4;
 
     // No need to authenticate user in Hermes, just need jwt to set up accounts
-    string jwt = 5;
+    string authToken = 5;
+
 }
 
 

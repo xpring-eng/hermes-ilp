@@ -12,10 +12,13 @@ import feign.FeignException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import okhttp3.HttpUrl;
 import org.lognet.springboot.grpc.GRpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Optional;
 
 @GRpcService
 public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBase {
@@ -31,12 +34,15 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
   @Autowired
   protected ConnectorRoutesClient routesClient;
 
+  @Autowired
+  protected HttpUrl spspReceiverUrl;
+
   @Override
   public void getAccount(GetAccountRequest request, StreamObserver<GetAccountResponse> responseObserver) {
     Status grpcStatus;
     try {
       GetAccountResponse accountResponse = adminClient.findAccount(request.getAccountId())
-        .map(AccountRequestResponseConverter::createGetAccountResponseFromAccountSettings)
+        .map(account -> AccountRequestResponseConverter.createGetAccountResponseFromAccountSettings(account, spspReceiverUrl))
         .orElseThrow(() -> new AccountNotFoundProblem(AccountId.of(request.getAccountId())));
 
       responseObserver.onNext(accountResponse);
@@ -59,13 +65,21 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
   public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
     Status grpcStatus;
     try {
+      String requestedToken = request.getAuthToken();
+      StringBuilder maybeAuthToken = new StringBuilder();
+      if (requestedToken != null && !requestedToken.isEmpty()) {
+        maybeAuthToken.append(requestedToken.substring(requestedToken.indexOf(" ") + 1));
+      }
+
+      Optional<String> credentials = maybeAuthToken.toString().isEmpty() ?
+        Optional.empty() : Optional.of(maybeAuthToken.toString());
 
       // Create account on the connector
-      AccountSettings returnedAccountSettings = newAccountService.createAccount(request);
+      AccountSettings returnedAccountSettings = newAccountService.createAccount(credentials, request);
 
       // Convert returned AccountSettings into Grpc response object
       final CreateAccountResponse.Builder replyBuilder =
-        AccountRequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings);
+        AccountRequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings, spspReceiverUrl);
 
       responseObserver.onNext(replyBuilder.build());
       responseObserver.onCompleted();

@@ -1,5 +1,7 @@
 package org.interledger.spsp.server.grpc.services;
 
+import static org.interledger.spsp.server.services.HermesUtils.paymentPointerFromSpspUrl;
+
 import org.interledger.connector.accounts.AccountBalanceSettings;
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
@@ -14,10 +16,15 @@ import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.GetAccountResponse;
 import org.interledger.spsp.server.grpc.SendPaymentResponse;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
+import org.interledger.spsp.server.services.HermesUtils;
 import org.interledger.stream.SendMoneyResult;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import okhttp3.HttpUrl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,8 +33,9 @@ import java.util.stream.Collectors;
 
 public class AccountRequestResponseConverter {
 
+  private static Logger logger = LoggerFactory.getLogger(AccountRequestResponseConverter.class);
 
-  public static GetAccountResponse createGetAccountResponseFromAccountSettings(AccountSettings accountSettings) {
+  public static GetAccountResponse createGetAccountResponseFromAccountSettings(AccountSettings accountSettings, HttpUrl spspReceiverUrl) {
 
     long maxPacketAmount = accountSettings.maximumPacketAmount().isPresent() ?
       accountSettings.maximumPacketAmount().get().longValue() : 0L;
@@ -50,7 +58,8 @@ public class AccountRequestResponseConverter {
       .setIsConnectionInitiator(accountSettings.isConnectionInitiator())
       .setIlpAddressSegment(accountSettings.ilpAddressSegment())
       .setIsSendRoutes(accountSettings.isSendRoutes())
-      .setIsReceiveRoutes(accountSettings.isReceiveRoutes());
+      .setIsReceiveRoutes(accountSettings.isReceiveRoutes())
+      .setPaymentPointer(paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()).toString());
 
 
     GetAccountResponse.BalanceSettings.Builder balanceSettingsBuilder = GetAccountResponse.BalanceSettings.newBuilder()
@@ -90,7 +99,8 @@ public class AccountRequestResponseConverter {
       .build();
   }
 
-  public static CreateAccountResponse.Builder generateCreateAccountResponseFromAccountSettings(AccountSettings accountSettings) {
+  public static CreateAccountResponse.Builder generateCreateAccountResponseFromAccountSettings(AccountSettings accountSettings,
+                                                                                               HttpUrl spspReceiverUrl) {
 
     long maxPacketAmount = accountSettings.maximumPacketAmount().isPresent() ?
       accountSettings.maximumPacketAmount().get().longValue() : 0L;
@@ -113,7 +123,8 @@ public class AccountRequestResponseConverter {
       .setIsConnectionInitiator(accountSettings.isConnectionInitiator())
       .setIlpAddressSegment(accountSettings.ilpAddressSegment())
       .setIsSendRoutes(accountSettings.isSendRoutes())
-      .setIsReceiveRoutes(accountSettings.isReceiveRoutes());
+      .setIsReceiveRoutes(accountSettings.isReceiveRoutes())
+      .setPaymentPointer(HermesUtils.paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()).toString());
 
 
     CreateAccountResponse.BalanceSettings.Builder balanceSettingsBuilder = CreateAccountResponse.BalanceSettings.newBuilder()
@@ -158,7 +169,8 @@ public class AccountRequestResponseConverter {
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
   }
 
-  public static AccountSettings accountSettingsFromCreateAccountRequest(CreateAccountRequest createAccountRequest,
+  public static AccountSettings accountSettingsFromCreateAccountRequest(String authToken,
+                                                                        CreateAccountRequest createAccountRequest,
                                                                         OutgoingLinkSettings outgoingLinkSettings) {
 
     return AccountSettings.builder()
@@ -166,13 +178,13 @@ public class AccountRequestResponseConverter {
       .assetCode(createAccountRequest.getAssetCode())
       .assetScale(createAccountRequest.getAssetScale())
       .description(createAccountRequest.getDescription())
-      .accountRelationship(AccountRelationship.PEER)
+      .accountRelationship(AccountRelationship.CHILD)
       .linkType(IlpOverHttpLink.LINK_TYPE)
-      .customSettings(customSettingsFromJwt(createAccountRequest.getJwt(), outgoingLinkSettings))
+      .customSettings(customSettingsFromAuthToken(authToken, outgoingLinkSettings))
       .build();
   }
 
-  public static AccountSettings accountSettingsFromCreateAccountRequest(String jwt,
+  public static AccountSettings accountSettingsFromCreateAccountRequest(String authToken,
                                                                         CreateAccountRestRequest createAccountRequest,
                                                                         OutgoingLinkSettings outgoingLinkSettings) {
 
@@ -181,23 +193,42 @@ public class AccountRequestResponseConverter {
       .assetCode(createAccountRequest.assetCode())
       .assetScale(createAccountRequest.assetScale())
       .description(createAccountRequest.description())
-      .accountRelationship(AccountRelationship.PEER)
+      .accountRelationship(AccountRelationship.CHILD)
       .linkType(IlpOverHttpLink.LINK_TYPE)
-      .customSettings(customSettingsFromJwt(jwt, outgoingLinkSettings))
+      .customSettings(customSettingsFromAuthToken(authToken, outgoingLinkSettings))
       .build();
   }
 
-  private static Map<String, Object> customSettingsFromJwt(String encodedJwt, OutgoingLinkSettings outgoingLinkSettings) {
-    // Derive custom settings (auth) from jwt
-    DecodedJWT decodedJwt = JWT.decode(encodedJwt);
+  private static Map<String, Object> customSettingsFromAuthToken(String authToken,
+                                                                 OutgoingLinkSettings outgoingLinkSettings) {
+    Map<String, Object> customSettings;
+    try {
+      DecodedJWT maybeDecodedJwt = JWT.decode(authToken);
+      customSettings = customSettingsFromJwt(maybeDecodedJwt);
+    } catch (JWTDecodeException e) {
+      logger.debug("Unable to decode auth token as JWT. Treating auth token as SIMPLE.");
+      customSettings = customSettingsFromSimpleToken(authToken);
+    }
+
+    customSettings.putAll(outgoingLinkSettings.toCustomSettingsMap());
+    return customSettings;
+  }
+
+  private static Map<String, Object> customSettingsFromSimpleToken(String simpleAuthToken) {
+    Map<String, Object> customSettings = new HashMap<>();
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.SIMPLE);
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN, simpleAuthToken);
+
+    return customSettings;
+  }
+
+  private static Map<String, Object> customSettingsFromJwt(DecodedJWT decodedJwt) {
 
     Map<String, Object> customSettings = new HashMap<>();
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, decodedJwt.getIssuer());
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, decodedJwt.getAudience().get(0));
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, decodedJwt.getSubject());
-
-    customSettings.putAll(outgoingLinkSettings.toCustomSettingsMap());
 
     return customSettings;
   }
