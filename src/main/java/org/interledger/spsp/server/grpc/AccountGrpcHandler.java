@@ -5,8 +5,10 @@ import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.spsp.server.services.NewAccountService;
+import org.interledger.spsp.server.util.OptionalAuthToken;
 
 import feign.FeignException;
 import io.grpc.Status;
@@ -17,8 +19,6 @@ import org.lognet.springboot.grpc.GRpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.Optional;
 
 @GRpcService
 public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBase {
@@ -36,6 +36,9 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
 
   @Autowired
   protected HttpUrl spspReceiverUrl;
+
+  @Autowired
+  protected IlpGrpcAuthContext ilpGrpcAuthContext;
 
   @Override
   public void getAccount(GetAccountRequest request, StreamObserver<GetAccountResponse> responseObserver) {
@@ -65,17 +68,9 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
   public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
     Status grpcStatus;
     try {
-      String requestedToken = request.getAuthToken();
-      StringBuilder maybeAuthToken = new StringBuilder();
-      if (requestedToken != null && !requestedToken.isEmpty()) {
-        maybeAuthToken.append(requestedToken.substring(requestedToken.indexOf(" ") + 1));
-      }
-
-      Optional<String> credentials = maybeAuthToken.toString().isEmpty() ?
-        Optional.empty() : Optional.of(maybeAuthToken.toString());
-
       // Create account on the connector
-      AccountSettings returnedAccountSettings = newAccountService.createAccount(credentials, request);
+      AccountSettings returnedAccountSettings = newAccountService
+        .createAccount(OptionalAuthToken.of(ilpGrpcAuthContext.getAuthorizationHeader()), request);
 
       // Convert returned AccountSettings into Grpc response object
       final CreateAccountResponse.Builder replyBuilder =

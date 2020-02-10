@@ -8,6 +8,9 @@ import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.interledger.spsp.server.config.ilp.IlpOverHttpConfig.SPSP;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
@@ -24,6 +27,9 @@ import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
+import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
+import org.interledger.spsp.server.grpc.utils.InterceptedService;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
 
@@ -108,6 +114,9 @@ public class IlpHttpGrpcTests {
   @Autowired
   IlpOverHttpGrpcHandler ilpOverHttpGrpcHandler;
 
+  @Autowired
+  IlpGrpcMetadataReader ilpGrpcMetadataReader;
+
   /**
    * This starts up a mock JWKS server
    */
@@ -157,8 +166,14 @@ public class IlpHttpGrpcTests {
     String serverName = InProcessServerBuilder.generateName();
 
     // Create a server, add service, start, and register for automatic graceful shutdown.
-    grpcCleanup.register(InProcessServerBuilder
-        .forName(serverName).directExecutor().addService(ilpOverHttpGrpcHandler).build().start());
+    grpcCleanup.register(
+      InProcessServerBuilder
+        .forName(serverName)
+        .directExecutor()
+        .addService(InterceptedService.of(ilpOverHttpGrpcHandler, ilpGrpcMetadataReader))
+        .build()
+        .start()
+    );
 
     blockingStub = IlpOverHttpServiceGrpc.newBlockingStub(
         // Create a client channel and register for automatic graceful shutdown.
@@ -216,15 +231,17 @@ public class IlpHttpGrpcTests {
     JwtAuthSettings aliceJwtAuthSettings = jwtAuthSettings("alice");
     int sendAmount = 10000;
     String aliceJwt = jwtServer.createJwt(aliceJwtAuthSettings, Instant.now().plusSeconds(sendAmount));
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + aliceJwt);
 
     SendPaymentRequest sendMoneyRequest = SendPaymentRequest.newBuilder()
       .setAccountId("alice")
       .setAmount(sendAmount)
       .setDestinationPaymentPointer(paymentPointerFromBaseUrl() + "/bob")
-      .setJwt(aliceJwt)
       .build();
 
-    SendPaymentResponse response = blockingStub.sendMoney(sendMoneyRequest);
+    SendPaymentResponse response = blockingStub
+      .withCallCredentials(IlpCallCredentials.build(aliceJwt))
+      .sendMoney(sendMoneyRequest);
     if (!response.getSuccessfulPayment()) {
       fail();
     }
@@ -330,6 +347,12 @@ public class IlpHttpGrpcTests {
     protected HttpUrl spspReceiverUrl() {
 //      return HttpUrl.parse(getContainerBaseUri(spspServer).toString());
       return SPSP_SERVER_URL;
+    }
+
+    @Bean
+    @Primary
+    public IlpGrpcMetadataReader ilpGrpcMetadataReader() {
+      return mock(IlpGrpcMetadataReader.class);
     }
   }
 }

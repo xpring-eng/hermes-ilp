@@ -1,7 +1,6 @@
 package org.interledger.spsp.server.client;
 
 import org.interledger.connector.accounts.AccountSettings;
-import org.interledger.connector.accounts.ImmutableAccountSettings;
 import org.interledger.spsp.PaymentPointer;
 
 import com.fasterxml.jackson.annotation.JsonProperty;

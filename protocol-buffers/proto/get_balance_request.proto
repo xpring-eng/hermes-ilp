@@ -6,8 +6,6 @@ package org.interledger.stream.proto;
 
 message GetBalanceRequest {
     string account_id = 1;
-
-    string jwt = 2;
 }
 
 
