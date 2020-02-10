@@ -1,6 +1,5 @@
 package org.interledger.spsp.server.config.model;
 
-
 import org.interledger.crypto.CryptoKey;
 import org.interledger.crypto.CryptoKeys;
 

@@ -24,7 +24,7 @@ import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
-import org.interledger.spsp.server.grpc.jwt.IlpJwtCallCredentials;
+import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
@@ -125,7 +125,7 @@ public class IlpHttpGrpcTests {
    *  Start up a connector from the nightly docker image
    */
   @ClassRule
-  public static GenericContainer connector = new GenericContainer<>("interledger4j/java-ilpv4-connector:nightly")
+  public static GenericContainer connector = new GenericContainer<>("interledger4j/java-ilpv4-connector:0.2.0")
     .withExposedPorts(CONNECTOR_PORT)
     .withNetwork(network);
 
@@ -233,7 +233,7 @@ public class IlpHttpGrpcTests {
       .build();
 
     SendPaymentResponse response = blockingStub
-      .withCallCredentials(IlpJwtCallCredentials.build(aliceJwt))
+      .withCallCredentials(IlpCallCredentials.build(aliceJwt))
       .sendMoney(sendMoneyRequest);
     if (!response.getSuccessfulPayment()) {
       fail();

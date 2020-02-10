@@ -8,6 +8,8 @@ import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
@@ -22,8 +24,7 @@ import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
-import org.interledger.spsp.server.grpc.utils.InterceptedService;
-import org.interledger.spsp.server.grpc.utils.Redactor;
+import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -107,7 +108,7 @@ public class AccountGrpcHandlerTests {
    *  Start up a connector from the nightly docker image
    */
   @ClassRule
-  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:nightly")
+  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:0.2.0")
     .withExposedPorts(CONNECTOR_PORT)
     .withNetwork(network);
 
@@ -132,8 +133,22 @@ public class AccountGrpcHandlerTests {
   @Autowired
   private OutgoingLinkSettings outgoingLinkSettings;
 
+  private String paymentPointerBase;
+
+  @Autowired
+  HttpUrl spspReceiverUrl;
+
+  @Autowired
+  IlpGrpcAuthContext ilpGrpcAuthContext;
+
   @Before
   public void setUp() throws IOException {
+
+    paymentPointerBase = "$" + spspReceiverUrl.host();
+    if (spspReceiverUrl.port() != 80 && spspReceiverUrl.port() != 443) {
+      paymentPointerBase += ":" + spspReceiverUrl.port();
+    }
+
     // Set up the JWKS server
     jwtServer = new JwksServer();
     resetJwks();
@@ -177,13 +192,13 @@ public class AccountGrpcHandlerTests {
     String serverName = InProcessServerBuilder.generateName();
 
     // Create a server, add service, start, and register for automatic graceful shutdown.
-    grpcCleanup.register(
-      InProcessServerBuilder
-        .forName(serverName)
-        .directExecutor()
-        .addService(InterceptedService.of(accountGrpcHandler))
-        .build()
-        .start()
+    grpcCleanup.register(InProcessServerBuilder
+      .forName(serverName)
+      .directExecutor()
+//      .addService(InterceptedService.of(accountGrpcHandler))
+      .addService(accountGrpcHandler)
+      .build()
+      .start()
     );
 
     blockingStub = AccountServiceGrpc.newBlockingStub(
@@ -219,6 +234,7 @@ public class AccountGrpcHandlerTests {
     assertThat(reply.getAssetCode()).isEqualTo("XRP");
     assertThat(reply.getLinkType()).isEqualTo(IlpOverHttpLink.LINK_TYPE.value());
     assertThat(reply.getAccountRelationship()).isEqualTo(AccountRelationship.CHILD.toString());
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + accountIdHermes.value());
   }
 
   /**
@@ -226,7 +242,7 @@ public class AccountGrpcHandlerTests {
    */
   @Test
   public void getAccountFooFailsAccountNotFound() {
-    AccountId accountId = AccountId.of("foo");
+    AccountId accountId = AccountId.of("imaginary friend");
 
     try {
       GetAccountResponse reply =
@@ -238,11 +254,62 @@ public class AccountGrpcHandlerTests {
     }
   }
 
+  @Test
+  public void createAccountWithTokenButNoRequest() {
+    when(ilpGrpcAuthContext.getToken()).thenReturn("password");
+    CreateAccountRequest request = CreateAccountRequest.newBuilder()
+      .build();
+
+    CreateAccountResponse reply = blockingStub.createAccount(request);
+    logger.info(reply.toString());
+
+    assertThat(reply.getAccountId()).startsWith("user_");
+    assertThat(reply.getAssetCode()).isEqualTo("XRP");
+    assertThat(reply.getAssetScale()).isEqualTo(9);
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + reply.getAccountId());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo("password");
+  }
+
+  @Test
+  public void createAccountWithNoTokenAndNoRequest() {
+    CreateAccountResponse reply = blockingStub.createAccount(null);
+    logger.info(reply.toString());
+
+    assertThat(reply.getAccountId()).startsWith("user_");
+    assertThat(reply.getAssetCode()).isEqualTo("XRP");
+    assertThat(reply.getAssetScale()).isEqualTo(9);
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + reply.getAccountId());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isNotEmpty();
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().doesNotStartWith("enc:jks");
+  }
+
+  @Test
+  public void createAccountWithSimpleAuthAndFullRequest() {
+    when(ilpGrpcAuthContext.getToken()).thenReturn("password");
+    CreateAccountRequest request = CreateAccountRequest.newBuilder()
+      .setAccountId("foo")
+      .setAssetCode("USD")
+      .setAssetScale(4)
+      .build();
+
+    CreateAccountResponse reply = blockingStub.createAccount(request);
+    logger.info(reply.toString());
+
+    assertThat(reply.getAccountId()).isEqualTo("foo");
+    assertThat(reply.getAssetCode()).isEqualTo("USD");
+    assertThat(reply.getAssetScale()).isEqualTo(4);
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + reply.getAccountId());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo("password");
+  }
+
   /**
    * Creates an account through Hermes Grpc
-    */
+   */
   @Test
-  public void createAccountTest() {
+  public void createAccountTestWithJwtTokenAndFullRequest() {
     String accountID = "AccountServiceGRPCTest";
     String accountDescription = "Noah's test account";
 
@@ -260,13 +327,12 @@ public class AccountGrpcHandlerTests {
       .stream()
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()))
     );
-    Redactor redactor = new Redactor();
 
     CreateAccountResponse expected = CreateAccountResponse.newBuilder()
       .setAccountRelationship("CHILD")
       .setAssetCode("XRP")
       .setAssetScale(9)
-      .putAllCustomSettings(redactor.redact(customSettings))
+      .putAllCustomSettings(customSettings)
       .setAccountId(accountID)
       .setDescription(accountDescription)
       .setLinkType(IlpOverHttpLink.LINK_TYPE_STRING)
@@ -274,22 +340,33 @@ public class AccountGrpcHandlerTests {
       .setIlpAddressSegment(accountID)
       .setBalanceSettings(CreateAccountResponse.BalanceSettings.newBuilder().build())
       .setIsChildAccount(true)
+      .setIsInternal(false)
+      .setIsSendRoutes(true)
+      .setIsReceiveRoutes(false)
+      .setMaxPacketsPerSecond(0)
+      .setIsParentAccount(false)
+      .setIsPeerAccount(false)
+      .setIsPeerOrParentAccount(false)
+      .setPaymentPointer(paymentPointerBase + "/AccountServiceGRPCTest")
       .build();
 
     CreateAccountRequest.Builder request = CreateAccountRequest.newBuilder()
       .setAccountId(accountID)
       .setAssetCode("XRP")
       .setAssetScale(9)
-      .setDescription(accountDescription)
-      .setJwt(jwt);
+      .setDescription(accountDescription);
+
+    when(ilpGrpcAuthContext.getToken()).thenReturn(jwt);
 
     CreateAccountResponse reply = blockingStub.createAccount(request.build());
-    System.out.println(reply);
+    logger.info(reply.toString());
 
     assertThat(expected)
-      .usingRecursiveComparison()
-      .ignoringFields("createdAt_", "memoizedHashCode", "modifiedAt_")
-      .isEqualTo(reply);
+      .isEqualToIgnoringGivenFields(reply, "customSettings_", "createdAt_", "memoizedHashCode", "modifiedAt_");
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER)).isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE)).isEqualTo(jwtAuthSettings.tokenAudience().get());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT)).isEqualTo(jwtAuthSettings.tokenSubject());
   }
 
   private ImmutableJwtAuthSettings defaultAuthSettings(HttpUrl issuer) {
@@ -331,6 +408,12 @@ public class AccountGrpcHandlerTests {
       return ConnectorRoutesClient.construct(getInterledgerBaseUri(), template -> {
         template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
       });
+    }
+
+    @Bean
+    @Primary
+    public IlpGrpcAuthContext ilpGrpcAuthContext() {
+      return mock(IlpGrpcAuthContext.class);
     }
   }
 }

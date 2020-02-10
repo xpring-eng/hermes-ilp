@@ -19,7 +19,7 @@ import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
-import org.interledger.spsp.server.grpc.jwt.IlpJwtCallCredentials;
+import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -118,7 +118,7 @@ public class BalanceGrpcHandlerTests {
    *  Start up a connector from the nightly docker image
    */
   @ClassRule
-  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:nightly")
+  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:0.2.0")
     .withExposedPorts(CONNECTOR_PORT)
     .withNetwork(network);
 
@@ -217,7 +217,7 @@ public class BalanceGrpcHandlerTests {
 
     GetBalanceResponse reply =
       blockingStub
-        .withCallCredentials(IlpJwtCallCredentials.build(jwt))
+        .withCallCredentials(IlpCallCredentials.build(jwt))
         .getBalance(
           GetBalanceRequest.newBuilder()
           .setAccountId(accountIdHermes.value())
@@ -246,7 +246,7 @@ public class BalanceGrpcHandlerTests {
     expectedException.expectMessage(Status.PERMISSION_DENIED.getCode().name());
 
     blockingStub
-      .withCallCredentials(IlpJwtCallCredentials.build("thisIsNotAValidJwt"))
+      .withCallCredentials(IlpCallCredentials.build("thisIsNotAValidJwt"))
       .getBalance(
         GetBalanceRequest.newBuilder()
           .setAccountId(accountIdHermes.value())
@@ -270,7 +270,7 @@ public class BalanceGrpcHandlerTests {
     String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
 
     blockingStub
-      .withCallCredentials(IlpJwtCallCredentials.build(jwt))
+      .withCallCredentials(IlpCallCredentials.build(jwt))
       .getBalance(
         GetBalanceRequest.newBuilder()
           .setAccountId("thisAccountDoesntExist")

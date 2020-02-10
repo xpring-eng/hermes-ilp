@@ -2,7 +2,7 @@ package org.interledger.spsp.server.grpc;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.PaymentPointer;
-import org.interledger.spsp.server.grpc.jwt.JwtContext;
+import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.spsp.server.services.SendMoneyService;
 import org.interledger.stream.SendMoneyResult;
@@ -24,13 +24,16 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
   @Autowired
   protected SendMoneyService sendMoneyService;
 
+  @Autowired
+  protected IlpGrpcAuthContext ilpGrpcAuthContext;
+
   @Override
   public void sendMoney(SendPaymentRequest request, StreamObserver<SendPaymentResponse> responseObserver) {
     // Send payment using STREAM
     SendMoneyResult result = null;
 
     try {
-      String jwt = JwtContext.getToken();
+      String jwt = ilpGrpcAuthContext.getToken();
       result = sendMoneyService.sendMoney(AccountId.of(request.getAccountId()),
         jwt.substring("Bearer ".length()),
         UnsignedLong.valueOf(request.getAmount()),

@@ -15,13 +15,13 @@ import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.DecodedJWT;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class NewAccountService {
 
@@ -45,19 +45,57 @@ public class NewAccountService {
     this.spspAddressPrefix = spspAddressPrefix;
   }
 
-  public AccountSettings createAccount(CreateAccountRequest request) {
-    // Convert request to AccountSettings
-    AccountSettings requestedAccountSettings =
-      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(request, spspLinkSettings);
+  public AccountSettings createAccount(Optional<String> authToken, CreateAccountRequest request) {
+    // Generate a random alpha-numeric string as a simple auth token
+    String credentials = authToken.orElse(generateSimpleAuthCredentials());
 
-    return createAccount(requestedAccountSettings);
+    // Convert request to AccountSettings
+    AccountSettings populatedAccountSettings =
+      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(credentials,
+        fillInCreateAccountRequest(request),
+        spspLinkSettings);
+
+    return revertSimpleAuthTokenUnencrypted(populatedAccountSettings, createAccount(populatedAccountSettings));
   }
 
-  public AccountSettings createAccount(String jwt, CreateAccountRestRequest request) {
-    AccountSettings populatedAccountSettings =
-      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(jwt, request, spspLinkSettings);
+  public AccountSettings createAccount(Optional<String> authToken, Optional<CreateAccountRestRequest> request) {
 
-    return createAccount(populatedAccountSettings);
+    // Generate a random alpha-numeric string as a simple auth token
+    String credentials = authToken.orElse(generateSimpleAuthCredentials());
+
+    AccountSettings populatedAccountSettings =
+      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(credentials,
+        fillInCreateAccountRequest(request),
+        spspLinkSettings);
+
+    return revertSimpleAuthTokenUnencrypted(populatedAccountSettings, createAccount(populatedAccountSettings));
+  }
+
+  private AccountSettings revertSimpleAuthTokenUnencrypted(AccountSettings populatedAccountSettings, AccountSettings returnedAccountSettings) {
+    if (returnedAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE).equals(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString())) {
+      String simpleAuthToken = populatedAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN).toString();
+      Map<String, Object> customSettingsUnencrypted = revertSimpleAuthTokenCustomSetting(returnedAccountSettings.customSettings(), simpleAuthToken);
+
+      return AccountSettings.builder()
+        .from(returnedAccountSettings)
+        .customSettings(customSettingsUnencrypted)
+        .build();
+    }
+
+    return returnedAccountSettings;
+  }
+
+  private Map<String, Object> revertSimpleAuthTokenCustomSetting(Map<String, Object> encryptedCustomSettings, String simpleAuthToken) {
+    Map<String, Object> newCustomSettings = new HashMap<>();
+    encryptedCustomSettings.forEach((k, v) -> {
+      if (k.equals(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)) {
+        newCustomSettings.put(k, simpleAuthToken);
+      } else {
+        newCustomSettings.put(k, v);
+      }
+    });
+
+    return newCustomSettings;
   }
 
   public AccountSettings createAccount(AccountSettings request) {
@@ -99,5 +137,65 @@ public class NewAccountService {
       .build();
 
     return createAccount(requestedAccountSettings);
+  }
+
+  /**
+   * Generates a random alphanumeric string of length 13 to be used as credentials
+   *
+   * TODO: Use a library that generates more secure tokens
+   * @return Random alphanumeric simple auth token with 13 characters
+   */
+  private String generateSimpleAuthCredentials() {
+    return RandomStringUtils.randomAlphanumeric(13);
+  }
+
+  /**
+   * If the request isnt empty, just return it, otherwise create a default account with a generated accountID
+   * @param createAccountRequest a {@link Optional<CreateAccountRestRequest>} from a REST controller
+   * @return a CreateAccountRestRequest (either given or generated)
+   */
+  private CreateAccountRestRequest fillInCreateAccountRequest(Optional<CreateAccountRestRequest> createAccountRequest) {
+    if (createAccountRequest.isPresent()) {
+      return createAccountRequest.get();
+    } else {
+      return newDefaultCreateAccountRequest();
+    }
+  }
+
+  /**
+   * If the request isnt empty, just return it, otherwise create a default account with a generated accountID
+   * @param createAccountRequest a {@link CreateAccountRequest} from a GRPC handler.
+   * @return a CreateAccountRestRequest (either given or filled in by this method)
+   */
+  private CreateAccountRequest fillInCreateAccountRequest(CreateAccountRequest createAccountRequest) {
+
+    // Purposely not setting auth token in proto object, as an auth token may be generated outside the proto object.
+    // This will allow us to get rid of authToken from the proto object and instead pass it as an Authorization header
+    return CreateAccountRequest.newBuilder()
+      .setAccountId(createAccountRequest.getAccountId().isEmpty() ? generateAccountId() : createAccountRequest.getAccountId())
+      .setAssetCode(createAccountRequest.getAssetCode().isEmpty() ? "XRP" : createAccountRequest.getAssetCode())
+      .setAssetScale(createAccountRequest.getAssetScale() == 0 ? 9 : createAccountRequest.getAssetScale())
+      .setDescription(createAccountRequest.getDescription())
+      .build();
+  }
+
+  /**
+   * Generates a {@link CreateAccountRestRequest} if none is given
+   * @return a {@link CreateAccountRestRequest} with a generated accountId
+   */
+  private CreateAccountRestRequest newDefaultCreateAccountRequest() {
+    return CreateAccountRestRequest.builder()
+      .accountId(generateAccountId())
+      .assetCode("XRP")
+      .assetScale(9)
+      .build();
+  }
+
+  /**
+   * Generates an account ID with format user_{random 8 alphanumeric characters}
+   * @return A String representing a generated account ID
+   */
+  private String generateAccountId() {
+    return "user_" + RandomStringUtils.randomAlphanumeric(8);
   }
 }

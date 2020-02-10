@@ -5,13 +5,16 @@ import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.spsp.server.services.NewAccountService;
+import org.interledger.spsp.server.util.OptionalAuthToken;
 
 import feign.FeignException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import okhttp3.HttpUrl;
 import org.lognet.springboot.grpc.GRpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +34,18 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
   @Autowired
   protected ConnectorRoutesClient routesClient;
 
+  @Autowired
+  protected HttpUrl spspReceiverUrl;
+
+  @Autowired
+  protected IlpGrpcAuthContext ilpGrpcAuthContext;
+
   @Override
   public void getAccount(GetAccountRequest request, StreamObserver<GetAccountResponse> responseObserver) {
     Status grpcStatus;
     try {
       GetAccountResponse accountResponse = adminClient.findAccount(request.getAccountId())
-        .map(AccountRequestResponseConverter::createGetAccountResponseFromAccountSettings)
+        .map(account -> AccountRequestResponseConverter.createGetAccountResponseFromAccountSettings(account, spspReceiverUrl))
         .orElseThrow(() -> new AccountNotFoundProblem(AccountId.of(request.getAccountId())));
 
       responseObserver.onNext(accountResponse);
@@ -59,13 +68,13 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
   public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
     Status grpcStatus;
     try {
-
       // Create account on the connector
-      AccountSettings returnedAccountSettings = newAccountService.createAccount(request);
+      AccountSettings returnedAccountSettings = newAccountService
+        .createAccount(OptionalAuthToken.of(ilpGrpcAuthContext.getToken()), request);
 
       // Convert returned AccountSettings into Grpc response object
       final CreateAccountResponse.Builder replyBuilder =
-        AccountRequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings);
+        AccountRequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings, spspReceiverUrl);
 
       responseObserver.onNext(replyBuilder.build());
       responseObserver.onCompleted();

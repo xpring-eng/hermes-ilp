@@ -141,6 +141,10 @@
             <artifactId>grpc-stub</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
@@ -219,11 +223,12 @@
         </dependency>
         <dependency>
             <groupId>org.interledger.connector</groupId>
-            <artifactId>connector-model</artifactId>
+            <artifactId>connector-routing-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.interledger.connector</groupId>
-            <artifactId>connector-routing-api</artifactId>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -304,6 +309,10 @@
             <groupId>io.github.openfeign</groupId>
             <artifactId>feign-jackson</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-context</artifactId>
+        </dependency>
 <!--        <dependency>-->
 <!--            <groupId>io.grpc</groupId>-->
 <!--            <artifactId>grpc-services</artifactId>-->
@@ -361,6 +370,11 @@
             </dependency>
             <dependency>
                 <groupId>io.grpc</groupId>
+                <artifactId>grpc-context</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
                 <artifactId>grpc-core</artifactId>
                 <version>${grpc.version}</version>
             </dependency>
@@ -378,6 +392,11 @@
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-stub</artifactId>
                 <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.9</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
@@ -427,11 +446,6 @@
             </dependency>
             <dependency>
                 <groupId>org.interledger.connector</groupId>
-                <artifactId>connector-model</artifactId>
-                <version>${ilp-connector.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.interledger.connector</groupId>
                 <artifactId>connector-routing-api</artifactId>
                 <version>${ilp-connector.version}</version>
             </dependency>
@@ -444,6 +458,12 @@
                 <groupId>org.interledger.connector</groupId>
                 <artifactId>connector-service-impl</artifactId>
                 <version>${ilp-connector.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>3.2.4</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>

@@ -1,13 +1,12 @@
 package org.interledger.spsp.server.config.model;
 
-
 import org.interledger.crypto.CryptoKey;
 
 import java.util.Objects;
 import java.util.StringJoiner;
 
 /**
- * An implementation of {@link org.interledger.crypto.CryptoKey} that can be used by Spring Boot to load these properties from a YAML file.
+ * An implementation of {@link CryptoKey} that can be used by Spring Boot to load these properties from a YAML file.
  */
 public class CryptoKeyFromPropertyFile implements CryptoKey {
 

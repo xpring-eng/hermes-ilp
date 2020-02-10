@@ -1,4 +1,4 @@
-package org.interledger.spsp.server.grpc;
+package org.interledger.spsp.server.grpc.auth;
 
 import com.google.common.net.HttpHeaders;
 import io.grpc.Context;
@@ -11,14 +11,12 @@ import org.lognet.springboot.grpc.GRpcGlobalInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 @GRpcGlobalInterceptor
-public class JwtContextInterceptor implements ServerInterceptor {
+public class AuthContextInterceptor implements ServerInterceptor {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(JwtContextInterceptor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(AuthContextInterceptor.class);
 
-  public JwtContextInterceptor() {
+  public AuthContextInterceptor() {
     LOGGER.info("JwtContextInterceptor started for GRPC");
   }
 
@@ -27,14 +25,7 @@ public class JwtContextInterceptor implements ServerInterceptor {
                                                                Metadata headers,
                                                                ServerCallHandler<ReqT, RespT> next) {
     String bearer = headers.get(Metadata.Key.of(HttpHeaders.AUTHORIZATION, Metadata.ASCII_STRING_MARSHALLER));
-    AtomicReference<Context> context = new AtomicReference(Context.current());
-//    if (!bearer.startsWith("Bearer ")) {
-//      LOGGER.warn("Received an authorization header to GRPC that was not a bearer token");
-//    }
-//    else {
-//      String jwt = bearer.substring("Bearer ".length());
-      context.set(Context.current().withValue(GrpcConstants.JWT_KEY, bearer));
-//    }
-    return Contexts.interceptCall(context.get(), call, headers, next);
+    Context context = Context.current().withValue(IlpGrpcAuthConstants.AUTH_KEY, bearer);
+    return Contexts.interceptCall(context, call, headers, next);
   }
 }

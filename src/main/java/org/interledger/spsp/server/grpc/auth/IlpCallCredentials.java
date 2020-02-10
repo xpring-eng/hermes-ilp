@@ -1,4 +1,4 @@
-package org.interledger.spsp.server.grpc.jwt;
+package org.interledger.spsp.server.grpc.auth;
 
 import io.grpc.CallCredentials;
 import io.grpc.Metadata;
@@ -8,17 +8,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Executor;
 
-public class IlpJwtCallCredentials extends CallCredentials {
-  private static Logger LOGGER = LoggerFactory.getLogger(IlpJwtCallCredentials.class);
+public class IlpCallCredentials extends CallCredentials {
+  private static Logger LOGGER = LoggerFactory.getLogger(IlpCallCredentials.class);
 
   private final String jwtToken;
 
-  private IlpJwtCallCredentials(String jwtToken) {
+  private IlpCallCredentials(String jwtToken) {
     this.jwtToken = jwtToken;
   }
 
-  public static IlpJwtCallCredentials build(String token) {
-    return new IlpJwtCallCredentials(token);
+  public static IlpCallCredentials build(String token) {
+    return new IlpCallCredentials(token);
   }
 
   @Override

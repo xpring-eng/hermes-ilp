@@ -2,7 +2,7 @@ package org.interledger.spsp.server.grpc;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
-import org.interledger.spsp.server.grpc.jwt.JwtContext;
+import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,10 +28,13 @@ public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBas
   @Autowired
   protected ObjectMapper objectMapper;
 
+  @Autowired
+  protected IlpGrpcAuthContext ilpGrpcAuthContext;
+
   @Override
   public void getBalance(GetBalanceRequest request, StreamObserver<GetBalanceResponse> responseObserver) {
     try {
-      String jwt = JwtContext.getToken();
+      String jwt = ilpGrpcAuthContext.getToken();
       balanceClient.getBalance(jwt, AccountId.of(request.getAccountId()))
         .ifPresent(balanceResponse -> {
           final GetBalanceResponse reply = GetBalanceResponse.newBuilder()
