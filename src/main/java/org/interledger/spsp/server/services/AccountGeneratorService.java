@@ -14,7 +14,7 @@ import java.util.Optional;
  */
 @Service
 public class AccountGeneratorService {
-  
+
   /**
    * Generates a random alphanumeric string of length 13 to be used as credentials
    *
