@@ -6,6 +6,7 @@ import org.interledger.spsp.PaymentPointer;
 import com.google.common.primitives.UnsignedLong;
 import okhttp3.HttpUrl;
 
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 public class GimmeMoneyService {
@@ -25,6 +26,8 @@ public class GimmeMoneyService {
 
   public UnsignedLong gimmeMoney(AccountId destinationAccount, UnsignedLong amount) throws ExecutionException, InterruptedException {
     return sendMoneyService.sendMoney(rainmakerAccountId, rainmakerBearerToken, amount,
-        PaymentPointer.of("$" + spspUrl.host() + "/" + destinationAccount.value())).amountSent();
+        PaymentPointer.of("$" + spspUrl.host() + "/" + destinationAccount.value()),
+        UUID.randomUUID()) //FIXME: do async?
+      .amountSent();
   }
 }

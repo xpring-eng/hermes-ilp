@@ -16,8 +16,8 @@ import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.GetAccountResponse;
 import org.interledger.spsp.server.grpc.SendPaymentResponse;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
+import org.interledger.spsp.server.model.Payment;
 import org.interledger.spsp.server.services.HermesUtils;
-import org.interledger.stream.SendMoneyResult;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;
@@ -233,12 +233,12 @@ public class AccountRequestResponseConverter {
     return customSettings;
   }
 
-  public static SendPaymentResponse sendPaymentResponseFromSendMoneyResult(SendMoneyResult result) {
+  public static SendPaymentResponse sendPaymentResponseFromSendMoneyResult(Payment result) {
     return SendPaymentResponse.newBuilder()
       .setOriginalAmount(result.originalAmount().longValue())
       .setAmountDelivered(result.amountDelivered().longValue())
       .setAmountSent(result.amountSent().longValue())
-      .setSuccessfulPayment(result.successfulPayment())
+      .setSuccessfulPayment(true) //FIXME: change after protos change for async
       .build();
   }
 }

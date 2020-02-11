@@ -21,6 +21,7 @@ import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReaderImpl;
 import org.interledger.spsp.server.services.GimmeMoneyService;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
+import org.interledger.spsp.server.services.tracker.HermesPaymentTracker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.ConnectionPool;
@@ -33,8 +34,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.OkHttp3ClientHttpRequestFactory;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.Arrays;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -178,8 +183,9 @@ public class IlpOverHttpConfig {
                                            ObjectMapper objectMapper,
                                            ConnectorAdminClient adminClient,
                                            OkHttpClient okHttpClient,
-                                           SpspClient spspClient) {
-    return new SendMoneyService(HttpUrl.parse(connectorUrl), objectMapper, adminClient, okHttpClient, spspClient);
+                                           SpspClient spspClient,
+                                           HermesPaymentTracker hermesPaymentTracker) {
+    return new SendMoneyService(HttpUrl.parse(connectorUrl), objectMapper, adminClient, okHttpClient, spspClient, hermesPaymentTracker);
   }
 
   @Bean
@@ -217,5 +223,4 @@ public class IlpOverHttpConfig {
   public IlpGrpcMetadataReader ilpGrpcMetadataReader() {
     return new IlpGrpcMetadataReaderImpl();
   }
-
 }

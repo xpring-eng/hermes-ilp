@@ -53,6 +53,7 @@ public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBas
           responseObserver.onCompleted();
         });
     } catch (FeignException e) {
+      logger.error("Error occurred getting balance: {}", e);
       Status exceptionStatus;
       switch (e.status()) {
         case 401:

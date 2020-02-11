@@ -1,11 +1,10 @@
 package org.interledger.spsp.server.controllers;
 
 import org.interledger.connector.accounts.AccountId;
-import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.model.ImmutablePaymentRequest;
+import org.interledger.spsp.server.model.Payment;
 import org.interledger.spsp.server.model.PaymentResponse;
 import org.interledger.spsp.server.services.SendMoneyService;
-import org.interledger.stream.SendMoneyResult;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.zalando.problem.spring.common.MediaTypes;
+
+import java.util.UUID;
 
 
 @RestController
@@ -39,25 +40,20 @@ public class PaymentController extends AbstractController {
    * @return payment result
    */
   @RequestMapping(
-    value = "/accounts/{accountId}/pay", method = {RequestMethod.POST},
+    value = "/accounts/{accountId}/payments/{paymentId}", method = {RequestMethod.PUT},
     consumes = MediaType.APPLICATION_JSON_VALUE,
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
-  public PaymentResponse sendPayment(@PathVariable("accountId") String accountId,
-                                     @RequestBody ImmutablePaymentRequest paymentRequest) {
+  public Payment sendPayment(@PathVariable("accountId") AccountId accountId,
+                             @PathVariable("paymentId") UUID paymentId,
+                             @RequestBody ImmutablePaymentRequest paymentRequest) {
     try {
       getJwt(); // hack to make sure JWT isn't expired
-      SendMoneyResult result = sendMoneyService.sendMoney(AccountId.of(accountId),
+      return sendMoneyService.sendMoney(accountId,
         getBearerToken(),
         paymentRequest.amount(),
-        PaymentPointer.of(paymentRequest.destinationPaymentPointer()));
-
-      return PaymentResponse.builder()
-        .amountDelivered(result.amountDelivered())
-        .amountSent(result.amountSent())
-        .originalAmount(paymentRequest.amount())
-        .successfulPayment(result.successfulPayment())
-        .build();
+        paymentRequest.destinationPaymentPointer(),
+        paymentId);
     } catch (Exception e) {
       throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
     }

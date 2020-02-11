@@ -1,5 +1,7 @@
 package org.interledger.spsp.server.model;
 
+import org.interledger.spsp.PaymentPointer;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.primitives.UnsignedLong;
@@ -14,7 +16,7 @@ public interface PaymentRequest {
     return ImmutablePaymentRequest.builder();
   }
 
-  String destinationPaymentPointer();
+  PaymentPointer destinationPaymentPointer();
   UnsignedLong amount();
 
 }

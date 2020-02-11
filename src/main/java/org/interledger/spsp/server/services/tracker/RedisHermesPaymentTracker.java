@@ -58,14 +58,14 @@ public class RedisHermesPaymentTracker implements HermesPaymentTracker {
   @Override
   public void registerPayment(final UUID paymentId,
                               final AccountId senderAccountId,
-                              final long originalAmount,
+                              final UnsignedLong originalAmount,
                               final PaymentPointer destination) throws HermesPaymentTrackerException {
     Objects.requireNonNull(paymentId, "paymentId must not be null");
     Objects.requireNonNull(senderAccountId, "senderAccountId must not be null");
     Objects.requireNonNull(originalAmount, "originalAmount must not be null");
     Objects.requireNonNull(destination, "destination must not be null");
 
-    Preconditions.checkArgument(originalAmount >= 0, String.format("originalAmount `%s` cannot be negative!", originalAmount));
+    Preconditions.checkArgument(originalAmount.longValue() >= 0, String.format("originalAmount `%s` cannot be negative!", originalAmount));
 
     try {
       stringRedisTemplate.execute(
@@ -74,7 +74,7 @@ public class RedisHermesPaymentTracker implements HermesPaymentTracker {
         // Arg1: senderAccountId
         senderAccountId.value() + "",
         // Arg2: originalAmount : amount to send
-        originalAmount + "",
+        originalAmount.longValue() + "",
         // Arg3: destination payment pointer,
         destination.toString()
       );
@@ -92,9 +92,9 @@ public class RedisHermesPaymentTracker implements HermesPaymentTracker {
 
   @Override
   public void updatePaymentOnComplete(UUID paymentId,
-                                      long amountSent,
-                                      long amountDelivered,
-                                      long amountLeftToSend,
+                                      UnsignedLong amountSent,
+                                      UnsignedLong amountDelivered,
+                                      UnsignedLong amountLeftToSend,
                                       PaymentStatus status) throws HermesPaymentTrackerException {
     Objects.requireNonNull(paymentId, "paymentId must not be null");
     Objects.requireNonNull(amountSent, "amountSent must not be null");
@@ -105,9 +105,9 @@ public class RedisHermesPaymentTracker implements HermesPaymentTracker {
       stringRedisTemplate.execute(
         updatePaymentOnCompleteScript,
         Collections.singletonList(toRedisPaymentKey(paymentId)),
-        amountSent + "",
-        amountDelivered + "",
-        amountLeftToSend + "",
+        amountSent.longValue() + "",
+        amountDelivered.longValue() + "",
+        amountLeftToSend.longValue() + "",
         status.toString()
       );
 
@@ -120,6 +120,13 @@ public class RedisHermesPaymentTracker implements HermesPaymentTracker {
         );
       throw new HermesPaymentTrackerException(errorMessage, e);
     }
+  }
+
+  @Override
+  public void updatePaymentOnError(UUID paymentId) {
+    Objects.requireNonNull(paymentId, "paymentId must not be null");
+
+    updatePaymentOnComplete(paymentId, UnsignedLong.ZERO, UnsignedLong.ZERO, UnsignedLong.ZERO, PaymentStatus.FAILED);
   }
 
   private String toRedisPaymentKey(final UUID paymentId) {

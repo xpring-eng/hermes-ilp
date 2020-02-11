@@ -23,7 +23,9 @@ import org.interledger.link.http.ImmutableJwtAuthSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
+import org.interledger.spsp.server.AbstractIntegrationTest;
 import org.interledger.spsp.server.HermesServerApplication;
+import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
@@ -70,62 +72,9 @@ import java.util.stream.Collectors;
     classes = {HermesServerApplication.class, AccountGrpcHandlerTests.TestConfig.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {"spring.main.allow-bean-definition-overriding=true"})
-public class AccountGrpcHandlerTests {
+public class AccountGrpcHandlerTests extends AbstractGrpcHandlerTest {
 
   private Logger logger = LoggerFactory.getLogger(this.getClass());
-
-  @Rule
-  public ExpectedException expectedException = ExpectedException.none();
-  /**
-   * Fields for our JWKS mock server
-   */
-  public static final String WELL_KNOWN_JWKS_JSON = "/.well-known/jwks.json";
-  public static final int WIRE_MOCK_PORT = 32456;
-  HttpUrl issuer;
-
-  /**
-   * Connector fields
-   */
-  private static final Network network = Network.newNetwork();
-  private static final int CONNECTOR_PORT = 8080;
-
-  /**
-   * Admin token for creating the account for accountIdHermes
-   */
-  private AccountId accountIdHermes;
-  public static final String ADMIN_AUTH_TOKEN = "YWRtaW46cGFzc3dvcmQ=";
-
-  /**
-   * This starts up a mock JWKS server
-   */
-  @Rule
-  public WireMockRule wireMockRule = new WireMockRule(WIRE_MOCK_PORT);
-
-  // Need this to have the JWKS port exposed to the connector running in the container
-  static {
-    Testcontainers.exposeHostPorts(WIRE_MOCK_PORT);
-  }
-
-  /**
-   *  Start up a connector from the nightly docker image
-   */
-  @ClassRule
-  public static GenericContainer interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:0.2.0")
-    .withExposedPorts(CONNECTOR_PORT)
-    .withNetwork(network);
-
-  @Autowired
-  private ConnectorAdminClient adminClient;
-
-  private JwksServer jwtServer;
-  private ObjectMapper objectMapper = ObjectMapperFactory.create();
-
-  /**
-   * This rule manages automatic graceful shutdown for the registered servers and channels at the
-   * end of test.
-   */
-  @Rule
-  public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
   private AccountServiceGrpc.AccountServiceBlockingStub blockingStub;
 
@@ -135,30 +84,9 @@ public class AccountGrpcHandlerTests {
   @Autowired
   private OutgoingLinkSettings outgoingLinkSettings;
 
-  private String paymentPointerBase;
-
-  @Autowired
-  HttpUrl spspReceiverUrl;
-
-  @Autowired
-  IlpGrpcMetadataReader ilpGrpcMetadataReader;
-
   @Before
   public void setUp() throws IOException {
-
-    paymentPointerBase = "$" + spspReceiverUrl.host();
-    if (spspReceiverUrl.port() != 80 && spspReceiverUrl.port() != 443) {
-      paymentPointerBase += ":" + spspReceiverUrl.port();
-    }
-
-    // Set up the JWKS server
-    jwtServer = new JwksServer();
-    resetJwks();
-    issuer = HttpUrl.parse("http://host.testcontainers.internal:" + wireMockRule.port());
-
-    // Create an admin client to create a test account
-    accountIdHermes = AccountId.of("hermes");
-    JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
+    super.setUp();
 
     // Set up auth settings to use JWT_RS_256
     Map<String, Object> customSettings = new HashMap<>();
@@ -185,11 +113,10 @@ public class AccountGrpcHandlerTests {
         logger.warn("Hermes account already exists. If you want to update the account, delete it and try again with new settings.");
       }
     }
-
-    registerGrpc();
   }
 
-  private void registerGrpc() throws IOException {
+  @Override
+  public void registerGrpc() throws IOException {
     // Generate a unique in-process server name.
     String serverName = InProcessServerBuilder.generateName();
 
@@ -205,19 +132,6 @@ public class AccountGrpcHandlerTests {
     blockingStub = AccountServiceGrpc.newBlockingStub(
       // Create a client channel and register for automatic graceful shutdown.
       grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
-  }
-
-  /**
-   * Helper method to return the base URL for the Rust Connector.
-   *
-   * @return An {@link HttpUrl} to communicate with.
-   */
-  private static HttpUrl getInterledgerBaseUri() {
-    return new HttpUrl.Builder()
-      .scheme("http")
-      .host(interledgerNode.getContainerIpAddress())
-      .port(interledgerNode.getFirstMappedPort())
-      .build();
   }
 
   /**
@@ -370,24 +284,6 @@ public class AccountGrpcHandlerTests {
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT)).isEqualTo(jwtAuthSettings.tokenSubject());
   }
 
-  private ImmutableJwtAuthSettings defaultAuthSettings(HttpUrl issuer) {
-    return JwtAuthSettings.builder()
-      .tokenIssuer(issuer)
-      .tokenSubject("foo")
-      .tokenAudience("bar")
-      .build();
-  }
-
-  private void resetJwks() throws JsonProcessingException {
-    jwtServer.resetKeyPairs();
-    WireMock.reset();
-    stubFor(get(urlEqualTo(WELL_KNOWN_JWKS_JSON))
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withBody(objectMapper.writeValueAsString(jwtServer.getJwks()))
-      ));
-  }
-
   public static class TestConfig {
 
     /**
@@ -401,6 +297,12 @@ public class AccountGrpcHandlerTests {
       return ConnectorAdminClient.construct(getInterledgerBaseUri(), template -> {
         template.header(AUTHORIZATION, "Basic " + ADMIN_AUTH_TOKEN);
       });
+    }
+
+    @Bean
+    @Primary
+    public ConnectorBalanceClient balanceClient() {
+      return ConnectorBalanceClient.construct(getInterledgerBaseUri());
     }
 
     @Bean

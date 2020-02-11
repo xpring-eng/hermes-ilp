@@ -32,6 +32,7 @@ import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
+import org.interledger.spsp.server.services.tracker.HermesPaymentTracker;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,6 +56,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -76,38 +78,10 @@ import java.util.stream.Collectors;
     classes = {HermesServerApplication.class, IlpHttpGrpcTests.TestConfig.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {"spring.main.allow-bean-definition-overriding=true"})
-public class IlpHttpGrpcTests {
+public class IlpHttpGrpcTests extends AbstractGrpcHandlerTest {
 
   private static final HttpUrl SPSP_SERVER_URL = HttpUrl.parse("https://money.ilpv4.dev");
   private Logger logger = LoggerFactory.getLogger(this.getClass());
-
-  @Rule
-  public ExpectedException expectedException = ExpectedException.none();
-  /**
-   * Fields for our JWKS mock server
-   */
-  public static final String WELL_KNOWN_JWKS_JSON = "/.well-known/jwks.json";
-  public static final int WIRE_MOCK_PORT = 32987;
-  HttpUrl issuer;
-
-  /**
-   * Connector/SPSP server container fields
-   */
-  private static final Network network = Network.newNetwork();
-  private static final int CONNECTOR_PORT = 8080;
-  private static final Integer SPSP_SERVER_PORT = 8080;
-
-  /**
-   * Admin token for creating accounds
-   */
-  public static final String ADMIN_AUTH_TOKEN = "YWRtaW46cGFzc3dvcmQ=";
-
-  /**
-   * This rule manages automatic graceful shutdown for the registered servers and channels at the
-   * end of test.
-   */
-  @Rule
-  public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
   private IlpOverHttpServiceGrpc.IlpOverHttpServiceBlockingStub blockingStub;
 
@@ -115,52 +89,23 @@ public class IlpHttpGrpcTests {
   IlpOverHttpGrpcHandler ilpOverHttpGrpcHandler;
 
   @Autowired
-  IlpGrpcMetadataReader ilpGrpcMetadataReader;
-
-  /**
-   * This starts up a mock JWKS server
-   */
-  @Rule
-  public WireMockRule wireMockRule = new WireMockRule(WIRE_MOCK_PORT);
-
-  // Need this to have the JWKS port exposed to the connector running in the container
-
-  static {
-    Testcontainers.exposeHostPorts(WIRE_MOCK_PORT);
-  }
-  /**
-   *  Start up a connector from the nightly docker image
-   */
-  @ClassRule
-  public static GenericContainer connector = new GenericContainer<>("interledger4j/java-ilpv4-connector:0.2.0")
-    .withExposedPorts(CONNECTOR_PORT)
-    .withNetwork(network);
-
-  @Autowired
   private NewAccountService newAccountService;
 
   @Autowired
   private ConnectorBalanceClient balanceClient;
 
-  private JwksServer jwtServer;
-  private ObjectMapper objectMapper = ObjectMapperFactory.create();
-
   @Autowired
   private OutgoingLinkSettings outgoingLinkSettings;
 
   @Before
-  public void startUp() throws IOException {
-    // Set up the JWKS server
-    jwtServer = new JwksServer();
-    resetJwks();
-    issuer = HttpUrl.parse("http://host.testcontainers.internal:" + wireMockRule.port());
-
+  public void setUp() throws IOException {
+    super.setUp();
     createTestAccount("alice");
     createTestAccount("bob");
 
-    registerGrpc();
   }
 
+  @Override
   public void registerGrpc() throws IOException {
     // Generate a unique in-process server name.
     String serverName = InProcessServerBuilder.generateName();
@@ -280,29 +225,6 @@ public class IlpHttpGrpcTests {
   }
 
 
-  /**
-   * Helper method to return the base URL for the Rust Connector.
-   *
-   * @return An {@link HttpUrl} to communicate with.
-   */
-  private static HttpUrl getContainerBaseUri(GenericContainer container) {
-    return new HttpUrl.Builder()
-      .scheme("http")
-      .host(container.getContainerIpAddress())
-      .port(container.getFirstMappedPort())
-      .build();
-  }
-
-  private void resetJwks() throws JsonProcessingException {
-    jwtServer.resetKeyPairs();
-    WireMock.reset();
-    stubFor(get(urlEqualTo(WELL_KNOWN_JWKS_JSON))
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withBody(objectMapper.writeValueAsString(jwtServer.getJwks()))
-      ));
-  }
-
   public static class TestConfig {
 
     /**
@@ -313,7 +235,7 @@ public class IlpHttpGrpcTests {
     @Bean
     @Primary
     public ConnectorAdminClient adminClient() {
-      return ConnectorAdminClient.construct(getContainerBaseUri(connector), template -> {
+      return ConnectorAdminClient.construct(getInterledgerBaseUri(), template -> {
         template.header(AUTHORIZATION, "Basic " + ADMIN_AUTH_TOKEN);
       });
     }
@@ -321,15 +243,21 @@ public class IlpHttpGrpcTests {
     @Bean
     @Primary
     public ConnectorBalanceClient balanceClient() {
-      return ConnectorBalanceClient.construct(getContainerBaseUri(connector));
+      return ConnectorBalanceClient.construct(getInterledgerBaseUri());
     }
 
     @Bean
     @Primary
     public ConnectorRoutesClient routesClient() {
-      return ConnectorRoutesClient.construct(getContainerBaseUri(connector), template -> {
+      return ConnectorRoutesClient.construct(getInterledgerBaseUri(), template -> {
         template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
       });
+    }
+
+    @Bean
+    @Primary
+    public IlpGrpcMetadataReader ilpGrpcMetadataReader() {
+      return mock(IlpGrpcMetadataReader.class);
     }
 
     @Bean
@@ -337,8 +265,9 @@ public class IlpHttpGrpcTests {
     public SendMoneyService sendMoneyService(ObjectMapper objectMapper,
                                              ConnectorAdminClient adminClient,
                                              OkHttpClient okHttpClient,
-                                             SpspClient spspClient) {
-      return new SendMoneyService(getContainerBaseUri(connector), objectMapper, adminClient, okHttpClient, spspClient);
+                                             SpspClient spspClient,
+                                             HermesPaymentTracker hermesPaymentTracker) {
+      return new SendMoneyService(getInterledgerBaseUri(), objectMapper, adminClient, okHttpClient, spspClient, hermesPaymentTracker);
     }
 
     @Bean
@@ -349,11 +278,6 @@ public class IlpHttpGrpcTests {
       return SPSP_SERVER_URL;
     }
 
-    @Bean
-    @Primary
-    public IlpGrpcMetadataReader ilpGrpcMetadataReader() {
-      return mock(IlpGrpcMetadataReader.class);
-    }
   }
 }
 
