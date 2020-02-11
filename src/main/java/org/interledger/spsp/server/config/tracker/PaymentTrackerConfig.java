@@ -47,7 +47,7 @@ public class PaymentTrackerConfig {
 
   @Bean
   protected HermesPaymentTracker redisPaymentTracker(
-    @Qualifier(PAYMENT_TRACKING) RedisTemplate<String, String> stringRedisTemplate,,
+    @Qualifier(PAYMENT_TRACKING) RedisTemplate<String, String> stringRedisTemplate,
     @Qualifier(PAYMENT_TRACKING) RedisTemplate<String, ?> jacksonRedisTemplate
   ) {
     try {
@@ -78,18 +78,18 @@ public class PaymentTrackerConfig {
   }
 
   @Bean
-  protected RedisScript<Long> registerPaymentScript() {
-    DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+  protected RedisScript<Void> registerPaymentScript() {
+    DefaultRedisScript<Void> script = new DefaultRedisScript<>();
     script.setLocation(new ClassPathResource("META-INF/scripts/registerPaymentScript.lua"));
-    script.setResultType(Long.class);
+    script.setResultType(Void.class);
     return script;
   }
 
   @Bean
-  protected RedisScript<String> updatePaymentOnCompleteScript() {
-    DefaultRedisScript<String> script = new DefaultRedisScript<>();
+  protected RedisScript<Void> updatePaymentOnCompleteScript() {
+    DefaultRedisScript<Void> script = new DefaultRedisScript<>();
     script.setLocation(new ClassPathResource("META-INF/scripts/updatePaymentOnCompleteScript.lua"));
-    script.setResultType(String.class);
+    script.setResultType(Void.class);
     return script;
   }
 }

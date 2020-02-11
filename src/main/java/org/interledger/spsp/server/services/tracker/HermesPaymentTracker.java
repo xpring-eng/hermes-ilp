@@ -2,27 +2,30 @@ package org.interledger.spsp.server.services.tracker;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.PaymentPointer;
-
-import com.google.common.primitives.UnsignedLong;
+import org.interledger.spsp.server.model.Payment;
 
 import java.util.UUID;
 
 public interface HermesPaymentTracker {
 
-  void registerPayment(UUID paymentId,
-                       AccountId senderAccountId,
-                       UnsignedLong originalAmount,
-                       PaymentPointer destination);
+  Payment payment(final UUID paymentId);
+
+  void registerPayment(final UUID paymentId,
+                       final AccountId senderAccountId,
+                       final long originalAmount,
+                       final PaymentPointer destination)
+    throws HermesPaymentTrackerException;
 
   void updatePaymentOnComplete(UUID paymentId,
-                               UnsignedLong amountSent,
-                               UnsignedLong amountDelivered,
-                               UnsignedLong amountLeftToSend,
-                               PaymentStatus status);
+                               final long amountSent,
+                               final long amountDelivered,
+                               final long amountLeftToSend,
+                               PaymentStatus status)
+    throws HermesPaymentTrackerException;
 
   enum PaymentStatus {
     PENDING,
-    COMPLETE,
+    SUCCESSFUL,
     FAILED
   }
 }

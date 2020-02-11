@@ -1,4 +1,4 @@
-package org.interledger.spsp.server.grpc;
+package org.interledger.spsp.server.rest;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -19,6 +19,7 @@ import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.controllers.AccountController;
+import org.interledger.spsp.server.grpc.JwksServer;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
