@@ -49,7 +49,7 @@ public class RedisHermesPaymentTracker implements HermesPaymentTracker {
       .originalAmount(toUnsignedLong(result.get("original_amount")))
       .amountSent(toUnsignedLong(result.get("amount_sent")))
       .amountDelivered(toUnsignedLong(result.get("amount_delivered")))
-      .amountLeftToSend(toUnsignedLong(result.get("amount_left")))
+      .amountLeftToSend(toUnsignedLong(result.get("amount_left_to_send")))
       .destination(PaymentPointer.of(result.get("destination")))
       .status(PaymentStatus.valueOf(result.get("status")))
       .build();

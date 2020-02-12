@@ -23,6 +23,6 @@ local status = 'PENDING'
 redis.call('HSET', payment_id,
     'sender_account_id', sender_account_id,
     'original_amount', original_amount,
-    'amount_left', amount_left_to_send,
+    'amount_left_to_send', amount_left_to_send,
     'destination', destination,
     'status', status)

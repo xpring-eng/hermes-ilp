@@ -3,10 +3,12 @@ package org.interledger.spsp.server.rest;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
+import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
@@ -126,6 +128,44 @@ public class PaymentControllerTests extends AbstractRestControllerTest {
     Payment statusCheck = hermesPaymentTracker.payment(paymentId);
     logger.info(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(statusCheck));
     assertThat(statusCheck.status()).isNotEqualTo(HermesPaymentTracker.PaymentStatus.PENDING);
+  }
+
+  @Test
+  public void getPendingPayment() {
+    UUID paymentId = UUID.randomUUID();
+    AccountId accountId = AccountId.of("foo");
+    UnsignedLong originalAmount = UnsignedLong.valueOf(1000);
+    PaymentPointer destination = PaymentPointer.of("$foo.bar/baz");
+    hermesPaymentTracker.registerPayment(paymentId, accountId, originalAmount, destination);
+
+    Payment payment = testRestTemplate.getForEntity(hermesUrl + "/payments/" + paymentId, Payment.class).getBody();
+    assertThat(payment.paymentId()).isEqualTo(paymentId);
+    assertThat(payment.senderAccountId()).isEqualTo(accountId);
+    assertThat(payment.originalAmount()).isEqualTo(originalAmount);
+    assertThat(payment.destination()).isEqualTo(destination);
+    assertThat(payment.amountSent()).isEqualTo(UnsignedLong.ZERO);
+    assertThat(payment.amountDelivered()).isEqualTo(UnsignedLong.ZERO);
+    assertThat(payment.amountLeftToSend()).isEqualTo(originalAmount);
+  }
+
+  @Test
+  public void getSuccessfulPayment() {
+    UUID paymentId = UUID.randomUUID();
+    AccountId accountId = AccountId.of("foo");
+    UnsignedLong originalAmount = UnsignedLong.valueOf(1000);
+    PaymentPointer destination = PaymentPointer.of("$foo.bar/baz");
+    hermesPaymentTracker.registerPayment(paymentId, accountId, originalAmount, destination);
+
+    hermesPaymentTracker.updatePaymentOnComplete(paymentId, originalAmount, originalAmount, UnsignedLong.ZERO, HermesPaymentTracker.PaymentStatus.SUCCESSFUL);
+
+    Payment payment = testRestTemplate.getForEntity(hermesUrl + "/payments/" + paymentId, Payment.class).getBody();
+    assertThat(payment.paymentId()).isEqualTo(paymentId);
+    assertThat(payment.senderAccountId()).isEqualTo(accountId);
+    assertThat(payment.originalAmount()).isEqualTo(originalAmount);
+    assertThat(payment.destination()).isEqualTo(destination);
+    assertThat(payment.amountLeftToSend()).isEqualTo(UnsignedLong.ZERO);
+    assertThat(payment.amountDelivered()).isEqualTo(originalAmount);
+    assertThat(payment.amountSent()).isEqualTo(originalAmount);
   }
 
   public static class TestConfig {

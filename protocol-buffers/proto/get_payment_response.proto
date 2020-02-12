@@ -5,7 +5,7 @@ package org.interledger.stream.proto;
 
 // Defines the fields that are returned after a SendPayment RPC has completed.
 // Next field: 4
-message SendPaymentResponse {
+message GetPaymentResponse {
 
     // Unique ID (UUID) of the payment
     string payment_id = 1;

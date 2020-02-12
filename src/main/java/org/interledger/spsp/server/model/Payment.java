@@ -10,7 +10,6 @@ import com.google.common.primitives.UnsignedLong;
 import org.immutables.value.Value;
 
 import java.util.UUID;
-import javax.annotation.Nullable;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutablePayment.class)

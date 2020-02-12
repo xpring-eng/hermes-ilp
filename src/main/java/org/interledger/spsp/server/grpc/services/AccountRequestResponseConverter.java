@@ -14,6 +14,7 @@ import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.GetAccountResponse;
+import org.interledger.spsp.server.grpc.GetPaymentResponse;
 import org.interledger.spsp.server.grpc.SendPaymentResponse;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.model.Payment;
@@ -233,12 +234,29 @@ public class AccountRequestResponseConverter {
     return customSettings;
   }
 
-  public static SendPaymentResponse sendPaymentResponseFromSendMoneyResult(Payment result) {
+  public static SendPaymentResponse sendPaymentResponseFromPayment(Payment result) {
     return SendPaymentResponse.newBuilder()
+      .setPaymentId(result.paymentId().toString())
+      .setSenderAccountId(result.senderAccountId().value())
       .setOriginalAmount(result.originalAmount().longValue())
       .setAmountDelivered(result.amountDelivered().longValue())
       .setAmountSent(result.amountSent().longValue())
-      .setSuccessfulPayment(true) //FIXME: change after protos change for async
+      .setAmountLeftToSend(result.amountLeftToSend().longValue())
+      .setDestination(result.destination().toString())
+      .setStatus(result.status().toString())
+      .build();
+  }
+
+  public static GetPaymentResponse getPaymentResponseFromPayment(Payment result) {
+    return GetPaymentResponse.newBuilder()
+      .setPaymentId(result.paymentId().toString())
+      .setSenderAccountId(result.senderAccountId().value())
+      .setOriginalAmount(result.originalAmount().longValue())
+      .setAmountDelivered(result.amountDelivered().longValue())
+      .setAmountSent(result.amountSent().longValue())
+      .setAmountLeftToSend(result.amountLeftToSend().longValue())
+      .setDestination(result.destination().toString())
+      .setStatus(result.status().toString())
       .build();
   }
 }

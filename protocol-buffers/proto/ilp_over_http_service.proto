@@ -6,12 +6,16 @@ package org.interledger.stream.proto;
 
 import "send_payment_request.proto";
 import "send_payment_response.proto";
+import "get_payment_request.proto";
+import "get_payment_response.proto";
 
 // RPCs available to interact with Hermes.
 service IlpOverHttpService {
 
     // Send a payment through Hermes to a given payment pointer
     rpc SendMoney (SendPaymentRequest) returns (SendPaymentResponse);
+
+    rpc GetPayment (GetPaymentRequest) returns (GetPaymentResponse);
 
 }
 

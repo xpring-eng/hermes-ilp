@@ -31,24 +31,36 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
   @Override
   public void sendMoney(SendPaymentRequest request, StreamObserver<SendPaymentResponse> responseObserver) {
     // Send payment using STREAM
-    Payment result = null;
-
+    Payment result;
     try {
       String jwt = ilpGrpcAuthContext.getAuthorizationHeader();
       result = paymentService.sendMoney(AccountId.of(request.getAccountId()),
         jwt.substring("Bearer ".length()),
         UnsignedLong.valueOf(request.getAmount()),
-        PaymentPointer.of(request.getDestinationPaymentPointer()), UUID.randomUUID()); // FIXME: do async in grpc
+        PaymentPointer.of(request.getDestinationPaymentPointer()),
+        UUID.fromString(request.getPaymentId()));
     } catch (HermesPaymentTrackerException e) {
       responseObserver.onError(e);
       return;
     }
 
-    SendPaymentResponse sendPaymentResponse = AccountRequestResponseConverter.sendPaymentResponseFromSendMoneyResult(result);
-    System.out.println("Send Payment Response: " + sendPaymentResponse);
+    SendPaymentResponse sendPaymentResponse = AccountRequestResponseConverter.sendPaymentResponseFromPayment(result);
     responseObserver.onNext(sendPaymentResponse);
-
     responseObserver.onCompleted();
   }
 
+  @Override
+  public void getPayment(GetPaymentRequest request, StreamObserver<GetPaymentResponse> responseObserver) {
+    Payment result;
+    try {
+      result = paymentService.getPayment(UUID.fromString(request.getPaymentId()));
+    } catch (HermesPaymentTrackerException e) {
+      responseObserver.onError(e);
+      return;
+    }
+
+    GetPaymentResponse getPaymentResponse = AccountRequestResponseConverter.getPaymentResponseFromPayment(result);
+    responseObserver.onNext(getPaymentResponse);
+    responseObserver.onCompleted();
+  }
 }

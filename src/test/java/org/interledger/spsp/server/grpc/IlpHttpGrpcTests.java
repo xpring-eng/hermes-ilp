@@ -17,6 +17,7 @@ import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
+import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
@@ -25,12 +26,14 @@ import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
+import org.interledger.spsp.server.model.Payment;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.PaymentService;
 import org.interledger.spsp.server.services.tracker.HermesPaymentTracker;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.primitives.UnsignedLong;
 import feign.FeignException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
@@ -55,6 +58,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RunWith(SpringRunner.class)
@@ -81,6 +85,9 @@ public class IlpHttpGrpcTests extends AbstractGrpcHandlerTest {
 
   @Autowired
   private OutgoingLinkSettings outgoingLinkSettings;
+
+  @Autowired
+  private HermesPaymentTracker hermesPaymentTracker;
 
   @Before
   public void setUp() throws IOException {
@@ -157,13 +164,15 @@ public class IlpHttpGrpcTests extends AbstractGrpcHandlerTest {
   }
 
   @Test
-  public void sendMoneyTest() throws JsonProcessingException {
+  public void sendMoneyTest() throws JsonProcessingException, InterruptedException {
     JwtAuthSettings aliceJwtAuthSettings = jwtAuthSettings("alice");
     int sendAmount = 10000;
     String aliceJwt = jwtServer.createJwt(aliceJwtAuthSettings, Instant.now().plusSeconds(sendAmount));
     when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + aliceJwt);
 
+    String paymentId = UUID.randomUUID().toString();
     SendPaymentRequest sendMoneyRequest = SendPaymentRequest.newBuilder()
+      .setPaymentId(paymentId)
       .setAccountId("alice")
       .setAmount(sendAmount)
       .setDestinationPaymentPointer(paymentPointerFromBaseUrl() + "/bob")
@@ -172,24 +181,91 @@ public class IlpHttpGrpcTests extends AbstractGrpcHandlerTest {
     SendPaymentResponse response = blockingStub
       .withCallCredentials(IlpCallCredentials.build(aliceJwt))
       .sendMoney(sendMoneyRequest);
-    if (!response.getSuccessfulPayment()) {
+
+    if (!response.getStatus().equals(HermesPaymentTracker.PaymentStatus.PENDING.toString())) {
       fail();
     }
+
     logger.info("Payment sent successfully!  Payment Response: ");
     logger.info(response.toString());
 
     SendPaymentResponse expected = SendPaymentResponse.newBuilder()
-      .setAmountSent(sendAmount)
+      .setPaymentId(paymentId)
+      .setSenderAccountId(sendMoneyRequest.getAccountId())
+      .setDestination(sendMoneyRequest.getDestinationPaymentPointer())
       .setOriginalAmount(sendAmount)
-      .setAmountDelivered(sendAmount)
-      .setAmountSent(sendAmount)
-      .setSuccessfulPayment(true)
+      .setAmountSent(0)
+      .setAmountDelivered(0)
+      .setAmountLeftToSend(sendAmount)
+      .setStatus(HermesPaymentTracker.PaymentStatus.PENDING.toString())
       .build();
 
     assertThat(response).isEqualToComparingFieldByField(expected);
 
     JwtAuthSettings bobJwtAuthSettings = jwtAuthSettings("bob");
     String bobJwt = jwtServer.createJwt(bobJwtAuthSettings, Instant.now().plusSeconds(sendAmount));
+    assertBalancesUpdated(aliceJwt, bobJwt, sendAmount);
+
+    assertPaymentUpdated(paymentId);
+  }
+
+  @Test
+  public void getPendingPayment() {
+    UUID paymentId = UUID.randomUUID();
+    AccountId accountId = AccountId.of("foo");
+    UnsignedLong originalAmount = UnsignedLong.valueOf(1000);
+    PaymentPointer destination = PaymentPointer.of("$foo.bar/baz");
+    hermesPaymentTracker.registerPayment(paymentId, accountId, originalAmount, destination);
+
+    GetPaymentRequest request = GetPaymentRequest.newBuilder()
+      .setPaymentId(paymentId.toString())
+      .build();
+
+    GetPaymentResponse payment = blockingStub.getPayment(request);
+
+    assertThat(payment.getPaymentId()).isEqualTo(paymentId.toString());
+    assertThat(payment.getSenderAccountId()).isEqualTo(accountId.value());
+    assertThat(payment.getOriginalAmount()).isEqualTo(originalAmount.longValue());
+    assertThat(payment.getDestination()).isEqualTo(destination.toString());
+    assertThat(payment.getAmountSent()).isEqualTo(UnsignedLong.ZERO.longValue());
+    assertThat(payment.getAmountDelivered()).isEqualTo(UnsignedLong.ZERO.longValue());
+    assertThat(payment.getAmountLeftToSend()).isEqualTo(originalAmount.longValue());
+  }
+
+  @Test
+  public void getSuccessfulPayment() {
+    UUID paymentId = UUID.randomUUID();
+    AccountId accountId = AccountId.of("foo");
+    UnsignedLong originalAmount = UnsignedLong.valueOf(1000);
+    PaymentPointer destination = PaymentPointer.of("$foo.bar/baz");
+    hermesPaymentTracker.registerPayment(paymentId, accountId, originalAmount, destination);
+
+    hermesPaymentTracker.updatePaymentOnComplete(paymentId, originalAmount, originalAmount, UnsignedLong.ZERO, HermesPaymentTracker.PaymentStatus.SUCCESSFUL);
+
+    GetPaymentRequest request = GetPaymentRequest.newBuilder()
+      .setPaymentId(paymentId.toString())
+      .build();
+
+    GetPaymentResponse payment = blockingStub.getPayment(request);
+
+    assertThat(payment.getPaymentId()).isEqualTo(paymentId.toString());
+    assertThat(payment.getSenderAccountId()).isEqualTo(accountId.value());
+    assertThat(payment.getOriginalAmount()).isEqualTo(originalAmount.longValue());
+    assertThat(payment.getDestination()).isEqualTo(destination.toString());
+    assertThat(payment.getAmountLeftToSend()).isEqualTo(UnsignedLong.ZERO.longValue());
+    assertThat(payment.getAmountDelivered()).isEqualTo(originalAmount.longValue());
+    assertThat(payment.getAmountSent()).isEqualTo(originalAmount.longValue());
+  }
+
+  private void assertPaymentUpdated(String paymentId) throws InterruptedException {
+    Payment payment = hermesPaymentTracker.payment(UUID.fromString(paymentId));
+    assertThat(payment.status()).isNotEqualTo(HermesPaymentTracker.PaymentStatus.PENDING);
+    assertThat(payment.amountSent()).isNotEqualTo(UnsignedLong.ZERO);
+    assertThat(payment.amountLeftToSend()).isLessThan(payment.originalAmount());
+  }
+
+  private void assertBalancesUpdated(String aliceJwt, String bobJwt, int sendAmount) throws JsonProcessingException, InterruptedException {
+    Thread.sleep(5000);
     Optional<AccountBalanceResponse> aliceBalance = balanceClient.getBalance("Bearer " + aliceJwt, AccountId.of("alice"));
     Optional<AccountBalanceResponse> bobBalance = balanceClient.getBalance("Bearer " + bobJwt, AccountId.of("bob"));
 
