@@ -159,7 +159,7 @@ public class PaymentService {
 
       // We don't care about the result of this. Payment results can be accessed via the getPayment endpoint
       return null;
-    });
+    }, this.executorService);
 
     return payment;
   }
