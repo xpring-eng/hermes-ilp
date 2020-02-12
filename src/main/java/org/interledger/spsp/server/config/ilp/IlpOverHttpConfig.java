@@ -13,14 +13,14 @@ import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
-import org.interledger.spsp.server.services.AccountGeneratorService;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContextImpl;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReaderImpl;
+import org.interledger.spsp.server.services.AccountGeneratorService;
 import org.interledger.spsp.server.services.GimmeMoneyService;
 import org.interledger.spsp.server.services.NewAccountService;
-import org.interledger.spsp.server.services.SendMoneyService;
+import org.interledger.spsp.server.services.PaymentService;
 import org.interledger.spsp.server.services.tracker.HermesPaymentTracker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,12 +34,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.OkHttp3ClientHttpRequestFactory;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.Arrays;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -179,19 +175,19 @@ public class IlpOverHttpConfig {
   }
 
   @Bean
-  public SendMoneyService sendMoneyService(@Value("${interledger.connector.connector-url}") String connectorUrl,
-                                           ObjectMapper objectMapper,
-                                           ConnectorAdminClient adminClient,
-                                           OkHttpClient okHttpClient,
-                                           SpspClient spspClient,
-                                           HermesPaymentTracker hermesPaymentTracker) {
-    return new SendMoneyService(HttpUrl.parse(connectorUrl), objectMapper, adminClient, okHttpClient, spspClient, hermesPaymentTracker);
+  public PaymentService sendMoneyService(@Value("${interledger.connector.connector-url}") String connectorUrl,
+                                         ObjectMapper objectMapper,
+                                         ConnectorAdminClient adminClient,
+                                         OkHttpClient okHttpClient,
+                                         SpspClient spspClient,
+                                         HermesPaymentTracker hermesPaymentTracker) {
+    return new PaymentService(HttpUrl.parse(connectorUrl), objectMapper, adminClient, okHttpClient, spspClient, hermesPaymentTracker);
   }
 
   @Bean
-  public GimmeMoneyService gimmeMoneyService(SendMoneyService sendMoneyService,
+  public GimmeMoneyService gimmeMoneyService(PaymentService paymentService,
                                              @Qualifier(SPSP) HttpUrl spspUrl) {
-    return new GimmeMoneyService(sendMoneyService, AccountId.of("rainmaker"), "password", spspUrl);
+    return new GimmeMoneyService(paymentService, AccountId.of("rainmaker"), "password", spspUrl);
   }
 
   @Bean

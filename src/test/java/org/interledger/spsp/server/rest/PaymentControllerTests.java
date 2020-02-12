@@ -10,14 +10,15 @@ import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
-import org.interledger.spsp.server.controllers.PaymentController;
+import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
 import org.interledger.spsp.server.model.Payment;
 import org.interledger.spsp.server.model.PaymentRequest;
 import org.interledger.spsp.server.services.HermesUtils;
 import org.interledger.spsp.server.services.NewAccountService;
-import org.interledger.spsp.server.services.SendMoneyService;
+import org.interledger.spsp.server.services.PaymentService;
 import org.interledger.spsp.server.services.tracker.HermesPaymentTracker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.primitives.UnsignedLong;
 import okhttp3.HttpUrl;
@@ -25,14 +26,14 @@ import okhttp3.OkHttpClient;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -73,10 +74,13 @@ public class PaymentControllerTests extends AbstractRestControllerTest {
   @Autowired
   private HttpUrl spspReceiverUrl;
 
+  private final ObjectMapper objectMapper = ObjectMapperFactory.createObjectMapperForProblemsJson();
+
   String hermesUrl;
 
   AccountSettings senderAccount;
   AccountSettings receiverAccount;
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Before
   public void setUp() throws IOException {
@@ -88,7 +92,7 @@ public class PaymentControllerTests extends AbstractRestControllerTest {
   }
 
   @Test
-  public void sendPayment() throws InterruptedException {
+  public void sendPayment() throws InterruptedException, JsonProcessingException {
     UnsignedLong sendAmount = UnsignedLong.valueOf(100000);
     PaymentRequest request = PaymentRequest.builder()
       .amount(sendAmount)
@@ -118,8 +122,10 @@ public class PaymentControllerTests extends AbstractRestControllerTest {
     assertThat(payment.amountDelivered().longValue()).isEqualTo(UnsignedLong.ZERO.longValue());
     assertThat(payment.amountLeftToSend().longValue()).isEqualTo(sendAmount.longValue());
 
-    Thread.sleep(500);
-    assertThat(hermesPaymentTracker.payment(paymentId).status()).isNotEqualTo(HermesPaymentTracker.PaymentStatus.PENDING);
+    Thread.sleep(5000);
+    Payment statusCheck = hermesPaymentTracker.payment(paymentId);
+    logger.info(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(statusCheck));
+    assertThat(statusCheck.status()).isNotEqualTo(HermesPaymentTracker.PaymentStatus.PENDING);
   }
 
   public static class TestConfig {
@@ -147,12 +153,12 @@ public class PaymentControllerTests extends AbstractRestControllerTest {
 
     @Bean
     @Primary
-    public SendMoneyService sendMoneyService(ObjectMapper objectMapper,
-                                             ConnectorAdminClient adminClient,
-                                             OkHttpClient okHttpClient,
-                                             SpspClient spspClient,
-                                             HermesPaymentTracker hermesPaymentTracker) {
-      return new SendMoneyService(getInterledgerBaseUri(), objectMapper, adminClient, okHttpClient, spspClient, hermesPaymentTracker);
+    public PaymentService sendMoneyService(ObjectMapper objectMapper,
+                                           ConnectorAdminClient adminClient,
+                                           OkHttpClient okHttpClient,
+                                           SpspClient spspClient,
+                                           HermesPaymentTracker hermesPaymentTracker) {
+      return new PaymentService(getInterledgerBaseUri(), objectMapper, adminClient, okHttpClient, spspClient, hermesPaymentTracker);
     }
   }
 }

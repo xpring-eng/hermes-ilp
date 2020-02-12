@@ -5,7 +5,7 @@ import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.spsp.server.model.Payment;
-import org.interledger.spsp.server.services.SendMoneyService;
+import org.interledger.spsp.server.services.PaymentService;
 import org.interledger.spsp.server.services.tracker.HermesPaymentTrackerException;
 
 import com.google.common.primitives.UnsignedLong;
@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 @GRpcService
 public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpServiceImplBase {
@@ -24,7 +23,7 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Autowired
-  protected SendMoneyService sendMoneyService;
+  protected PaymentService paymentService;
 
   @Autowired
   protected IlpGrpcAuthContext ilpGrpcAuthContext;
@@ -36,7 +35,7 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
 
     try {
       String jwt = ilpGrpcAuthContext.getAuthorizationHeader();
-      result = sendMoneyService.sendMoney(AccountId.of(request.getAccountId()),
+      result = paymentService.sendMoney(AccountId.of(request.getAccountId()),
         jwt.substring("Bearer ".length()),
         UnsignedLong.valueOf(request.getAmount()),
         PaymentPointer.of(request.getDestinationPaymentPointer()), UUID.randomUUID()); // FIXME: do async in grpc

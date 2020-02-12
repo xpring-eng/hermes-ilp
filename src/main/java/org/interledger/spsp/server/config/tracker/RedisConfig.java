@@ -67,6 +67,8 @@ public class RedisConfig {
       if (!lettuceConnectionFactory.getConnection().ping().equalsIgnoreCase("PONG")) {
         logger.warn("WARNING: Unable to connect to Redis.");
       }
+
+      logger.info("Connected to Redis for Payment Tracking!");
     } catch (RedisConnectionFailureException e) {
       logger.warn("WARNING: Unable to connect to Redis!");
       // If debug-output is enabled, then emit the stack-trace.

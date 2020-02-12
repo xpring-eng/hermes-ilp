@@ -1,9 +1,5 @@
 package org.interledger.spsp.server.grpc;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.interledger.spsp.server.config.ilp.IlpOverHttpConfig.SPSP;
@@ -16,7 +12,6 @@ import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
-import org.interledger.connector.jackson.ObjectMapperFactory;
 import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.IncomingLinkSettings;
@@ -31,24 +26,18 @@ import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
 import org.interledger.spsp.server.services.NewAccountService;
-import org.interledger.spsp.server.services.SendMoneyService;
+import org.interledger.spsp.server.services.PaymentService;
 import org.interledger.spsp.server.services.tracker.HermesPaymentTracker;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import feign.FeignException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
-import io.grpc.testing.GrpcCleanupRule;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,13 +45,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.Testcontainers;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Network;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -262,12 +247,12 @@ public class IlpHttpGrpcTests extends AbstractGrpcHandlerTest {
 
     @Bean
     @Primary
-    public SendMoneyService sendMoneyService(ObjectMapper objectMapper,
-                                             ConnectorAdminClient adminClient,
-                                             OkHttpClient okHttpClient,
-                                             SpspClient spspClient,
-                                             HermesPaymentTracker hermesPaymentTracker) {
-      return new SendMoneyService(getInterledgerBaseUri(), objectMapper, adminClient, okHttpClient, spspClient, hermesPaymentTracker);
+    public PaymentService sendMoneyService(ObjectMapper objectMapper,
+                                           ConnectorAdminClient adminClient,
+                                           OkHttpClient okHttpClient,
+                                           SpspClient spspClient,
+                                           HermesPaymentTracker hermesPaymentTracker) {
+      return new PaymentService(getInterledgerBaseUri(), objectMapper, adminClient, okHttpClient, spspClient, hermesPaymentTracker);
     }
 
     @Bean

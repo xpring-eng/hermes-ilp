@@ -3,7 +3,7 @@ package org.interledger.spsp.server.controllers;
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.model.ImmutablePaymentRequest;
 import org.interledger.spsp.server.model.Payment;
-import org.interledger.spsp.server.services.SendMoneyService;
+import org.interledger.spsp.server.services.PaymentService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +27,7 @@ public class PaymentController extends AbstractController {
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Autowired
-  private SendMoneyService sendMoneyService;
+  private PaymentService paymentService;
 
   /**
    * Sends payment from the given account.
@@ -46,7 +46,7 @@ public class PaymentController extends AbstractController {
                              @RequestBody ImmutablePaymentRequest paymentRequest) {
     try {
       getJwt(); // hack to make sure JWT isn't expired
-      return sendMoneyService.sendMoney(accountId,
+      return paymentService.sendMoney(accountId,
         getBearerToken(),
         paymentRequest.amount(),
         paymentRequest.destinationPaymentPointer(),
@@ -56,4 +56,11 @@ public class PaymentController extends AbstractController {
     }
   }
 
+  @RequestMapping(
+    value = "/payments/{paymentId}", method = {RequestMethod.GET},
+    produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
+  )
+  public Payment getPayment(@PathVariable("paymentId") UUID paymentId) {
+    return paymentService.getPayment(paymentId);
+  }
 }

@@ -37,7 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import javax.annotation.PreDestroy;
 
-public class SendMoneyService {
+public class PaymentService {
 
   public static final int SEND_TIMEOUT = 30;
   private final SpspClient spspClient;
@@ -52,12 +52,12 @@ public class SendMoneyService {
   private HermesPaymentTracker hermesPaymentTracker;
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  public SendMoneyService(HttpUrl connectorUrl,
-                          ObjectMapper objectMapper,
-                          ConnectorAdminClient adminClient,
-                          OkHttpClient okHttpClient,
-                          SpspClient spspClient,
-                          HermesPaymentTracker hermesPaymentTracker) {
+  public PaymentService(HttpUrl connectorUrl,
+                        ObjectMapper objectMapper,
+                        ConnectorAdminClient adminClient,
+                        OkHttpClient okHttpClient,
+                        SpspClient spspClient,
+                        HermesPaymentTracker hermesPaymentTracker) {
     this.connectorUrl = connectorUrl;
     this.objectMapper = objectMapper;
     this.adminClient = adminClient;
@@ -77,6 +77,10 @@ public class SendMoneyService {
       payment.senderAccountId(),
       payment.originalAmount(),
       payment.destination());
+  }
+
+  public Payment getPayment(UUID paymentId) {
+    return hermesPaymentTracker.payment(paymentId);
   }
 
   private void updatePaymentOnComplete(UUID paymentId, SendMoneyResult paymentResult) {
@@ -147,7 +151,7 @@ public class SendMoneyService {
         this.updatePaymentOnComplete(paymentId, result);
 
       } catch (InterruptedException | ExecutionException e) {
-        logger.error("");
+        logger.error(String.format("Exception occurred while sending payment %s. Settings status to FAILED.", paymentId));
 
         // Update the payment in Redis with status = FAILED
         this.updatePaymentOnError(paymentId);
