@@ -75,6 +75,8 @@ public class RedisHermesPaymentTracker implements HermesPaymentTracker {
         senderAccountId.value() + "",
         // Arg2: originalAmount : amount to send
         originalAmount.longValue() + "",
+        // Arg3: amountLeftToSend : initially originalAmount
+        originalAmount.longValue() + "",
         // Arg3: destination payment pointer,
         destination.toString()
       );

@@ -87,7 +87,6 @@ public class AccountGrpcHandlerTests extends AbstractGrpcHandlerTest {
   @Before
   public void setUp() throws IOException {
     super.setUp();
-
     // Set up auth settings to use JWT_RS_256
     Map<String, Object> customSettings = new HashMap<>();
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);

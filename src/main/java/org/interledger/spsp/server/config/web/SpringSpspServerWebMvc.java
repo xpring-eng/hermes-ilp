@@ -1,6 +1,6 @@
 package org.interledger.spsp.server.config.web;
 
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_SPSP_SERVER_PARENT_ACCOUNT;
+import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_HERMES_PARENT_ACCOUNT;
 import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.LINK_TYPE;
 import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM;
 
@@ -30,7 +30,7 @@ import java.util.List;
  * Web config for the Spring Connector.
  */
 @Configuration
-@ConditionalOnProperty(prefix = INTERLEDGER_SPSP_SERVER_PARENT_ACCOUNT, name = LINK_TYPE, havingValue = IlpOverHttpLink.LINK_TYPE_STRING)
+@ConditionalOnProperty(prefix = INTERLEDGER_HERMES_PARENT_ACCOUNT, name = LINK_TYPE, havingValue = IlpOverHttpLink.LINK_TYPE_STRING)
 @EnableWebMvc
 @ComponentScan(basePackages = "org.interledger.spsp.server.controllers")
 @Import({SecurityConfiguration.class})

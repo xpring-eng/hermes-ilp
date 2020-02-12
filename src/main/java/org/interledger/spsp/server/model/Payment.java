@@ -10,6 +10,7 @@ import com.google.common.primitives.UnsignedLong;
 import org.immutables.value.Value;
 
 import java.util.UUID;
+import javax.annotation.Nullable;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutablePayment.class)
@@ -26,11 +27,20 @@ public interface Payment {
 
   UnsignedLong originalAmount();
 
-  UnsignedLong amountDelivered();
+  @Value.Default
+  default UnsignedLong amountDelivered() {
+    return UnsignedLong.ZERO;
+  };
 
-  UnsignedLong amountSent();
+  @Value.Default
+  default UnsignedLong amountSent() {
+    return UnsignedLong.ZERO;
+  };
 
-  UnsignedLong amountLeftToSend();
+  @Value.Default
+  default UnsignedLong amountLeftToSend() {
+    return this.originalAmount();
+  };
 
   PaymentPointer destination();
 

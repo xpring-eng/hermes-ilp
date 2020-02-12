@@ -51,7 +51,7 @@ public class RedisHermesPaymentTrackerTest extends AbstractRedisPaymentTrackerTe
     assertThat(registeredPayment.status()).isEqualTo(HermesPaymentTracker.PaymentStatus.PENDING);
     assertThat(registeredPayment.amountDelivered().longValue()).isEqualTo(UnsignedLong.ZERO.longValue());
     assertThat(registeredPayment.amountSent().longValue()).isEqualTo(UnsignedLong.ZERO.longValue());
-    assertThat(registeredPayment.amountLeftToSend().longValue()).isEqualTo(UnsignedLong.ZERO.longValue());
+    assertThat(registeredPayment.amountLeftToSend()).isEqualTo(originalAmount);
 
     return registeredPayment;
   }

@@ -1,8 +1,10 @@
 package org.interledger.spsp.server.rest;
 
+import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.interledger.connector.accounts.AccountId;
+import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
@@ -10,14 +12,16 @@ import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.AbstractIntegrationTest;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
+import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.controllers.AccountController;
-import org.interledger.spsp.server.grpc.AbstractGrpcHandlerTest;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -27,7 +31,7 @@ import java.util.Optional;
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
 @SpringBootTest(
-  classes = {HermesServerApplication.class, AbstractRestControllerTest.TestConfig.class},
+  classes = {HermesServerApplication.class, AccountsRestControllerTests.TestConfig.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
   properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class AccountsRestControllerTests extends AbstractIntegrationTest {
@@ -108,5 +112,29 @@ public class AccountsRestControllerTests extends AbstractIntegrationTest {
     assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER)).isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());
     assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE)).isEqualTo(jwtAuthSettings.tokenAudience().get());
     assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT)).isEqualTo(jwtAuthSettings.tokenSubject());
+  }
+
+  public static class TestConfig {
+
+    /**
+     * Overrides the adminClient bean for test purposes to connect to our Connector container
+     *
+     * @return a ConnectorAdminClient that can speak to the test container connector
+     */
+    @Bean
+    @Primary
+    public ConnectorAdminClient adminClient() {
+      return ConnectorAdminClient.construct(getInterledgerBaseUri(), template -> {
+        template.header(AUTHORIZATION, "Basic " + ADMIN_AUTH_TOKEN);
+      });
+    }
+
+    @Bean
+    @Primary
+    public ConnectorRoutesClient routesClient() {
+      return ConnectorRoutesClient.construct(getInterledgerBaseUri(), template -> {
+        template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
+      });
+    }
   }
 }

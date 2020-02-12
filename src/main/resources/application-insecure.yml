@@ -1,0 +1,11 @@
+# dummy secrets and keys that make it easy to run for dev purposes but are completely insecure for running a real-world
+# connector because the passwords and keys would be known
+interledger:
+  hermes:
+    keystore:
+      jks:
+        enabled: true
+        filename: crypto/crypto.p12
+        password: password
+        secret0_alias: secret0
+        secret0_password: password

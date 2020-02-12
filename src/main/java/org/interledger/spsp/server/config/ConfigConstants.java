@@ -7,7 +7,7 @@ public interface ConfigConstants {
   String TRUE = "true";
   String FALSE = "false";
   String INTERLEDGER = "interledger";
-  String SPSP_SERVER = "spsp-server";
+  String HERMES = "hermes";
 
-  String INTERLEDGER__SPSP_SERVER = INTERLEDGER + "." + SPSP_SERVER;
+  String INTERLEDGER__HERMES = INTERLEDGER + "." + HERMES;
 }

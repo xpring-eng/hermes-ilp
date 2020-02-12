@@ -3,11 +3,11 @@ package org.interledger.spsp.server.controllers;
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.model.ImmutablePaymentRequest;
 import org.interledger.spsp.server.model.Payment;
-import org.interledger.spsp.server.model.PaymentResponse;
 import org.interledger.spsp.server.services.SendMoneyService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,11 +26,8 @@ public class PaymentController extends AbstractController {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  private final SendMoneyService sendMoneyService;
-
-  public PaymentController(SendMoneyService sendMoneyService) {
-    this.sendMoneyService = sendMoneyService;
-  }
+  @Autowired
+  private SendMoneyService sendMoneyService;
 
   /**
    * Sends payment from the given account.
