@@ -1,5 +1,8 @@
 package org.interledger.spsp.server.services.tracker;
 
+/**
+ * Overarching exception class for all exceptions occurring within {@link HermesPaymentTracker}
+ */
 public class HermesPaymentTrackerException extends RuntimeException {
   public HermesPaymentTrackerException() {
   }

@@ -19,6 +19,9 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+/**
+ * Configuration for Hermes' PaymentTracker, including a Redis based tracker
+ */
 @Configuration
 public class PaymentTrackerConfig {
   public static final String PAYMENT_TRACKING = "PAYMENT_TRACKING";

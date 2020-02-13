@@ -15,6 +15,9 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 
 import java.nio.charset.Charset;
 
+/**
+ * Redis configuration for HermesPaymentTracker and any future stateful operations
+ */
 @Configuration
 public class RedisConfig {
 

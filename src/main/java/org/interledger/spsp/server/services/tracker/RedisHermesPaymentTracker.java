@@ -107,9 +107,13 @@ public class RedisHermesPaymentTracker implements HermesPaymentTracker {
       stringRedisTemplate.execute(
         updatePaymentOnCompleteScript,
         Collections.singletonList(toRedisPaymentKey(paymentId)),
+        // Arg1 : Amount sent
         amountSent.longValue() + "",
+        // Arg2 : Amount delivered
         amountDelivered.longValue() + "",
+        // Arg3 : Amount left to send
         amountLeftToSend.longValue() + "",
+        // Arg4 : Resulting status of payment
         status.toString()
       );
 

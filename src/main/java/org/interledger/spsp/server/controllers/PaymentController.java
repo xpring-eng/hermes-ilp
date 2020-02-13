@@ -56,6 +56,11 @@ public class PaymentController extends AbstractController {
     }
   }
 
+  /**
+   * Track a payment that was sent through Hermes
+   * @param paymentId
+   * @return Payment information for payment with id = paymentId
+   */
   @RequestMapping(
     value = "/payments/{paymentId}", method = {RequestMethod.GET},
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
