@@ -94,6 +94,9 @@ public interface Payment {
    *
    * @return the current status of the payment, as seen from Hermes' point of view
    */
-  HermesPaymentTracker.PaymentStatus status();
+  @Value.Default
+  default HermesPaymentTracker.PaymentStatus status() {
+    return HermesPaymentTracker.PaymentStatus.PENDING;
+  };
 
 }

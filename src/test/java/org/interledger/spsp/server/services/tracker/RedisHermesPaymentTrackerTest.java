@@ -7,7 +7,9 @@ import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.model.Payment;
 
 import com.google.common.primitives.UnsignedLong;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -19,6 +21,9 @@ import java.util.UUID;
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = {AbstractRedisPaymentTrackerTest.Config.class})
 public class RedisHermesPaymentTrackerTest extends AbstractRedisPaymentTrackerTest {
+
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
 
   @Autowired
   private RedisHermesPaymentTracker paymentTracker;
@@ -76,5 +81,11 @@ public class RedisHermesPaymentTrackerTest extends AbstractRedisPaymentTrackerTe
     assertThat(updatedPayment.amountDelivered()).isEqualTo(amountDelivered);
     assertThat(updatedPayment.amountSent()).isEqualTo(amountSent);
     assertThat(updatedPayment.amountLeftToSend()).isEqualTo(amountLeftToSend);
+  }
+
+  @Test
+  public void getPaymentFailsPaymentDoesntExist() {
+    expectedException.expect(HermesPaymentTrackerException.class);
+    paymentTracker.payment(UUID.randomUUID());
   }
 }

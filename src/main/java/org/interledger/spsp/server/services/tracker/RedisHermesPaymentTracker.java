@@ -43,6 +43,10 @@ public class RedisHermesPaymentTracker implements HermesPaymentTracker {
     final BoundHashOperations<String, String, String> result =
       stringRedisTemplate.boundHashOps(toRedisPaymentKey(paymentId));
 
+    if (Objects.nonNull(result.entries()) && result.entries().isEmpty()) {
+      throw new HermesPaymentTrackerException("Payment does not exist! paymentId=" + paymentId);
+    }
+
     return Payment.builder()
       .paymentId(paymentId)
       .senderAccountId(AccountId.of(result.get("sender_account_id")))
@@ -102,6 +106,9 @@ public class RedisHermesPaymentTracker implements HermesPaymentTracker {
     Objects.requireNonNull(amountSent, "amountSent must not be null");
     Objects.requireNonNull(amountDelivered, "amountDelivered must not be null");
     Objects.requireNonNull(status, "status must not be null");
+
+    // Make sure the payment exists. This will throw an exception if it doesnt exist
+    this.payment(paymentId);
 
     try {
       stringRedisTemplate.execute(

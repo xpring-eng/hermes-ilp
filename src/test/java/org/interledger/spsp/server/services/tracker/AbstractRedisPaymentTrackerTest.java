@@ -1,7 +1,5 @@
 package org.interledger.spsp.server.services.tracker;
 
-import static org.mockito.Mockito.mock;
-
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.jackson.ObjectMapperFactory;
 import org.interledger.crypto.Decryptor;
@@ -15,9 +13,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Optional;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
