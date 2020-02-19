@@ -132,10 +132,8 @@ public class AccountsRestControllerTests {
    */
   @Test
   public void testCreateAccountWithTokenAndFullRequest() {
-    CreateAccountRestRequest request = CreateAccountRestRequest.builder()
+    CreateAccountRestRequest request = CreateAccountRestRequest.builder("USD", 6)
       .accountId("foo")
-      .assetCode("USD")
-      .assetScale(6)
       .build();
 
     AccountSettingsResponse response = accountController.createAccount(Optional.of("Bearer password"), Optional.of(request));
@@ -175,6 +173,19 @@ public class AccountsRestControllerTests {
     assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().doesNotStartWith("enc:jks");
   }
 
+  @Test
+  public void testCreateAccountWithOnlyAssetDetails() {
+    CreateAccountRestRequest request = CreateAccountRestRequest.builder("USD", 2).build();
+
+    AccountSettingsResponse response = accountController.createAccount(Optional.empty(), Optional.of(request));
+    assertThat(response.accountId().value()).startsWith("user_");
+    assertThat(response.assetCode()).isEqualTo("USD");
+    assertThat(response.assetScale()).isEqualTo(2);
+    assertThat(response.paymentPointer()).isEqualTo(PaymentPointer.of(paymentPointerBase + "/" + response.accountId()));
+    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().doesNotStartWith("enc:jks");
+  }
+
   /**
    * Test that we can still create an account using a JWT and full account settings.
    * Tests compatibility with the xpring ilp wallet
@@ -187,10 +198,8 @@ public class AccountsRestControllerTests {
     JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
     String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
 
-    CreateAccountRestRequest request = CreateAccountRestRequest.builder()
+    CreateAccountRestRequest request = CreateAccountRestRequest.builder("XRP", 9)
       .accountId(accountID)
-      .assetCode("XRP")
-      .assetScale(9)
       .description(accountDescription)
       .build();
 

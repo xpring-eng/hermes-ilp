@@ -9,24 +9,19 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = ImmutableCreateAccountRestRequest.class)
 public interface CreateAccountRestRequest {
 
-  static ImmutableCreateAccountRestRequest.Builder builder() {
-    return ImmutableCreateAccountRestRequest.builder();
+  static ImmutableCreateAccountRestRequest.Builder builder(String assetCode, Integer assetScale) {
+    return ImmutableCreateAccountRestRequest.builder().assetCode(assetCode).assetScale(assetScale);
   }
 
   @Value.Default
   default String accountId() {
     return AccountGeneratorService.generateAccountId();
-  };
+  }
 
-  @Value.Default
-  default String assetCode() {
-    return "XRP";
-  };
 
-  @Value.Default
-  default int assetScale() {
-    return 9;
-  };
+  String assetCode();
+
+  Integer assetScale();
 
   @Value.Default
   default String description() {
