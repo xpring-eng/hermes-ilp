@@ -14,7 +14,7 @@ import java.util.Optional;
  */
 @Service
 public class AccountGeneratorService {
-  
+
   /**
    * Generates a random alphanumeric string of length 13 to be used as credentials
    *
@@ -67,7 +67,7 @@ public class AccountGeneratorService {
    * Generates an account ID with format user_{random 8 alphanumeric characters}
    * @return A String representing a generated account ID
    */
-  public String generateAccountId() {
+  public static String generateAccountId() {
     return "user_" + RandomStringUtils.randomAlphanumeric(8);
   }
 
