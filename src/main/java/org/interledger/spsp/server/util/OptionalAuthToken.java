@@ -11,6 +11,11 @@ public final class OptionalAuthToken {
   }
 
   public static Optional<String> of(String authToken) {
-    return of(Optional.ofNullable(authToken));
+    if (authToken != null) {
+      authToken = authToken.substring(authToken.indexOf(" ") + 1);
+      return of(Optional.ofNullable(authToken.isEmpty() ? null : authToken));
+    }
+
+    return of(Optional.empty());
   }
 }

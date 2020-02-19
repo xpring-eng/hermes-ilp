@@ -1,5 +1,7 @@
 package org.interledger.spsp.server.model;
 
+import org.interledger.spsp.server.services.AccountGeneratorService;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
@@ -11,7 +13,10 @@ public interface CreateAccountRestRequest {
     return ImmutableCreateAccountRestRequest.builder();
   }
 
-  String accountId();
+  @Value.Default
+  default String accountId() {
+    return AccountGeneratorService.generateAccountId();
+  };
 
   @Value.Default
   default String assetCode() {

@@ -80,6 +80,7 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
       responseObserver.onCompleted();
       return;
     } catch (FeignException e) {
+      logger.error("Error creating account: " + e);
       switch (e.status()) {
         case 401:
           grpcStatus = Status.PERMISSION_DENIED;
