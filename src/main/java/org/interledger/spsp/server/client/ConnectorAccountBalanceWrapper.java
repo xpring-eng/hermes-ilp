@@ -1,14 +1,8 @@
 package org.interledger.spsp.server.client;
 
-import org.interledger.connector.accounts.AccountId;
-import org.interledger.core.InterledgerAddress;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.common.primitives.UnsignedLong;
 import org.immutables.value.Value;
-
-import java.math.BigInteger;
 
 @JsonSerialize(as = ImmutableConnectorAccountBalance.class)
 @JsonDeserialize(as = ImmutableConnectorAccountBalance.class)
