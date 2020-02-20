@@ -167,10 +167,9 @@ public class IlpOverHttpConfig {
     ConnectorAdminClient adminClient,
     ConnectorRoutesClient connectorRoutesClient,
     @Qualifier(SPSP) OutgoingLinkSettings spspLinkSettings,
-    @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix,
-    AccountGeneratorService accountGeneratorService
+    @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix
   ) {
-    return new NewAccountService(adminClient, connectorRoutesClient, spspLinkSettings, spspAddressPrefix, accountGeneratorService);
+    return new NewAccountService(adminClient, connectorRoutesClient, spspLinkSettings, spspAddressPrefix);
   }
 
   @Bean

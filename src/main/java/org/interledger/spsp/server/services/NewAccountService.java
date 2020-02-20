@@ -34,46 +34,50 @@ public class NewAccountService {
 
   private final InterledgerAddressPrefix spspAddressPrefix;
 
-  private final AccountGeneratorService accountGeneratorService;
-
   public NewAccountService(ConnectorAdminClient adminClient,
                            ConnectorRoutesClient connectorRoutesClient,
                            OutgoingLinkSettings spspLinkSettings,
-                           InterledgerAddressPrefix spspAddressPrefix,
-                           AccountGeneratorService accountGeneratorService) {
+                           InterledgerAddressPrefix spspAddressPrefix) {
     this.adminClient = adminClient;
     this.connectorRoutesClient = connectorRoutesClient;
     this.spspLinkSettings = spspLinkSettings;
     this.spspAddressPrefix = spspAddressPrefix;
-    this.accountGeneratorService = accountGeneratorService;
-  }
-
-  public AccountSettings createAccount(Optional<String> authToken, CreateAccountRequest request) {
-    // Generate a random alpha-numeric string as a simple auth token,
-    // after removing the token prefix from a possibly present auth token
-    String credentials = authToken.orElse(accountGeneratorService.generateSimpleAuthCredentials());
-
-    // Convert request to AccountSettings
-    AccountSettings populatedAccountSettings =
-      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(credentials,
-        accountGeneratorService.fillInCreateAccountRequest(request),
-        spspLinkSettings);
-
-    return revertSimpleAuthTokenUnencrypted(populatedAccountSettings, createAccount(populatedAccountSettings));
   }
 
   public AccountSettings createAccount(Optional<String> authToken, Optional<CreateAccountRestRequest> request) {
 
     // Generate a random alpha-numeric string as a simple auth token
     // after removing the token prefix from a possibly present auth token
-    String credentials = authToken.orElse(accountGeneratorService.generateSimpleAuthCredentials());
+    String credentials = authToken.orElse(AccountGeneratorService.generateSimpleAuthCredentials());
 
     AccountSettings populatedAccountSettings =
       AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(credentials,
-        accountGeneratorService.fillInCreateAccountRequest(request),
+        request.orElseGet(AccountGeneratorService::newDefaultCreateAccountRequest),
         spspLinkSettings);
 
     return revertSimpleAuthTokenUnencrypted(populatedAccountSettings, createAccount(populatedAccountSettings));
+  }
+
+  public AccountSettings createAccount(AccountSettings request) {
+    // Create account on the connector
+    AccountSettings returnedAccountSettings = adminClient.createAccount(request);
+
+    logger.info("Account created successfully with accountId: " + request.accountId());
+
+    try {
+      InterledgerAddressPrefix routePrefix = spspAddressPrefix.with(returnedAccountSettings.accountId().value());
+      connectorRoutesClient.createStaticRoute(
+        routePrefix.getValue(),
+        StaticRoute.builder()
+          .routePrefix(routePrefix)
+          .nextHopAccountId(returnedAccountSettings.accountId())
+          .build()
+      );
+    } catch (Exception e) {
+      logger.warn("Failed to create route", e);
+    }
+
+    return returnedAccountSettings;
   }
 
   private AccountSettings revertSimpleAuthTokenUnencrypted(AccountSettings populatedAccountSettings, AccountSettings returnedAccountSettings) {
@@ -101,28 +105,6 @@ public class NewAccountService {
     });
 
     return newCustomSettings;
-  }
-
-  public AccountSettings createAccount(AccountSettings request) {
-    // Create account on the connector
-    AccountSettings returnedAccountSettings = adminClient.createAccount(request);
-
-    logger.info("Account created successfully with accountId: " + request.accountId());
-
-    try {
-      InterledgerAddressPrefix routePrefix = spspAddressPrefix.with(returnedAccountSettings.accountId().value());
-      connectorRoutesClient.createStaticRoute(
-        routePrefix.getValue(),
-        StaticRoute.builder()
-          .routePrefix(routePrefix)
-          .nextHopAccountId(returnedAccountSettings.accountId())
-          .build()
-      );
-    } catch (Exception e) {
-      logger.warn("Failed to create route", e);
-    }
-
-    return returnedAccountSettings;
   }
 
   public AccountSettings createRainmaker() {
