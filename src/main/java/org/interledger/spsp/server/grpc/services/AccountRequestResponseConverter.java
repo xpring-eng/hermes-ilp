@@ -163,27 +163,6 @@ public class AccountRequestResponseConverter {
       .putAllCustomSettings(settingsMapToGrpcSettingsMap(accountSettings.customSettings()));
   }
 
-  private static Map<String, String> settingsMapToGrpcSettingsMap(Map<String, Object> settingsMap) {
-    return settingsMap.entrySet()
-      .stream()
-      .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
-  }
-
-  public static AccountSettings accountSettingsFromCreateAccountRequest(String authToken,
-                                                                        CreateAccountRequest createAccountRequest,
-                                                                        OutgoingLinkSettings outgoingLinkSettings) {
-
-    return AccountSettings.builder()
-      .accountId(AccountId.of(createAccountRequest.getAccountId()))
-      .assetCode(createAccountRequest.getAssetCode())
-      .assetScale(createAccountRequest.getAssetScale())
-      .description(createAccountRequest.getDescription())
-      .accountRelationship(AccountRelationship.CHILD)
-      .linkType(IlpOverHttpLink.LINK_TYPE)
-      .customSettings(customSettingsFromAuthToken(authToken, outgoingLinkSettings))
-      .build();
-  }
-
   public static AccountSettings accountSettingsFromCreateAccountRequest(String authToken,
                                                                         CreateAccountRestRequest createAccountRequest,
                                                                         OutgoingLinkSettings outgoingLinkSettings) {
@@ -197,6 +176,12 @@ public class AccountRequestResponseConverter {
       .linkType(IlpOverHttpLink.LINK_TYPE)
       .customSettings(customSettingsFromAuthToken(authToken, outgoingLinkSettings))
       .build();
+  }
+
+  private static Map<String, String> settingsMapToGrpcSettingsMap(Map<String, Object> settingsMap) {
+    return settingsMap.entrySet()
+      .stream()
+      .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
   }
 
   private static Map<String, Object> customSettingsFromAuthToken(String authToken,

@@ -287,6 +287,39 @@ public class AccountGrpcHandlerTests {
   }
 
   @Test
+  public void testCreateAccountWithAccountIdButNoAssetDetails() {
+    CreateAccountRequest request = CreateAccountRequest.newBuilder()
+      .setAccountId("foo")
+      .build();
+
+    try {
+      blockingStub.createAccount(request);
+      fail();
+    } catch (StatusRuntimeException e) {
+      logger.info("Failed successfully. Error status: " + e.getStatus());
+      assertThat(e.getStatus()).isEqualTo(Status.UNKNOWN);
+    }
+  }
+
+  @Test
+  public void testCreateAccountWithOnlyAssetDetails() {
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Basic password");
+    CreateAccountRequest request = CreateAccountRequest.newBuilder()
+      .setAssetCode("XRP")
+      .setAssetScale(9)
+      .build();
+
+    CreateAccountResponse reply = blockingStub.createAccount(request);
+    assertThat(reply.getAccountId()).startsWith("user_");
+    assertThat(reply.getAssetCode()).isEqualTo("XRP");
+    assertThat(reply.getAssetScale()).isEqualTo(9);
+    assertThat(reply.getPaymentPointer()).isEqualTo(paymentPointerBase + "/" + reply.getAccountId());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isNotEmpty();
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().doesNotStartWith("enc:jks");
+  }
+
+  @Test
   public void createAccountWithSimpleAuthAndFullRequest() {
     when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Basic password");
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
