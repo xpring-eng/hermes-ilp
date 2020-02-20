@@ -10,12 +10,12 @@ jobs:
   build:
     working_directory: ~/repo
 
-    docker:
-      # Primary container image where all commands run
-      - image: circleci/openjdk:8-jdk
-        environment:
-          # Customize the JVM maximum heap limit
-          MAVEN_OPTS: -Xmx4096m
+    machine:
+      image: ubuntu-1604:201903-01
+
+    environment:
+      MAVEN_OPTS: -Xmx4096m
+      JAVA_HOME: /usr/lib/jvm/jdk1.8.0/
 
     steps:
 
@@ -38,7 +38,7 @@ jobs:
             - v1-dependencies-{{ checksum "pom.xml" }}
 
       - run:
-          name: Full Build (H2)
+          name: Full Build
           command:  mvn dependency:go-offline -DskipITs install
 
       - save_cache: # saves the project dependencies
@@ -63,47 +63,47 @@ jobs:
       - store_artifacts:
           path: ~/junit
 
-      - run:
-          name: "Install Linter"
-          command: |
-            sudo curl -sSL https://github.com/uber/prototool/releases/download/v1.8.0/prototool-$(uname -s)-$(uname -m) -o /usr/local/bin/prototool
-            sudo chmod +x /usr/local/bin/prototool
+#      - run:
+#          name: "Install Linter"
+#          command: |
+#            sudo curl -sSL https://github.com/uber/prototool/releases/download/v1.8.0/prototool-$(uname -s)-$(uname -m) -o /usr/local/bin/prototool
+#            sudo chmod +x /usr/local/bin/prototool
+#
+#      - run:
+#          name: "Lint Protocol Buffers"
+#          command:
+#            prototool lint
+#
+#      - run:
+#          name: "Check Protocol Buffer Breakages"
+#          command:
+#            prototool break check
 
-      - run:
-          name: "Lint Protocol Buffers"
-          command:
-            prototool lint
-
-      - run:
-          name: "Check Protocol Buffer Breakages"
-          command:
-            prototool break check
-
-      - run:
-          name: "Node Client Tests"
-          command: |
-            cd node-client
-            npm test
+#      - run:
+#          name: "Node Client Tests"
+#          command: |
+#            cd node-client
+#            npm test
 
       # publish the coverage report to codecov.io
-      - run: bash <(curl -s https://codecov.io/bash)
+#      - run: bash <(curl -s https://codecov.io/bash)
 
-  docker_image:
-    working_directory: ~/repo
-    docker:
-      - image: circleci/openjdk:8-jdk
-        environment:
-          # Customize the JVM maximum heap limit
-          MAVEN_OPTS: -Xmx4096m
-
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "pom.xml" }}
-      - run:
-          name: Deploy docker image
-          command: mvn package -DskipTests -DskipITs -Pdocker -Dcontainer.version=nightly -Djib.to.auth.username=${DOCKERHUB_USERNAME} -Djib.to.auth.password=${DOCKERHUB_API_KEY}
+#  docker_image:
+#    working_directory: ~/repo
+#    docker:
+#      - image: circleci/openjdk:8-jdk
+#        environment:
+#          # Customize the JVM maximum heap limit
+#          MAVEN_OPTS: -Xmx4096m
+#
+#    steps:
+#      - checkout
+#      - restore_cache:
+#          keys:
+#            - v1-dependencies-{{ checksum "pom.xml" }}
+#      - run:
+#          name: Deploy docker image
+#          command: mvn package -DskipTests -DskipITs -Pdocker -Dcontainer.version=nightly -Djib.to.auth.username=${DOCKERHUB_USERNAME} -Djib.to.auth.password=${DOCKERHUB_API_KEY}
 
 workflows:
   version: 2
@@ -115,15 +115,15 @@ workflows:
     jobs:
       - build
 
-  nightly:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build
-      - docker_image:
-          context: org-java-ilp-connector
+#  nightly:
+#    triggers:
+#      - schedule:
+#          cron: "0 0 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
+#    jobs:
+#      - build
+#      - docker_image:
+#          context: org-java-ilp-connector
