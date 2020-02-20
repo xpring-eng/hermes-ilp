@@ -23,6 +23,6 @@ jobs:
           name: Full Build
           command:  mvn dependency:go-offline install
       - save_cache: # saves the project dependencies
-        paths:
-          - ~/.m2
-        key: v1-dependencies-{{ checksum "pom.xml" }}
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom.xml" }}
