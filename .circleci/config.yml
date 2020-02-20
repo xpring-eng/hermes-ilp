@@ -1,9 +1,25 @@
-version: 2.1
+version: 2
+jobs:
 
-orbs:
-  maven: circleci/maven@0.0.12
+  build:
+    working_directory: ~/repo
 
-workflows:
-  maven_test:
-    jobs:
-      - maven/test # checkout, build, test, and upload test results
+    docker:
+      # Primary container image where all commands run
+      - image: circleci/openjdk:8-jdk
+        environment:
+          # Customize the JVM maximum heap limit
+          MAVEN_OPTS: -Xmx4096m
+
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pom.xml" }}
+      - run:
+          name: Full Build
+          command:  mvn dependency:go-offline install
+      - save_cache: # saves the project dependencies
+        paths:
+          - ~/.m2
+        key: v1-dependencies-{{ checksum "pom.xml" }}
