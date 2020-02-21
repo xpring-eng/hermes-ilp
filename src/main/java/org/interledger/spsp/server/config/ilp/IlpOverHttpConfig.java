@@ -124,17 +124,23 @@ public class IlpOverHttpConfig {
 
   @Bean
   @Qualifier(SPSP)
-  protected HttpUrl spspReceiverUrl(@Value("${interledger.spsp.spsp-url}") String spspUrl) {
+  protected HttpUrl spspReceiverUrlInternal(@Value("${interledger.spsp.spsp-url.internal}") String spspUrl) {
     return HttpUrl.parse(spspUrl);
   }
 
   @Bean
   @Qualifier(SPSP)
-  OutgoingLinkSettings spspSettings(@Qualifier(SPSP) HttpUrl receiverUrl,
+  protected HttpUrl spspReceiverUrlPublic(@Value("${interledger.spsp.spsp-url.public}") String spspUrl) {
+    return HttpUrl.parse(spspUrl);
+  }
+
+  @Bean
+  @Qualifier(SPSP)
+  OutgoingLinkSettings spspSettings(@Qualifier(SPSP) HttpUrl spspReceiverUrlInternal,
                                     @Value("${interledger.spsp.auth-token}") String spspAuthToken) {
     return OutgoingLinkSettings.builder()
       .authType(IlpOverHttpLinkSettings.AuthType.SIMPLE)
-      .url(receiverUrl.newBuilder().addPathSegment("ilp").build())
+      .url(spspReceiverUrlInternal.newBuilder().addPathSegment("ilp").build())
       .simpleAuthSettings(SimpleAuthSettings.forAuthToken(spspAuthToken))
       .build();
   }
@@ -183,8 +189,8 @@ public class IlpOverHttpConfig {
 
   @Bean
   public GimmeMoneyService gimmeMoneyService(SendMoneyService sendMoneyService,
-                                             @Qualifier(SPSP) HttpUrl spspUrl) {
-    return new GimmeMoneyService(sendMoneyService, AccountId.of("rainmaker"), "password", spspUrl);
+                                             @Qualifier(SPSP) HttpUrl spspReceiverUrlInternal) {
+    return new GimmeMoneyService(sendMoneyService, AccountId.of("rainmaker"), "password", spspReceiverUrlInternal);
   }
 
   @Bean

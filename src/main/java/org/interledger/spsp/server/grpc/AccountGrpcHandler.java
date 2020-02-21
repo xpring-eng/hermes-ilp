@@ -39,7 +39,7 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
   protected ConnectorRoutesClient routesClient;
 
   @Autowired
-  protected HttpUrl spspReceiverUrl;
+  protected HttpUrl spspReceiverUrlPublic;
 
   @Autowired
   protected IlpGrpcAuthContext ilpGrpcAuthContext;
@@ -49,7 +49,7 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
     Status grpcStatus;
     try {
       GetAccountResponse accountResponse = adminClient.findAccount(request.getAccountId())
-        .map(account -> AccountRequestResponseConverter.createGetAccountResponseFromAccountSettings(account, spspReceiverUrl))
+        .map(account -> AccountRequestResponseConverter.createGetAccountResponseFromAccountSettings(account, spspReceiverUrlPublic))
         .orElseThrow(() -> new AccountNotFoundProblem(AccountId.of(request.getAccountId())));
 
       responseObserver.onNext(accountResponse);
@@ -79,7 +79,7 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
 
       // Convert returned AccountSettings into Grpc response object
       final CreateAccountResponse.Builder replyBuilder =
-        AccountRequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings, spspReceiverUrl);
+        AccountRequestResponseConverter.generateCreateAccountResponseFromAccountSettings(returnedAccountSettings, spspReceiverUrlPublic);
 
       responseObserver.onNext(replyBuilder.build());
       responseObserver.onCompleted();

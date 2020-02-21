@@ -100,14 +100,14 @@ public class AccountsRestControllerTests {
     private String paymentPointerBase;
 
     @Autowired
-    HttpUrl spspReceiverUrl;
+    HttpUrl spspReceiverUrlPublic;
 
   @Before
   public void setUp() throws JsonProcessingException {
 
-    paymentPointerBase = "$" + spspReceiverUrl.host();
-    if (spspReceiverUrl.port() != 80 && spspReceiverUrl.port() != 443) {
-      paymentPointerBase += ":" + spspReceiverUrl.port();
+    paymentPointerBase = "$" + spspReceiverUrlPublic.host();
+    if (spspReceiverUrlPublic.port() != 80 && spspReceiverUrlPublic.port() != 443) {
+      paymentPointerBase += ":" + spspReceiverUrlPublic.port();
     }
 
     // Set up the JWKS server

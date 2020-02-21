@@ -138,7 +138,7 @@ public class AccountGrpcHandlerTests {
   private String paymentPointerBase;
 
   @Autowired
-  HttpUrl spspReceiverUrl;
+  HttpUrl spspReceiverUrlPublic;
 
   @Autowired
   IlpGrpcMetadataReader ilpGrpcMetadataReader;
@@ -146,9 +146,9 @@ public class AccountGrpcHandlerTests {
   @Before
   public void setUp() throws IOException {
 
-    paymentPointerBase = "$" + spspReceiverUrl.host();
-    if (spspReceiverUrl.port() != 80 && spspReceiverUrl.port() != 443) {
-      paymentPointerBase += ":" + spspReceiverUrl.port();
+    paymentPointerBase = "$" + spspReceiverUrlPublic.host();
+    if (spspReceiverUrlPublic.port() != 80 && spspReceiverUrlPublic.port() != 443) {
+      paymentPointerBase += ":" + spspReceiverUrlPublic.port();
     }
 
     // Set up the JWKS server

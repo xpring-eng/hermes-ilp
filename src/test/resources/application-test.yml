@@ -13,7 +13,9 @@ interledger:
     #    admin-key:
 
   spsp:
-    spsp-url: https://money.ilpv4.dev
+    spsp-url:
+      internal: https://money.ilpv4.dev
+      public: https://money.ilpv4.dev
     auth-token: placeholder:c2ho
     address-prefix: test.jc.money
 

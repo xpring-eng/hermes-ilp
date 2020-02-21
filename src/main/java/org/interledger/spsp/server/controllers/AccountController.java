@@ -43,10 +43,10 @@ public class AccountController extends AbstractController {
 
   public AccountController(NewAccountService newAccountService,
                            ConnectorAdminClient adminClient,
-                           HttpUrl spspReceiverUrl) {
+                           HttpUrl spspReceiverUrlPublic) {
     this.newAccountService = Objects.requireNonNull(newAccountService);
     this.adminClient = Objects.requireNonNull(adminClient);
-    this.spspReceiverUrl = Objects.requireNonNull(spspReceiverUrl);
+    this.spspReceiverUrl = Objects.requireNonNull(spspReceiverUrlPublic);
   }
 
   @RequestMapping(
