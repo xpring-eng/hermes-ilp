@@ -18,7 +18,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 
-@ContextConfiguration(classes = ControllerTestConfig.class)
+/**
+ * An abstract super class for all Controller tests.
+ */
+@ContextConfiguration(classes = {
+  ControllerTestConfig.class // For custom Beans.
+})
 @ComponentScan(basePackages = "org.interledger.spsp.server.controllers")
 public class AbstractControllerTest {
 

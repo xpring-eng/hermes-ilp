@@ -1,4 +1,4 @@
-package org.interledger.spsp.server.controllers;
+package org.interledger.spsp.server.controllers.filters;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -18,6 +18,10 @@ import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.spsp.server.client.AccountBalance;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
+import org.interledger.spsp.server.controllers.AbstractControllerTest;
+import org.interledger.spsp.server.controllers.AccountController;
+import org.interledger.spsp.server.controllers.BalanceController;
+import org.interledger.spsp.server.controllers.PaymentController;
 import org.interledger.spsp.server.model.PaymentRequest;
 import org.interledger.stream.SendMoneyResult;
 
@@ -38,6 +42,9 @@ import java.time.Duration;
 import java.util.Optional;
 import javax.servlet.http.Cookie;
 
+/**
+ * Test suite to test {@link CookieAuthenticationFilter}
+ */
 @RunWith(SpringRunner.class)
 @WebMvcTest(controllers = {AccountController.class, BalanceController.class, PaymentController.class},
   excludeAutoConfiguration = {SecurityAutoConfiguration.class})

@@ -9,6 +9,11 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
+/**
+ * Wrapper class for {@link HttpServletRequest} which allows for mutability of headers.
+ *
+ * Should be used with {@link CookieAuthenticationFilter} to add an "Authorization" header to any incoming requests
+ */
 final class MutableHttpServletRequest extends HttpServletRequestWrapper {
   // holds custom header and value mapping
   private final Map<String, String> customHeaders;
@@ -33,7 +38,6 @@ final class MutableHttpServletRequest extends HttpServletRequestWrapper {
     return ((HttpServletRequest) getRequest()).getHeader(name);
   }
 
-  @Override
   public Enumeration<String> getHeaders(String name) {
     Set<String> headerValues = new HashSet<>();
     headerValues.add(this.customHeaders.get(name));
