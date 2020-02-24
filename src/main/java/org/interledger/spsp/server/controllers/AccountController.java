@@ -17,11 +17,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.zalando.problem.spring.common.MediaTypes;
@@ -30,7 +32,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 
-@RestController
+@Controller
 public class AccountController extends AbstractController {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -53,7 +55,7 @@ public class AccountController extends AbstractController {
     value = "/accounts", method = {RequestMethod.POST},
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
-  public AccountSettingsResponse createAccount(@RequestHeader("Authorization") Optional<String> authToken,
+  public @ResponseBody AccountSettingsResponse createAccount(@RequestHeader("Authorization") Optional<String> authToken,
                                        @RequestBody Optional<CreateAccountRestRequest> createAccountRequest) {
 
     try {
@@ -77,7 +79,7 @@ public class AccountController extends AbstractController {
     method = {RequestMethod.GET},
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
-  public AccountSettingsResponse getAccount(@PathVariable("accountId") String accountId) {
+  public @ResponseBody AccountSettingsResponse getAccount(@PathVariable("accountId") String accountId) {
     try {
       AccountSettings accountSettings = adminClient.findAccount(accountId)
         .orElseThrow(() -> new AccountNotFoundProblem(AccountId.of(accountId)));

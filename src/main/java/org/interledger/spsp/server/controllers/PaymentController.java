@@ -48,14 +48,14 @@ public class PaymentController extends AbstractController {
     try {
       getJwt(); // hack to make sure JWT isn't expired
       SendMoneyResult result = sendMoneyService.sendMoney(AccountId.of(accountId),
-        getBearerToken(),
+        getAuthorization(),
         paymentRequest.amount(),
         PaymentPointer.of(paymentRequest.destinationPaymentPointer()));
 
       return PaymentResponse.builder()
         .amountDelivered(result.amountDelivered())
         .amountSent(result.amountSent())
-        .originalAmount(paymentRequest.amount())
+        .originalAmount(result.originalAmount())
         .successfulPayment(result.successfulPayment())
         .build();
     } catch (Exception e) {

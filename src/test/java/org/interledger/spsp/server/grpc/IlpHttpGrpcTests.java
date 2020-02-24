@@ -24,6 +24,7 @@ import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.HermesServerApplication;
+import org.interledger.spsp.server.util.JwksServer;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
