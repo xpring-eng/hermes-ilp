@@ -1,4 +1,4 @@
-package org.interledger.spsp.server.grpc;
+package org.interledger.spsp.server.controllers;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -18,7 +18,7 @@ import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
-import org.interledger.spsp.server.controllers.AccountController;
+import org.interledger.spsp.server.util.JwksServer;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -49,10 +49,10 @@ import java.util.Optional;
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
 @SpringBootTest(
-  classes = {HermesServerApplication.class, AccountsRestControllerTests.TestConfig.class},
+  classes = {HermesServerApplication.class, AccountsRestControllerUnitTests.TestConfig.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
   properties = {"spring.main.allow-bean-definition-overriding=true"})
-public class AccountsRestControllerTests {
+public class AccountsRestControllerUnitTests {
   /**
    * Fields for our JWKS mock server
    */
@@ -97,10 +97,11 @@ public class AccountsRestControllerTests {
   @Autowired
   private AccountController accountController;
 
-    private String paymentPointerBase;
 
-    @Autowired
-    HttpUrl spspReceiverUrl;
+  private String paymentPointerBase;
+
+  @Autowired
+  HttpUrl spspReceiverUrl;
 
   @Before
   public void setUp() throws JsonProcessingException {

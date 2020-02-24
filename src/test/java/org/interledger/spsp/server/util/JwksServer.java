@@ -1,4 +1,4 @@
-package org.interledger.spsp.server.grpc;
+package org.interledger.spsp.server.util;
 
 import org.interledger.link.http.JwtAuthSettings;
 
