@@ -35,7 +35,7 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
     try {
       String jwt = ilpGrpcAuthContext.getAuthorizationHeader();
       result = sendMoneyService.sendMoney(AccountId.of(request.getAccountId()),
-        jwt.substring("Bearer ".length()),
+        jwt,
         UnsignedLong.valueOf(request.getAmount()),
         PaymentPointer.of(request.getDestinationPaymentPointer()));
     } catch (InterruptedException | ExecutionException e) {

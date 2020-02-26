@@ -135,7 +135,7 @@ public class CookieFilterTests extends AbstractControllerTest {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq(authToken), any())).thenReturn(Optional.of(accountBalanceResponseMock));
+    when(balanceClient.getBalance(eq("Bearer " + authToken), any())).thenReturn(Optional.of(accountBalanceResponseMock));
 
     this.mvc.perform(get("/accounts/foo/balance")
       .headers(testJsonHeaders())
@@ -143,7 +143,7 @@ public class CookieFilterTests extends AbstractControllerTest {
     )
     .andExpect(status().isOk());
 
-    verify(balanceClient, times(1)).getBalance(eq(authToken), any());
+    verify(balanceClient, times(1)).getBalance(eq("Bearer " + authToken), any());
   }
 
   @Test
@@ -159,7 +159,7 @@ public class CookieFilterTests extends AbstractControllerTest {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq(authToken), any())).thenReturn(Optional.of(accountBalanceResponseMock));
+    when(balanceClient.getBalance(eq("Bearer " + authToken), any())).thenReturn(Optional.of(accountBalanceResponseMock));
 
     this.mvc.perform(get("/accounts/foo/balance")
       .headers(testJsonHeaders())
@@ -167,7 +167,7 @@ public class CookieFilterTests extends AbstractControllerTest {
     )
       .andExpect(status().isOk());
 
-    verify(balanceClient, times(1)).getBalance(eq(authToken), any());
+    verify(balanceClient, times(1)).getBalance(eq("Bearer " + authToken), any());
   }
 
   @Test
@@ -187,7 +187,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq(authToken),
+      eq("Bearer " + authToken),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
@@ -203,7 +203,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .andExpect(status().isOk());
 
     verify(sendMoneyService, times(1)).sendMoney(any(),
-      eq(authToken),
+      eq("Bearer " + authToken),
       any(),
       any());
   }
@@ -224,7 +224,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq(authToken),
+      eq("Bearer " + authToken),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
@@ -240,7 +240,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .andExpect(status().isOk());
 
     verify(sendMoneyService, times(1)).sendMoney(any(),
-      eq(authToken),
+      eq("Bearer " + authToken),
       any(),
       any());
   }
