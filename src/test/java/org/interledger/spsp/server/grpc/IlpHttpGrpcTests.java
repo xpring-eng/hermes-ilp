@@ -232,7 +232,7 @@ public class IlpHttpGrpcTests {
     JwtAuthSettings aliceJwtAuthSettings = jwtAuthSettings("alice");
     int sendAmount = 10000;
     String aliceJwt = jwtServer.createJwt(aliceJwtAuthSettings, Instant.now().plusSeconds(sendAmount));
-    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + aliceJwt);
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn(aliceJwt);
 
     SendPaymentRequest sendMoneyRequest = SendPaymentRequest.newBuilder()
       .setAccountId("alice")
