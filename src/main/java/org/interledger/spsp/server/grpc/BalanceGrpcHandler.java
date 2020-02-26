@@ -36,7 +36,7 @@ public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBas
     try {
       String jwt = ilpGrpcAuthContext.getAuthorizationHeader();
       balanceClient.getBalance("Bearer " + jwt, AccountId.of(request.getAccountId()))
-        .ifPresent(balanceResponse -> {
+        .map(balanceResponse -> {
           final GetBalanceResponse reply = GetBalanceResponse.newBuilder()
             .setAssetScale(balanceResponse.assetScale())
             .setAssetCode(balanceResponse.assetCode())
@@ -51,6 +51,11 @@ public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBas
 
           responseObserver.onNext(reply);
           responseObserver.onCompleted();
+          return reply;
+        })
+        .orElseGet(() -> {
+          responseObserver.onError(new StatusRuntimeException(Status.INTERNAL));
+          return null;
         });
     } catch (FeignException e) {
       Status exceptionStatus;
