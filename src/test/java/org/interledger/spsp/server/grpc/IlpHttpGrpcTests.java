@@ -68,7 +68,6 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RunWith(SpringRunner.class)
@@ -261,18 +260,18 @@ public class IlpHttpGrpcTests {
 
     JwtAuthSettings bobJwtAuthSettings = jwtAuthSettings("bob");
     String bobJwt = jwtServer.createJwt(bobJwtAuthSettings, Instant.now().plusSeconds(sendAmount));
-    Optional<AccountBalanceResponse> aliceBalance = balanceClient.getBalance("Bearer " + aliceJwt, AccountId.of("alice"));
-    Optional<AccountBalanceResponse> bobBalance = balanceClient.getBalance("Bearer " + bobJwt, AccountId.of("bob"));
+    AccountBalanceResponse aliceBalance = balanceClient.getBalance("Bearer " + aliceJwt, AccountId.of("alice"));
+    AccountBalanceResponse bobBalance = balanceClient.getBalance("Bearer " + bobJwt, AccountId.of("bob"));
 
     logger.info("Alice's balance after sending payment: ");
-    logger.info(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(aliceBalance.get()));
+    logger.info(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(aliceBalance));
 
     logger.info("Bob's balance after receiving payment: ");
-    logger.info(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(bobBalance.get()));
+    logger.info(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(bobBalance));
 
-    assertThat(aliceBalance.get().accountBalance().netBalance())
-      .isEqualTo(bobBalance.get().accountBalance().netBalance().negate());
-    assertThat(aliceBalance.get().accountBalance().netBalance()).isEqualTo(BigInteger.valueOf(-sendAmount));
+    assertThat(aliceBalance.accountBalance().netBalance())
+      .isEqualTo(bobBalance.accountBalance().netBalance().negate());
+    assertThat(aliceBalance.accountBalance().netBalance()).isEqualTo(BigInteger.valueOf(-sendAmount));
   }
 
   private String paymentPointerFromBaseUrl() {

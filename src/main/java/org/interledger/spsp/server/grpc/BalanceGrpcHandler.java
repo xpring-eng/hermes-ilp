@@ -1,6 +1,8 @@
 package org.interledger.spsp.server.grpc;
 
 import org.interledger.connector.accounts.AccountId;
+import org.interledger.connector.accounts.AccountNotFoundProblem;
+import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 
@@ -35,28 +37,22 @@ public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBas
   public void getBalance(GetBalanceRequest request, StreamObserver<GetBalanceResponse> responseObserver) {
     try {
       String jwt = ilpGrpcAuthContext.getAuthorizationHeader();
-      balanceClient.getBalance("Bearer " + jwt, AccountId.of(request.getAccountId()))
-        .map(balanceResponse -> {
-          final GetBalanceResponse reply = GetBalanceResponse.newBuilder()
-            .setAssetScale(balanceResponse.assetScale())
-            .setAssetCode(balanceResponse.assetCode())
-            .setNetBalance(balanceResponse.accountBalance().netBalance().longValue())
-            .setPrepaidAmount(balanceResponse.accountBalance().prepaidAmount())
-            .setClearingBalance(balanceResponse.accountBalance().clearingBalance())
-            .setAccountId(balanceResponse.accountBalance().accountId().value())
-            .build();
+      AccountBalanceResponse balanceResponse = balanceClient.getBalance("Bearer " + jwt, AccountId.of(request.getAccountId()));
 
-          logger.info("Balance retrieved successfully.");
-          logger.info(reply.toString());
+      final GetBalanceResponse reply = GetBalanceResponse.newBuilder()
+        .setAssetScale(balanceResponse.assetScale())
+        .setAssetCode(balanceResponse.assetCode())
+        .setNetBalance(balanceResponse.accountBalance().netBalance().longValue())
+        .setPrepaidAmount(balanceResponse.accountBalance().prepaidAmount())
+        .setClearingBalance(balanceResponse.accountBalance().clearingBalance())
+        .setAccountId(balanceResponse.accountBalance().accountId().value())
+        .build();
 
-          responseObserver.onNext(reply);
-          responseObserver.onCompleted();
-          return reply;
-        })
-        .orElseGet(() -> {
-          responseObserver.onError(new StatusRuntimeException(Status.INTERNAL));
-          return null;
-        });
+      logger.info("Balance retrieved successfully.");
+      logger.info(reply.toString());
+
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
     } catch (FeignException e) {
       Status exceptionStatus;
       switch (e.status()) {

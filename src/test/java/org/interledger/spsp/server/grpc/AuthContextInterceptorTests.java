@@ -168,7 +168,7 @@ public class AuthContextInterceptorTests {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq("Bearer " + jwt), any())).thenReturn(Optional.of(accountBalanceResponseMock));
+    when(balanceClient.getBalance(eq("Bearer " + jwt), any())).thenReturn(accountBalanceResponseMock);
 
     GetBalanceResponse response = balanceServiceBlockingStub.getBalance(request);
     verify(balanceClient, times(1)).getBalance(eq("Bearer " + jwt), any());

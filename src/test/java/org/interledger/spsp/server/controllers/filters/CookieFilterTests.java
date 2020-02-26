@@ -135,7 +135,7 @@ public class CookieFilterTests extends AbstractControllerTest {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq("Bearer " + authToken), any())).thenReturn(Optional.of(accountBalanceResponseMock));
+    when(balanceClient.getBalance(eq("Bearer " + authToken), any())).thenReturn(accountBalanceResponseMock);
 
     this.mvc.perform(get("/accounts/foo/balance")
       .headers(testJsonHeaders())
@@ -159,7 +159,7 @@ public class CookieFilterTests extends AbstractControllerTest {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq("Bearer " + authToken), any())).thenReturn(Optional.of(accountBalanceResponseMock));
+    when(balanceClient.getBalance(eq("Bearer " + authToken), any())).thenReturn(accountBalanceResponseMock);
 
     this.mvc.perform(get("/accounts/foo/balance")
       .headers(testJsonHeaders())
