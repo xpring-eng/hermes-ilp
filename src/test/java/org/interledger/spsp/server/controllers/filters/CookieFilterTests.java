@@ -81,7 +81,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .accountRelationship(AccountRelationship.PEER)
       .build();
 
-    when(accountService.createAccount(eq(Optional.of(authToken)), any(Optional.class)))
+    when(accountService.createAccount(eq(Optional.of("Bearer " + authToken)), any(Optional.class)))
       .thenReturn(accountSettingsMock);
 
     this.mvc.perform(post("/accounts")
@@ -90,7 +90,7 @@ public class CookieFilterTests extends AbstractControllerTest {
     )
       .andExpect(status().isOk());
 
-    verify(accountService, times(1)).createAccount(eq(Optional.of(authToken)), any(Optional.class));
+    verify(accountService, times(1)).createAccount(eq(Optional.of("Bearer " + authToken)), any(Optional.class));
   }
 
   @Test
@@ -109,7 +109,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .accountRelationship(AccountRelationship.PEER)
       .build();
 
-    when(accountService.createAccount(eq(Optional.of(authToken)), any(Optional.class)))
+    when(accountService.createAccount(eq(Optional.of("Bearer " + authToken)), any(Optional.class)))
       .thenReturn(accountSettingsMock);
 
     this.mvc.perform(post("/accounts")
@@ -118,7 +118,7 @@ public class CookieFilterTests extends AbstractControllerTest {
     )
       .andExpect(status().isOk());
 
-    verify(accountService, times(1)).createAccount(eq(Optional.of(authToken)), any(Optional.class));
+    verify(accountService, times(1)).createAccount(eq(Optional.of("Bearer " + authToken)), any(Optional.class));
   }
 
   @Test

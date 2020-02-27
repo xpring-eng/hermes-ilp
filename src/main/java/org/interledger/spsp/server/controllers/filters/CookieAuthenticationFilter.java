@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServletRequest;
  * be present.
  */
 @Component
-@Order(1)
+@Order(0)
 public class CookieAuthenticationFilter implements Filter {
 
   private static final String JWT_COOKIE_NAME = "jwt";

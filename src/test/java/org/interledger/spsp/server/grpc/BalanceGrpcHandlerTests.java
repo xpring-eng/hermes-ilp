@@ -222,7 +222,7 @@ public class BalanceGrpcHandlerTests {
 
     JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
     String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
-    when(ilpGrpcMetadataReader.authorization(any())).thenReturn(jwt);
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + jwt);
 
     GetBalanceResponse reply =
       blockingStub
@@ -278,7 +278,7 @@ public class BalanceGrpcHandlerTests {
     JwtAuthSettings jwtAuthSettings = defaultAuthSettings(issuer);
     String jwt = jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(10));
 
-    when(ilpGrpcMetadataReader.authorization(any())).thenReturn(jwt);
+    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + jwt);
 
     blockingStub
       .withCallCredentials(IlpCallCredentials.build(jwt))

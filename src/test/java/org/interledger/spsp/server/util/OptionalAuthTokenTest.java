@@ -15,26 +15,11 @@ public class OptionalAuthTokenTest {
 
   @Test
   public void ofString() {
-    assertThat(OptionalAuthToken.of("foo bar")).isNotEmpty().get().isEqualTo("bar");
+    assertThat(OptionalAuthToken.of("foo bar")).isNotEmpty().get().isEqualTo("foo bar");
     assertThat(OptionalAuthToken.of("bar")).isNotEmpty().get().isEqualTo("bar");
 
     // to match method argument type
     String nullString = null;
     assertThat(OptionalAuthToken.of(nullString)).isEmpty();
-  }
-
-  @Test
-  public void ofOptional() {
-    assertThat(OptionalAuthToken.of(Optional.of("foo bar"))).isNotEmpty().get().isEqualTo("bar");
-    assertThat(OptionalAuthToken.of(Optional.of("bar"))).isNotEmpty().get().isEqualTo("bar");
-    assertThat(OptionalAuthToken.of(Optional.empty())).isEmpty();
-  }
-
-  @Test
-  public void ofOptionalHatesNull() {
-    expectedException.expect(NullPointerException.class);
-    // to match method argument type
-    Optional<String> nullOpt = null;
-    OptionalAuthToken.of(nullOpt);
   }
 }

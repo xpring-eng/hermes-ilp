@@ -146,11 +146,11 @@ public class AuthContextInterceptorTests {
       .accountRelationship(AccountRelationship.PEER)
       .build();
 
-    when(accountService.createAccount(eq(OptionalAuthToken.of(jwt)), any(Optional.class)))
+    when(accountService.createAccount(eq(OptionalAuthToken.of("Bearer " + jwt)), any(Optional.class)))
       .thenReturn(accountSettingsMock);
     CreateAccountResponse reply = accountServiceBlockingStub.createAccount(request);
 
-    verify(accountService, times(1)).createAccount(eq(OptionalAuthToken.of(jwt)), any(Optional.class));
+    verify(accountService, times(1)).createAccount(eq(OptionalAuthToken.of("Bearer " + jwt)), any(Optional.class));
   }
 
   @Test
@@ -195,12 +195,12 @@ public class AuthContextInterceptorTests {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq(jwt),
+      eq("Bearer " + jwt),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
     SendPaymentResponse response = paymentServiceBlockingStub.sendMoney(sendMoneyRequest);
-    verify(sendMoneyService, times(1)).sendMoney(any(), eq(jwt), any(), any());
+    verify(sendMoneyService, times(1)).sendMoney(any(), eq("Bearer " + jwt), any(), any());
   }
 
   private void registerGrpc() throws IOException {
