@@ -23,7 +23,6 @@ import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
-import org.interledger.spsp.server.util.OptionalAuthToken;
 import org.interledger.stream.SendMoneyResult;
 
 import com.google.common.net.HttpHeaders;
@@ -146,11 +145,11 @@ public class AuthContextInterceptorTests {
       .accountRelationship(AccountRelationship.PEER)
       .build();
 
-    when(accountService.createAccount(eq(OptionalAuthToken.of("Bearer " + jwt)), any(Optional.class)))
+    when(accountService.createAccount(eq(Optional.of("Bearer " + jwt)), any(Optional.class)))
       .thenReturn(accountSettingsMock);
     CreateAccountResponse reply = accountServiceBlockingStub.createAccount(request);
 
-    verify(accountService, times(1)).createAccount(eq(OptionalAuthToken.of("Bearer " + jwt)), any(Optional.class));
+    verify(accountService, times(1)).createAccount(eq(Optional.of("Bearer " + jwt)), any(Optional.class));
   }
 
   @Test

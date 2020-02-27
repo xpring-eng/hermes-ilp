@@ -10,7 +10,6 @@ import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.model.ImmutableCreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
-import org.interledger.spsp.server.util.OptionalAuthToken;
 
 import feign.FeignException;
 import io.grpc.Status;
@@ -75,7 +74,7 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
       // Create account on the connector
       Optional<CreateAccountRestRequest> convertedRequest = createAccountRestRequestFromGrpc(request);
       AccountSettings returnedAccountSettings = newAccountService
-        .createAccount(OptionalAuthToken.of(ilpGrpcAuthContext.getAuthorizationHeader()), convertedRequest);
+        .createAccount(Optional.ofNullable(ilpGrpcAuthContext.getAuthorizationHeader()), convertedRequest);
 
       // Convert returned AccountSettings into Grpc response object
       final CreateAccountResponse.Builder replyBuilder =

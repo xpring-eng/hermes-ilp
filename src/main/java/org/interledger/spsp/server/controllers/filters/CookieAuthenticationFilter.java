@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.servlet.Filter;
@@ -35,26 +37,30 @@ public class CookieAuthenticationFilter implements Filter {
 
   @Override
   public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-    MutableHttpServletRequest mutableRequest = new MutableHttpServletRequest((HttpServletRequest) servletRequest);
+    // Cast so we can get cookies
+    HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
 
-    Cookie[] cookies = mutableRequest.getCookies();
+    Optional<ServletRequest> immutableHttpServletRequest = Optional.empty();
+
+    Cookie[] cookies = httpRequest.getCookies();
     if (Objects.nonNull(cookies)) {
       // Get a jwt from a cookie if the cookie exists
-      Optional<String> jwt = Arrays.stream(cookies)
+      immutableHttpServletRequest = Optional.ofNullable(
+        Arrays.stream(cookies)
         .filter(c -> c.getName().equals(JWT_COOKIE_NAME))
         .map(Cookie::getValue)
-        .findFirst();
-
-      if (jwt.isPresent()) {
-        // jwt cookie exists, so add the jwt as a header
-        mutableRequest.putHeader(AUTHORIZATION, BEARER_SPACE + jwt.get());
-      } else {
-        logger.debug("No jwt cookie found in request. Using existing token from Authorization header.");
-      }
+        .findFirst()
+        .map(j -> {
+          // jwt cookie exists, so create a new request
+          Map<String, String> customHeaders = new HashMap<>();
+          customHeaders.put(AUTHORIZATION, BEARER_SPACE + j);
+          return new CustomHeadersHttpServletRequest(httpRequest, customHeaders);
+        }).orElse(null)
+      );
     } else {
       logger.debug("No jwt cookie found in request. Using existing token from Authorization header.");
     }
 
-    filterChain.doFilter(mutableRequest, servletResponse);
+    filterChain.doFilter(immutableHttpServletRequest.orElse(httpRequest), servletResponse);
   }
 }

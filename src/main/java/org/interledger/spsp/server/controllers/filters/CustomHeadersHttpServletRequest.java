@@ -2,7 +2,6 @@ package org.interledger.spsp.server.controllers.filters;
 
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -11,32 +10,39 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
 /**
- * Wrapper class for {@link HttpServletRequest} which allows for mutability of headers.
+ * Wrapper class for {@link HttpServletRequest} which allows for custom headers to be added in its constructor.
+ * Once this wrapper is initialized, it is immutable.
  *
  * Should be used with {@link CookieAuthenticationFilter} to add an "Authorization" header to any incoming requests
  */
-final class MutableHttpServletRequest extends HttpServletRequestWrapper {
+public class CustomHeadersHttpServletRequest extends HttpServletRequestWrapper {
+
   // holds custom header and value mapping
   private Map<String, String> customHeaders;
 
-  public MutableHttpServletRequest(HttpServletRequest request){
+  /**
+   * Constructs a request object wrapping the given request.
+   *
+   * @param request the {@link HttpServletRequest} to be wrapped.
+   * @throws IllegalArgumentException if the request is null
+   */
+  public CustomHeadersHttpServletRequest(HttpServletRequest request) {
     super(request);
   }
 
-  public void putHeader(String name, String value){
-    if (Objects.isNull(customHeaders)) {
-      customHeaders = new HashMap<>();
-    }
-    this.customHeaders.put(name, value);
+  /**
+   * Constructs a request object wrapping the given request with given custom headers
+   * @param request the {@link HttpServletRequest} to be wrapped
+   * @param customHeaders the {@link Map<String, String>} of custom headers to include in the request wrapper
+   */
+  public CustomHeadersHttpServletRequest(HttpServletRequest request, Map<String, String> customHeaders) {
+    super(request);
+    this.customHeaders = Objects.requireNonNull(customHeaders);
   }
 
   public String getHeader(String name) {
     // check the custom headers first
-    String headerValue = null;
-
-    if (Objects.nonNull(customHeaders)) {
-      headerValue = customHeaders.get(name);
-    }
+    String headerValue = customHeaders.get(name);
 
     if (headerValue != null){
       return headerValue;
@@ -47,9 +53,7 @@ final class MutableHttpServletRequest extends HttpServletRequestWrapper {
 
   public Enumeration<String> getHeaders(String name) {
     Set<String> headerValues = new HashSet<>();
-    if (Objects.nonNull(this.customHeaders)) {
-      headerValues.add(this.customHeaders.get(name));
-    }
+    headerValues.add(this.customHeaders.get(name));
 
     Enumeration<String> underlyingHeaderValues = ((HttpServletRequest) getRequest()).getHeaders(name);
     while (underlyingHeaderValues.hasMoreElements()) {
