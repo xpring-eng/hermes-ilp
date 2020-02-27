@@ -40,10 +40,8 @@ public class BalanceController extends AbstractController {
   )
   public AccountBalanceResponse getBalance(@PathVariable("accountId") String accountId) {
     try {
-      return balanceClient.getBalance(getAuthorization(), AccountId.of(accountId))
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-    }
-    catch (FeignException e) {
+      return balanceClient.getBalance(getAuthorization(), AccountId.of(accountId));
+    } catch (FeignException e) {
       throw new ResponseStatusException(HttpStatus.valueOf(e.status()), e.contentUTF8());
     }
   }

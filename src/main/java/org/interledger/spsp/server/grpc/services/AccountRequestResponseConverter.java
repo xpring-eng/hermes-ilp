@@ -188,7 +188,7 @@ public class AccountRequestResponseConverter {
                                                                  OutgoingLinkSettings outgoingLinkSettings) {
     Map<String, Object> customSettings;
     try {
-      DecodedJWT maybeDecodedJwt = JWT.decode(authToken);
+      DecodedJWT maybeDecodedJwt = JWT.decode(authToken.substring(authToken.indexOf(" ") + 1));
       customSettings = customSettingsFromJwt(maybeDecodedJwt);
     } catch (JWTDecodeException e) {
       logger.debug("Unable to decode auth token as JWT. Treating auth token as SIMPLE.");

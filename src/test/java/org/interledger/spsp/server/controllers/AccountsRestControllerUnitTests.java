@@ -151,7 +151,7 @@ public class AccountsRestControllerUnitTests {
    */
   @Test
   public void testCreateAccountWithTokenButNoRequest() {
-    AccountSettingsResponse response = accountController.createAccount(Optional.of("password"), Optional.empty());
+    AccountSettingsResponse response = accountController.createAccount(Optional.of("Bearer password"), Optional.empty());
     assertThat(response.accountId().value()).startsWith("user_");
     assertThat(response.assetCode()).isEqualTo("XRP");
     assertThat(response.assetScale()).isEqualTo(9);
@@ -204,7 +204,7 @@ public class AccountsRestControllerUnitTests {
       .description(accountDescription)
       .build();
 
-    AccountSettingsResponse createdAccountSettings = accountController.createAccount(Optional.of(jwt), Optional.of(request));
+    AccountSettingsResponse createdAccountSettings = accountController.createAccount(Optional.of("Bearer " + jwt), Optional.of(request));
     assertThat(createdAccountSettings.paymentPointer()).isEqualTo(PaymentPointer.of(paymentPointerBase + "/" + createdAccountSettings.accountId()));
     assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
     assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER)).isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());

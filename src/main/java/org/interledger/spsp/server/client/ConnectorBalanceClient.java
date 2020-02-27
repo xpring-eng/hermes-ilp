@@ -15,7 +15,6 @@ import feign.optionals.OptionalDecoder;
 import okhttp3.HttpUrl;
 
 import java.util.Objects;
-import java.util.Optional;
 
 public interface ConnectorBalanceClient {
   String ACCEPT = "Accept:";
@@ -46,6 +45,6 @@ public interface ConnectorBalanceClient {
     ACCEPT + APPLICATION_JSON,
     "Authorization: {authorizationHeader}"
   })
-  Optional<AccountBalanceResponse> getBalance(@Param("authorizationHeader") String authorizationHeader,
+  AccountBalanceResponse getBalance(@Param("authorizationHeader") String authorizationHeader,
                                                       @Param(ID) AccountId accountId);
 }

@@ -98,7 +98,7 @@ public class NewAccountService {
     Map<String, Object> newCustomSettings = new HashMap<>();
     encryptedCustomSettings.forEach((k, v) -> {
       if (k.equals(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)) {
-        newCustomSettings.put(k, simpleAuthToken);
+        newCustomSettings.put(k, simpleAuthToken.substring(simpleAuthToken.indexOf(" ") + 1));
       } else {
         newCustomSettings.put(k, v);
       }

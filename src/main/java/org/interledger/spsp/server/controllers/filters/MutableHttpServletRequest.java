@@ -5,6 +5,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
@@ -16,20 +17,26 @@ import javax.servlet.http.HttpServletRequestWrapper;
  */
 final class MutableHttpServletRequest extends HttpServletRequestWrapper {
   // holds custom header and value mapping
-  private final Map<String, String> customHeaders;
+  private Map<String, String> customHeaders;
 
   public MutableHttpServletRequest(HttpServletRequest request){
     super(request);
-    this.customHeaders = new HashMap<String, String>();
   }
 
   public void putHeader(String name, String value){
+    if (Objects.isNull(customHeaders)) {
+      customHeaders = new HashMap<>();
+    }
     this.customHeaders.put(name, value);
   }
 
   public String getHeader(String name) {
     // check the custom headers first
-    String headerValue = customHeaders.get(name);
+    String headerValue = null;
+
+    if (Objects.nonNull(customHeaders)) {
+      headerValue = customHeaders.get(name);
+    }
 
     if (headerValue != null){
       return headerValue;
@@ -40,7 +47,9 @@ final class MutableHttpServletRequest extends HttpServletRequestWrapper {
 
   public Enumeration<String> getHeaders(String name) {
     Set<String> headerValues = new HashSet<>();
-    headerValues.add(this.customHeaders.get(name));
+    if (Objects.nonNull(this.customHeaders)) {
+      headerValues.add(this.customHeaders.get(name));
+    }
 
     Enumeration<String> underlyingHeaderValues = ((HttpServletRequest) getRequest()).getHeaders(name);
     while (underlyingHeaderValues.hasMoreElements()) {

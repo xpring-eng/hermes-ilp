@@ -19,8 +19,7 @@ public abstract class AbstractController {
   private Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public String getAuthorization() {
-    String authToken = request.getHeader("Authorization");
-    return authToken.substring(authToken.indexOf(" ") + 1);
+    return request.getHeader("Authorization");
   }
 
   public DecodedJWT getJwt() {
