@@ -176,7 +176,7 @@ public class AccountRequestResponseConverter {
       .linkType(IlpOverHttpLink.LINK_TYPE)
       .customSettings(customSettingsFromAuthToken(authToken, outgoingLinkSettings))
       .build();
-  }
+}
 
   private static Map<String, String> settingsMapToGrpcSettingsMap(Map<String, Object> settingsMap) {
     return settingsMap.entrySet()

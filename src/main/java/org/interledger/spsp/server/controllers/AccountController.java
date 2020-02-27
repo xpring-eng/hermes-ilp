@@ -9,7 +9,6 @@ import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
-import org.interledger.spsp.server.util.OptionalAuthToken;
 
 import feign.FeignException;
 import okhttp3.HttpUrl;
@@ -24,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.zalando.problem.spring.common.MediaTypes;
 

@@ -15,11 +15,11 @@ public class OptionalAuthTokenTest {
 
   @Test
   public void ofString() {
-    assertThat(OptionalAuthToken.of("foo bar")).isNotEmpty().get().isEqualTo("foo bar");
-    assertThat(OptionalAuthToken.of("bar")).isNotEmpty().get().isEqualTo("bar");
+    assertThat(Optional.of("foo bar")).isNotEmpty().get().isEqualTo("foo bar");
+    assertThat(Optional.of("bar")).isNotEmpty().get().isEqualTo("bar");
 
     // to match method argument type
     String nullString = null;
-    assertThat(OptionalAuthToken.of(nullString)).isEmpty();
+    assertThat(Optional.ofNullable(nullString)).isEmpty();
   }
 }
