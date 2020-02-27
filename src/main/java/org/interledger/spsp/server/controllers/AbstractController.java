@@ -24,12 +24,17 @@ public abstract class AbstractController {
 
   public DecodedJWT getJwt() {
     try {
-      DecodedJWT jwt = JWT.decode(getAuthorization());
+      String bearerToken = getAuthorization();
+      DecodedJWT jwt = JWT.decode(bearerToken.substring(bearerToken.indexOf(" ") + 1));
       if (jwt.getExpiresAt().before(new Date())) {
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "JWT is expired");
       }
       return jwt;
-    } catch (JWTDecodeException e) {
+    } catch (Exception e) {
+      if (ResponseStatusException.class.isAssignableFrom(e.getClass())) {
+        throw e;
+      }
+
       logger.info("Could not decode bearer token as JWT, assuming it is SIMPLE token");
     }
     return null;
