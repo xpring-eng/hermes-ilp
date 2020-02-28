@@ -145,11 +145,11 @@ public class AuthContextInterceptorTests {
       .accountRelationship(AccountRelationship.PEER)
       .build();
 
-    when(accountService.createAccount(eq(Optional.of("Bearer " + jwt)), any(Optional.class)))
+    when(accountService.createAccount(eq(Optional.of(jwt)), any(Optional.class)))
       .thenReturn(accountSettingsMock);
     CreateAccountResponse reply = accountServiceBlockingStub.createAccount(request);
 
-    verify(accountService, times(1)).createAccount(eq(Optional.of("Bearer " + jwt)), any(Optional.class));
+    verify(accountService, times(1)).createAccount(eq(Optional.of(jwt)), any(Optional.class));
   }
 
   @Test
@@ -167,10 +167,10 @@ public class AuthContextInterceptorTests {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq("Bearer " + jwt), any())).thenReturn(accountBalanceResponseMock);
+    when(balanceClient.getBalance(eq(jwt), any())).thenReturn(accountBalanceResponseMock);
 
     GetBalanceResponse response = balanceServiceBlockingStub.getBalance(request);
-    verify(balanceClient, times(1)).getBalance(eq("Bearer " + jwt), any());
+    verify(balanceClient, times(1)).getBalance(eq(jwt), any());
   }
 
   @Test
@@ -194,12 +194,12 @@ public class AuthContextInterceptorTests {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq("Bearer " + jwt),
+      eq(jwt),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
     SendPaymentResponse response = paymentServiceBlockingStub.sendMoney(sendMoneyRequest);
-    verify(sendMoneyService, times(1)).sendMoney(any(), eq("Bearer " + jwt), any(), any());
+    verify(sendMoneyService, times(1)).sendMoney(any(), eq(jwt), any(), any());
   }
 
   private void registerGrpc() throws IOException {

@@ -19,3 +19,7 @@ interledger:
 
 grpc:
   port: ${random.int[3000,8000]}
+
+
+logging:
+  level: info

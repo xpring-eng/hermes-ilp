@@ -3,6 +3,7 @@ package org.interledger.spsp.server.controllers;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.core.InterledgerAddressPrefix;
 import org.interledger.link.http.OutgoingLinkSettings;
+import org.interledger.spsp.server.AbstractIntegrationTest;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.services.GimmeMoneyService;
@@ -14,6 +15,7 @@ import okhttp3.HttpUrl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
@@ -24,7 +26,9 @@ import org.springframework.test.context.ContextConfiguration;
 @ContextConfiguration(classes = {
   ControllerTestConfig.class // For custom Beans.
 })
-@ComponentScan(basePackages = "org.interledger.spsp.server.controllers")
+@ComponentScan(basePackages = "org.interledger.spsp.server.controllers",
+  excludeFilters={@ComponentScan.Filter(type= FilterType.ASSIGNABLE_TYPE,
+    value= AbstractIntegrationTest.TestConfig.class)})
 public class AbstractControllerTest {
 
   @MockBean

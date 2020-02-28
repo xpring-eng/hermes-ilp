@@ -35,7 +35,7 @@ public class IlpCallCredentials extends CallCredentials {
 
   protected void applyToken(MetadataApplier applier, String jwtToken) {
     Metadata metadata = new Metadata();
-    metadata.put(Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Bearer " + jwtToken);
+    metadata.put(Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), jwtToken);
     applier.apply(metadata);
   }
 

@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletRequest;
 public class CookieAuthenticationFilter implements Filter {
 
   private static final String JWT_COOKIE_NAME = "jwt";
-  public static final String BEARER_SPACE = "Bearer ";
   public static final String AUTHORIZATION = "Authorization";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -50,10 +49,10 @@ public class CookieAuthenticationFilter implements Filter {
         .filter(c -> c.getName().equals(JWT_COOKIE_NAME))
         .map(Cookie::getValue)
         .findFirst()
-        .map(j -> {
+        .map(token -> {
           // jwt cookie exists, so create a new request
           Map<String, String> customHeaders = new HashMap<>();
-          customHeaders.put(AUTHORIZATION, BEARER_SPACE + j);
+          customHeaders.put(AUTHORIZATION, token);
           return new CustomHeadersHttpServletRequest(httpRequest, customHeaders);
         }).orElse(null)
       );

@@ -11,7 +11,6 @@ import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
-import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.GetAccountResponse;
 import org.interledger.spsp.server.grpc.SendPaymentResponse;
@@ -184,11 +183,12 @@ public class AccountRequestResponseConverter {
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
   }
 
-  private static Map<String, Object> customSettingsFromAuthToken(String authToken,
+  private static Map<String, Object> customSettingsFromAuthToken(String authHeader,
                                                                  OutgoingLinkSettings outgoingLinkSettings) {
     Map<String, Object> customSettings;
+    String authToken = getToken(authHeader);
     try {
-      DecodedJWT maybeDecodedJwt = JWT.decode(authToken.substring(authToken.indexOf(" ") + 1));
+      DecodedJWT maybeDecodedJwt = JWT.decode(authToken);
       customSettings = customSettingsFromJwt(maybeDecodedJwt);
     } catch (JWTDecodeException e) {
       logger.debug("Unable to decode auth token as JWT. Treating auth token as SIMPLE.");
@@ -197,6 +197,10 @@ public class AccountRequestResponseConverter {
 
     customSettings.putAll(outgoingLinkSettings.toCustomSettingsMap());
     return customSettings;
+  }
+
+  private static String getToken(String authToken) {
+    return authToken.replace("Bearer ", "");
   }
 
   private static Map<String, Object> customSettingsFromSimpleToken(String simpleAuthToken) {
