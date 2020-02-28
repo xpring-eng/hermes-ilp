@@ -1,7 +1,6 @@
 package org.interledger.spsp.server.controllers;
 
 import com.auth0.jwt.JWT;
-import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +20,10 @@ public abstract class AbstractController {
   public String getAuthorization() {
     String bearerToken = request.getHeader("Authorization");
     return bearerToken.substring(bearerToken.indexOf(" ") + 1);
+  }
+
+  protected void setRequest(HttpServletRequest request) {
+    this.request = request;
   }
 
   public DecodedJWT getJwt() {
