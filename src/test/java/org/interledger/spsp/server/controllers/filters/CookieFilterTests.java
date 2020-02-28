@@ -81,7 +81,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .accountRelationship(AccountRelationship.PEER)
       .build();
 
-    when(accountService.createAccount(eq(Optional.of("Bearer " + authToken)), any(Optional.class)))
+    when(accountService.createAccount(eq(Optional.of(authToken)), any(Optional.class)))
       .thenReturn(accountSettingsMock);
 
     this.mvc.perform(post("/accounts")
@@ -90,7 +90,7 @@ public class CookieFilterTests extends AbstractControllerTest {
     )
       .andExpect(status().isOk());
 
-    verify(accountService, times(1)).createAccount(eq(Optional.of("Bearer " + authToken)), any(Optional.class));
+    verify(accountService, times(1)).createAccount(eq(Optional.of(authToken)), any(Optional.class));
   }
 
   @Test
@@ -187,7 +187,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq("Bearer " + authToken),
+      eq(authToken),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
@@ -203,7 +203,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .andExpect(status().isOk());
 
     verify(sendMoneyService, times(1)).sendMoney(any(),
-      eq("Bearer " + authToken),
+      eq(authToken),
       any(),
       any());
   }
@@ -224,7 +224,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq("Bearer " + authToken),
+      eq(authToken),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
@@ -234,13 +234,13 @@ public class CookieFilterTests extends AbstractControllerTest {
       .build();
     this.mvc.perform(post("/accounts/foo/pay")
       .headers(testJsonHeaders())
-      .header("Authorization", "Bearer " + authToken)
+      .header("Authorization", authToken)
       .content(objectMapper.writeValueAsString(request))
     )
       .andExpect(status().isOk());
 
     verify(sendMoneyService, times(1)).sendMoney(any(),
-      eq("Bearer " + authToken),
+      eq(authToken),
       any(),
       any());
   }

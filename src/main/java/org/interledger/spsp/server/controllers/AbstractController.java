@@ -19,13 +19,14 @@ public abstract class AbstractController {
   private Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public String getAuthorization() {
-    return request.getHeader("Authorization");
+    String bearerToken = request.getHeader("Authorization");
+    return bearerToken.substring(bearerToken.indexOf(" ") + 1);
   }
 
   public DecodedJWT getJwt() {
     try {
       String bearerToken = getAuthorization();
-      DecodedJWT jwt = JWT.decode(bearerToken.substring(bearerToken.indexOf(" ") + 1));
+      DecodedJWT jwt = JWT.decode(bearerToken);
       if (jwt.getExpiresAt().before(new Date())) {
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "JWT is expired");
       }
