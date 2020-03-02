@@ -2,9 +2,6 @@ package org.interledger.spsp.server.grpc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
@@ -39,8 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -157,7 +153,6 @@ public class IlpHttpGrpcTests extends AbstractIntegrationTest {
   public void sendMoneyTest() throws JsonProcessingException {
     int sendAmount = 10000;
     String aliceJwt = containers.createJwt("alice", 10);
-    when(ilpGrpcMetadataReader.authorization(any())).thenReturn(aliceJwt);
 
     SendPaymentRequest sendMoneyRequest = SendPaymentRequest.newBuilder()
       .setAccountId("alice")
@@ -199,13 +194,8 @@ public class IlpHttpGrpcTests extends AbstractIntegrationTest {
     assertThat(aliceBalance.accountBalance().netBalance()).isEqualTo(BigInteger.valueOf(-sendAmount));
   }
 
-  public static class TestConfig extends AbstractIntegrationTest.TestConfig {
-    @Bean
-    @Primary
-    public IlpGrpcMetadataReader ilpGrpcMetadataReader() {
-      return mock(IlpGrpcMetadataReader.class);
-    }
-  }
+  @Configuration
+  public static class TestConfig extends AbstractIntegrationTest.TestConfig {}
 }
 
 

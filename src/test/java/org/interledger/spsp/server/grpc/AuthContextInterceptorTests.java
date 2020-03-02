@@ -19,6 +19,7 @@ import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountBalance;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
+import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
 import org.interledger.spsp.server.services.NewAccountService;
@@ -150,6 +151,39 @@ public class AuthContextInterceptorTests {
     CreateAccountResponse reply = accountServiceBlockingStub.createAccount(request);
 
     verify(accountService, times(1)).createAccount(eq(Optional.of(jwt)), any(Optional.class));
+  }
+
+  /**
+   * When a client sends a create account request with both an "Authorization" header and a jwt cookie,
+   * the {@link org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader} should give precedence to the "Authorization" header
+   */
+  @Test
+  public void testCreateAccountWithCookieAuthAndAuthHeader() {
+    String authHeaderToken = "asdfdfkjsdhfksdjh";
+    CreateAccountRequest request = CreateAccountRequest.newBuilder()
+      .build();
+
+    AccountSettings accountSettingsMock = AccountSettings.builder()
+      .accountId(AccountId.of("foo"))
+      .linkType(IlpOverHttpLink.LINK_TYPE)
+      .assetCode("XRP")
+      .assetScale(9)
+      .balanceSettings(AccountBalanceSettings.builder().build())
+      .settlementEngineDetails(Optional.empty())
+      .rateLimitSettings(AccountRateLimitSettings.builder().build())
+      .maximumPacketAmount(UnsignedLong.valueOf(1000))
+      .accountRelationship(AccountRelationship.PEER)
+      .build();
+
+    when(accountService.createAccount(any(Optional.class), any(Optional.class)))
+      .thenReturn(accountSettingsMock);
+
+    accountServiceBlockingStub
+      .withCallCredentials(IlpCallCredentials.build(authHeaderToken))
+      .createAccount(request);
+
+    verify(accountService, times(1)).createAccount(eq(Optional.of(authHeaderToken)), any(Optional.class));
+    verify(accountService, times(0)).createAccount(eq(Optional.of(jwt)), any(Optional.class));
   }
 
   @Test
