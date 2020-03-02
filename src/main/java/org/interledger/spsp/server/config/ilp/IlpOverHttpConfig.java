@@ -5,6 +5,7 @@ import static okhttp3.CookieJar.NO_COOKIES;
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.core.InterledgerAddressPrefix;
+import org.interledger.crypto.EncryptionService;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.link.http.SimpleAuthSettings;
@@ -13,7 +14,6 @@ import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
-import org.interledger.spsp.server.services.AccountGeneratorService;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContextImpl;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
@@ -193,18 +193,26 @@ public class IlpOverHttpConfig {
   }
 
   @Bean
-  public ConnectorAdminClient adminClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl/*,
-                                          @Value("${interledger.connector.admin-key}") String adminKey*/) {
+  public ConnectorAdminClient adminClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl,
+                                          ConnectorAdminAuthProvider connectorAdminAuthProvider) {
     return ConnectorAdminClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
-      template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
+      template.header("Authorization", connectorAdminAuthProvider.getAdminAuth());
     });
   }
 
   @Bean
-  public ConnectorRoutesClient routesClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl) {
+  public ConnectorRoutesClient routesClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl,
+                                            ConnectorAdminAuthProvider connectorAdminAuthProvider) {
     return ConnectorRoutesClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
-      template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
+      template.header("Authorization", connectorAdminAuthProvider.getAdminAuth());
     });
+  }
+
+  @Bean
+  public ConnectorAdminAuthProvider connectorAdminAuthProvider(
+    @Value("${interledger.connector.admin-password}") String adminPasswordConfig,
+    EncryptionService encryptionService) {
+    return new ConnectorAdminAuthProvider(adminPasswordConfig, encryptionService);
   }
 
   @Bean

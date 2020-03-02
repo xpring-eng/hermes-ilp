@@ -125,7 +125,7 @@ public class TestIlpContainers {
 
   public ConnectorRoutesClient routesClient() {
     return ConnectorRoutesClient.construct(getNodeBaseUri(), template -> {
-      template.header("Authorization", "Basic YWRtaW46cGFzc3dvcmQ=");
+      template.header("Authorization", "Basic " + ADMIN_AUTH_TOKEN);
     });
   }
 

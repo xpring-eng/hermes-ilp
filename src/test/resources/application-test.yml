@@ -10,8 +10,7 @@ spring:
 interledger:
   connector:
     connector-url: http://localhost:8080
-    #    admin-key:
-
+    admin-password: password
   spsp:
     spsp-url: https://money.ilpv4.dev
     auth-token: placeholder:c2ho
