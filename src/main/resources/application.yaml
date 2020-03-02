@@ -33,3 +33,6 @@ spring:
       tracking-modes: SSL # Session tracking modes.
   session:
     store-type: NONE
+
+grpc:
+  port: 6565

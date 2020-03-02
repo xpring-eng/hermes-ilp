@@ -102,6 +102,12 @@
         <dependency>
             <groupId>com.google.api</groupId>
             <artifactId>gax</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.annotation</groupId>
+                    <artifactId>javax.annotation-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -259,6 +265,14 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-gcp-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-gcp-autoconfigure</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -627,6 +641,7 @@
                                     <ignoredDependency>org.postgresql:postgresql:jar</ignoredDependency>
                                     <ignoredDependency>org.springframework</ignoredDependency>
                                     <ignoredDependency>org.springframework.boot</ignoredDependency>
+                                    <ignoredDependency>org.springframework.cloud:spring-cloud-gcp-autoconfigure</ignoredDependency>
                                     <ignoredDependency>org.springframework.hateoas</ignoredDependency>
                                     <ignoredDependency>org.springframework.security</ignoredDependency>
                                     <ignoredDependency>org.springframework.data</ignoredDependency>

@@ -2,11 +2,11 @@ package org.interledger.spsp.server.config.crypto;
 
 import static org.interledger.connector.core.ConfigConstants.ENABLED;
 import static org.interledger.connector.core.ConfigConstants.TRUE;
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_SPSP_SERVER_KEYSTORE_JKS;
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_SPSP_SERVER_KEYSTORE_JKS_FILENAME;
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_SPSP_SERVER_KEYSTORE_JKS_PASSWORD;
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_SPSP_SERVER_KEYSTORE_JKS_SECRET0_ALIAS;
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_SPSP_SERVER_KEYSTORE_JKS_SECRET0_PASSWORD;
+import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_HERMES_KEYSTORE_JKS;
+import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_HERMES_KEYSTORE_JKS_FILENAME;
+import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_HERMES_KEYSTORE_JKS_PASSWORD;
+import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_HERMES_KEYSTORE_JKS_SECRET0_ALIAS;
+import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_HERMES_KEYSTORE_JKS_SECRET0_PASSWORD;
 
 import org.interledger.crypto.EncryptionException;
 import org.interledger.crypto.EncryptionService;
@@ -20,26 +20,25 @@ import org.springframework.context.annotation.Configuration;
 
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
-
 import javax.crypto.SecretKey;
 
 /**
  * Keystore Configuration that defines keys and secrets as being stored in a Java Keystore located on the classpath.
  */
 @Configuration
-@ConditionalOnProperty(prefix = INTERLEDGER_SPSP_SERVER_KEYSTORE_JKS, name = ENABLED, havingValue = TRUE)
+@ConditionalOnProperty(prefix = INTERLEDGER_HERMES_KEYSTORE_JKS, name = ENABLED, havingValue = TRUE)
 public class JksCryptoConfig {
 
-  @Value("${" + INTERLEDGER_SPSP_SERVER_KEYSTORE_JKS_FILENAME + "}")
+  @Value("${" + INTERLEDGER_HERMES_KEYSTORE_JKS_FILENAME + "}")
   private String jksFilename;
 
-  @Value("${" + INTERLEDGER_SPSP_SERVER_KEYSTORE_JKS_PASSWORD + "}")
+  @Value("${" + INTERLEDGER_HERMES_KEYSTORE_JKS_PASSWORD + "}")
   private String jksPassword;
 
-  @Value("${" + INTERLEDGER_SPSP_SERVER_KEYSTORE_JKS_SECRET0_ALIAS + "}")
+  @Value("${" + INTERLEDGER_HERMES_KEYSTORE_JKS_SECRET0_ALIAS + "}")
   private String secret0Alias;
 
-  @Value("${" + INTERLEDGER_SPSP_SERVER_KEYSTORE_JKS_SECRET0_PASSWORD + "}")
+  @Value("${" + INTERLEDGER_HERMES_KEYSTORE_JKS_SECRET0_PASSWORD + "}")
   private String secret0Password;
 
   /**
