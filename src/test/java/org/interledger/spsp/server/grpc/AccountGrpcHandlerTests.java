@@ -165,7 +165,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
         blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId(accountId.value()).build());
       fail();
     } catch (StatusRuntimeException e){
-      System.out.println("Failed successfully.  Error status: " + e.getStatus());
+      logger.info("Failed successfully.  Error status: " + e.getStatus());
       assertEquals(e.getStatus(), Status.NOT_FOUND);
     }
   }

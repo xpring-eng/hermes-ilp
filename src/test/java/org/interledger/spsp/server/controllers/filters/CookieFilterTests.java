@@ -109,16 +109,52 @@ public class CookieFilterTests extends AbstractControllerTest {
       .accountRelationship(AccountRelationship.PEER)
       .build();
 
-    when(accountService.createAccount(eq(Optional.of("Bearer " + authToken)), any(Optional.class)))
+    when(accountService.createAccount(eq(Optional.of(authToken)), any(Optional.class)))
       .thenReturn(accountSettingsMock);
 
     this.mvc.perform(post("/accounts")
       .headers(testJsonHeaders())
-      .header("Authorization", "Bearer " + authToken)
+      .header("Authorization", authToken)
     )
       .andExpect(status().isOk());
 
-    verify(accountService, times(1)).createAccount(eq(Optional.of("Bearer " + authToken)), any(Optional.class));
+    verify(accountService, times(1)).createAccount(eq(Optional.of(authToken)), any(Optional.class));
+  }
+
+  /**
+   * When a client sends a create account request with both an "Authorization" header and a jwt cookie,
+   * the CookieAuthenticationFilter should give precedence to the "Authorization" header
+   */
+  @Test
+  public void testCreateAccountWithCookieAndAuthHeader() throws Exception {
+    String headerAuthToken = "asdfulahsdfkljh";
+    String cookieAuthToken = "fakejwt.asdlkfj.sdlkfjj";
+    Cookie authCookie = new Cookie("jwt", cookieAuthToken);
+
+    AccountSettings accountSettingsMock = AccountSettings.builder()
+      .accountId(AccountId.of("foo"))
+      .linkType(IlpOverHttpLink.LINK_TYPE)
+      .assetCode("XRP")
+      .assetScale(9)
+      .balanceSettings(AccountBalanceSettings.builder().build())
+      .settlementEngineDetails(Optional.empty())
+      .rateLimitSettings(AccountRateLimitSettings.builder().build())
+      .maximumPacketAmount(UnsignedLong.valueOf(1000))
+      .accountRelationship(AccountRelationship.PEER)
+      .build();
+
+    when(accountService.createAccount(any(Optional.class), any(Optional.class)))
+      .thenReturn(accountSettingsMock);
+
+    this.mvc.perform(post("/accounts")
+      .headers(testJsonHeaders())
+      .header("Authorization", headerAuthToken)
+      .cookie(authCookie))
+      .andExpect(status().isOk());
+
+    // createAccount should have been called with the header auth, not the cookie auth
+    verify(accountService, times(1)).createAccount(eq(Optional.of(headerAuthToken)), any(Optional.class));
+    verify(accountService, times(0)).createAccount(eq(Optional.of(cookieAuthToken)), any(Optional.class));
   }
 
   @Test
