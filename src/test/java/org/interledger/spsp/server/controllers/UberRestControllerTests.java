@@ -17,7 +17,7 @@ import com.google.common.primitives.UnsignedLong;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -114,7 +114,7 @@ public class UberRestControllerTests extends AbstractIntegrationTest {
   }
 
 
-  @Component
+  @Configuration
   public static class TestConfig extends AbstractIntegrationTest.TestConfig {};
 
 }

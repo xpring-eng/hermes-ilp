@@ -3,9 +3,6 @@ package org.interledger.spsp.server.grpc;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
@@ -17,6 +14,7 @@ import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.AbstractIntegrationTest;
 import org.interledger.spsp.server.HermesServerApplication;
+import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
 
@@ -36,8 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -171,12 +168,14 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
   }
 
   @Test
-  public void createAccountWithTokenButNoRequest() {
-    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Basic password");
+  public void createAccountWithHeaderTokenButNoRequest() {
+    String authToken = "password";
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .build();
 
-    CreateAccountResponse reply = blockingStub.createAccount(request);
+    CreateAccountResponse reply = blockingStub
+      .withCallCredentials(IlpCallCredentials.build(authToken))
+      .createAccount(request);
     logger.info(reply.toString());
 
     assertThat(reply.getAccountId()).startsWith("user_");
@@ -184,7 +183,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
     assertThat(reply.getAssetScale()).isEqualTo(9);
     assertThat(reply.getPaymentPointer()).isEqualTo(containers.paymentPointerBase() + "/" + reply.getAccountId());
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo("password");
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo(authToken);
   }
 
   @Test
@@ -218,40 +217,43 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
 
   @Test
   public void testCreateAccountWithOnlyAssetDetails() {
-    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Basic password");
+    String authToken = "password";
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .setAssetCode("XRP")
       .setAssetScale(9)
       .build();
 
-    CreateAccountResponse reply = blockingStub.createAccount(request);
+    CreateAccountResponse reply = blockingStub
+      .withCallCredentials(IlpCallCredentials.build(authToken))
+      .createAccount(request);
+
     assertThat(reply.getAccountId()).startsWith("user_");
     assertThat(reply.getAssetCode()).isEqualTo("XRP");
     assertThat(reply.getAssetScale()).isEqualTo(9);
     assertThat(reply.getPaymentPointer()).isEqualTo(containers.paymentPointerBase() + "/" + reply.getAccountId());
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isNotEmpty();
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().doesNotStartWith("enc:jks");
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).isEqualTo(authToken);
   }
 
   @Test
   public void createAccountWithSimpleAuthAndFullRequest() {
-    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Basic password");
+    String authToken = "password";
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .setAccountId("foo")
       .setAssetCode("USD")
       .setAssetScale(4)
       .build();
 
-    CreateAccountResponse reply = blockingStub.createAccount(request);
-    logger.info(reply.toString());
+    CreateAccountResponse reply = blockingStub
+      .withCallCredentials(IlpCallCredentials.build(authToken))
+      .createAccount(request);
 
     assertThat(reply.getAccountId()).isEqualTo("foo");
     assertThat(reply.getAssetCode()).isEqualTo("USD");
     assertThat(reply.getAssetScale()).isEqualTo(4);
     assertThat(reply.getPaymentPointer()).isEqualTo(containers.paymentPointerBase() + "/" + reply.getAccountId());
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo("password");
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo(authToken);
   }
 
   /**
@@ -305,10 +307,9 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
       .setAssetScale(9)
       .setDescription(accountDescription);
 
-    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + jwt);
-
-    CreateAccountResponse reply = blockingStub.createAccount(request.build());
-    logger.info(reply.toString());
+    CreateAccountResponse reply = blockingStub
+      .withCallCredentials(IlpCallCredentials.build(jwt))
+      .createAccount(request.build());
 
     assertThat(expected)
       .isEqualToIgnoringGivenFields(reply, "customSettings_", "createdAt_", "memoizedHashCode", "modifiedAt_");
@@ -318,14 +319,8 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT)).isEqualTo(jwtAuthSettings.tokenSubject());
   }
 
-  public static class TestConfig extends AbstractIntegrationTest.TestConfig {
-
-    @Bean
-    @Primary
-    public IlpGrpcMetadataReader ilpGrpcMetadataReader() {
-      return mock(IlpGrpcMetadataReader.class);
-    }
-  }
+  @Configuration
+  public static class TestConfig extends AbstractIntegrationTest.TestConfig {}
 }
 
 

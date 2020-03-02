@@ -2,9 +2,6 @@ package org.interledger.spsp.server.grpc;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
@@ -34,9 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -141,7 +136,6 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
   public void getBalanceTest() {
 
     String jwt = containers.createJwt(accountIdHermes.value(), 10);
-    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + jwt);
 
     GetBalanceResponse reply =
       blockingStub
@@ -152,7 +146,6 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
           .build()
         );
 
-    logger.info("Balance: " + reply);
     assertThat(reply.getAccountId()).isEqualTo(accountIdHermes.value());
     assertThat(reply.getAssetCode()).isEqualTo("XRP");
     assertThat(reply.getAssetScale()).isEqualTo(9);
@@ -172,10 +165,7 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
     expectedException.expect(StatusRuntimeException.class);
     expectedException.expectMessage(Status.PERMISSION_DENIED.getCode().name());
 
-    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("thisIsNotAValidJwt");
-
     blockingStub
-      .withCallCredentials(IlpCallCredentials.build("thisIsNotAValidJwt"))
       .getBalance(
         GetBalanceRequest.newBuilder()
           .setAccountId(accountIdHermes.value())
@@ -196,8 +186,6 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
 
     String jwt = containers.createJwt("foo");
 
-    when(ilpGrpcMetadataReader.authorization(any())).thenReturn("Bearer " + jwt);
-
     blockingStub
       .withCallCredentials(IlpCallCredentials.build(jwt))
       .getBalance(
@@ -208,14 +196,7 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
   }
 
   @Configuration
-  public static class TestConfig extends AbstractIntegrationTest.TestConfig {
-
-    @Bean
-    @Primary
-    public IlpGrpcMetadataReader ilpGrpcMetadataReader() {
-      return mock(IlpGrpcMetadataReader.class);
-    }
-  }
+  public static class TestConfig extends AbstractIntegrationTest.TestConfig {}
 }
 
 
