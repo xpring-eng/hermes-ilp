@@ -22,7 +22,7 @@ import org.interledger.spsp.server.controllers.AbstractControllerTest;
 import org.interledger.spsp.server.controllers.AccountController;
 import org.interledger.spsp.server.controllers.BalanceController;
 import org.interledger.spsp.server.controllers.PaymentController;
-import org.interledger.spsp.server.model.PaymentRequest;
+import org.interledger.spsp.server.client.PaymentRequest;
 import org.interledger.stream.SendMoneyResult;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

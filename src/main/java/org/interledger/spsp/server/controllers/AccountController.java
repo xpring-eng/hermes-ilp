@@ -7,7 +7,7 @@ import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
-import org.interledger.spsp.server.model.CreateAccountRestRequest;
+import org.interledger.spsp.server.client.CreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
 
 import feign.FeignException;

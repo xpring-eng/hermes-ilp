@@ -4,6 +4,7 @@ import org.interledger.connector.jackson.modules.AccountIdModule;
 import org.interledger.quilt.jackson.address.InterledgerAddressModule;
 import org.interledger.quilt.jackson.addressprefix.InterledgerAddressPrefixModule;
 import org.interledger.quilt.jackson.link.LinkIdModule;
+import org.interledger.quilt.jackson.link.LinkTypeModule;
 import org.interledger.quilt.jackson.sharedsecret.SharedSecretModule;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -34,9 +35,10 @@ public class ObjectMapperFactory {
       .registerModule(new JavaTimeModule())
       .registerModule(new GuavaModule())
       .registerModule(new InterledgerAddressModule())
-      .registerModule(new AccountIdModule())
       .registerModule(new InterledgerAddressPrefixModule())
+      .registerModule(new AccountIdModule())
       .registerModule(new LinkIdModule())
+      .registerModule(new LinkTypeModule())
       .registerModule(new SharedSecretModule())
       .registerModule(new PaymentPointerModule())
       .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)

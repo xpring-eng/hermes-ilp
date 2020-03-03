@@ -1,12 +1,9 @@
 package org.interledger.spsp.server.services;
 
-import org.interledger.spsp.server.grpc.CreateAccountRequest;
-import org.interledger.spsp.server.model.CreateAccountRestRequest;
+import org.interledger.spsp.server.client.CreateAccountRestRequest;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 /**
  * A utility service for account creation, with methods for generating default accounts as well as simple auth tokens

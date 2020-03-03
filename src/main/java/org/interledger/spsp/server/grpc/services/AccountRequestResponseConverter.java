@@ -14,7 +14,7 @@ import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.GetAccountResponse;
 import org.interledger.spsp.server.grpc.SendPaymentResponse;
-import org.interledger.spsp.server.model.CreateAccountRestRequest;
+import org.interledger.spsp.server.client.CreateAccountRestRequest;
 import org.interledger.spsp.server.services.HermesUtils;
 import org.interledger.stream.SendMoneyResult;
 

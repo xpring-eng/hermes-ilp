@@ -3,6 +3,7 @@ package org.interledger.spsp.server.controllers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.interledger.connector.accounts.AccountId;
+import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
@@ -10,7 +11,7 @@ import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.AbstractIntegrationTest;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
-import org.interledger.spsp.server.model.CreateAccountRestRequest;
+import org.interledger.spsp.server.client.CreateAccountRestRequest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,9 +29,9 @@ import java.util.Optional;
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
   properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
-  
+
   /**
-   * Test that accounts created with a fully populated {@link org.interledger.spsp.server.model.CreateAccountRestRequest}
+   * Test that accounts created with a fully populated {@link CreateAccountRestRequest}
    * won't have anything overwritten
    */
   @Test
@@ -43,6 +44,7 @@ public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
     assertThat(response.accountId()).isEqualTo(AccountId.of("foo"));
     assertThat(response.assetCode()).isEqualTo("USD");
     assertThat(response.assetScale()).isEqualTo(6);
+    assertThat(response.linkType().value()).isEqualTo(IlpOverHttpLink.LINK_TYPE_STRING);
     assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
     assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).isEqualTo("password");
     assertThat(response.paymentPointer()).isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/foo"));

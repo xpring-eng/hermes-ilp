@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
-@JsonSerialize(as = ImmutableAccountSettingsResponse.class)
+/*@JsonSerialize(as = ImmutableAccountSettingsResponse.class)
 @JsonDeserialize(as = ImmutableAccountSettingsResponse.class)
 public interface AccountSettingsResponse extends AccountSettings {
 
@@ -27,4 +27,18 @@ public interface AccountSettingsResponse extends AccountSettings {
     @Override
     public abstract PaymentPointer paymentPointer();
   }
+}*/
+
+
+@Value.Immutable
+@Value.Modifiable
+@JsonSerialize(as = ImmutableAccountSettingsResponse.class)
+@JsonDeserialize(as = ImmutableAccountSettingsResponse.class)
+public abstract class AccountSettingsResponse extends AccountSettings.AbstractAccountSettings {
+
+  public static ImmutableAccountSettingsResponse.Builder builder() {
+    return ImmutableAccountSettingsResponse.builder();
+  }
+
+  public abstract PaymentPointer paymentPointer();
 }

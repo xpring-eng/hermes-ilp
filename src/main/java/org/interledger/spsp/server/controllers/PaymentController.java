@@ -2,8 +2,8 @@ package org.interledger.spsp.server.controllers;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.PaymentPointer;
-import org.interledger.spsp.server.model.ImmutablePaymentRequest;
-import org.interledger.spsp.server.model.PaymentResponse;
+import org.interledger.spsp.server.client.ImmutablePaymentRequest;
+import org.interledger.spsp.server.client.PaymentResponse;
 import org.interledger.spsp.server.services.SendMoneyService;
 import org.interledger.stream.SendMoneyResult;
 

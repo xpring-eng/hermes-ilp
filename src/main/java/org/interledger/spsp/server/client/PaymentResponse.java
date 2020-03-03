@@ -1,4 +1,4 @@
-package org.interledger.spsp.server.model;
+package org.interledger.spsp.server.client;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

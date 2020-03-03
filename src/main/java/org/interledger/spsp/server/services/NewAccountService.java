@@ -11,9 +11,8 @@ import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
-import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
-import org.interledger.spsp.server.model.CreateAccountRestRequest;
+import org.interledger.spsp.server.client.CreateAccountRestRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

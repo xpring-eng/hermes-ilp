@@ -10,8 +10,8 @@ import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.AbstractIntegrationTest;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
-import org.interledger.spsp.server.model.CreateAccountRestRequest;
-import org.interledger.spsp.server.model.PaymentRequest;
+import org.interledger.spsp.server.client.CreateAccountRestRequest;
+import org.interledger.spsp.server.client.PaymentRequest;
 
 import com.google.common.primitives.UnsignedLong;
 import org.junit.Test;

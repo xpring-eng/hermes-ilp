@@ -1,4 +1,4 @@
-package org.interledger.spsp.server.model;
+package org.interledger.spsp.server.client;
 
 import org.interledger.spsp.server.services.AccountGeneratorService;
 

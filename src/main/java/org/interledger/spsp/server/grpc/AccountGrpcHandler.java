@@ -7,8 +7,8 @@ import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
-import org.interledger.spsp.server.model.CreateAccountRestRequest;
-import org.interledger.spsp.server.model.ImmutableCreateAccountRestRequest;
+import org.interledger.spsp.server.client.CreateAccountRestRequest;
+import org.interledger.spsp.server.client.ImmutableCreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
 
 import feign.FeignException;
