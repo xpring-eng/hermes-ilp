@@ -15,6 +15,7 @@ import org.interledger.connector.accounts.AccountRateLimitSettings;
 import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.link.http.IlpOverHttpLink;
+import org.interledger.spsp.server.AbstractIntegrationTest;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountBalance;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
@@ -59,28 +60,24 @@ import java.util.Optional;
   classes = {HermesServerApplication.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
   properties = {"spring.main.allow-bean-definition-overriding=true"})
-
-public class AuthContextInterceptorTests {
+public class AuthContextInterceptorTests extends AbstractIntegrationTest {
 
   /**
-   * This rule manages automatic graceful shutdown for the registered servers and channels at the
-   * end of test.
+   * This rule manages automatic graceful shutdown for the registered servers and channels at the end of test.
    */
   @Rule
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
+  @Autowired
+  AccountGrpcHandler accountGrpcHandler;
+  @Autowired
+  BalanceGrpcHandler balanceGrpcHandler;
+  @Autowired
+  IlpOverHttpGrpcHandler ilpOverHttpGrpcHandler;
+
   private AccountServiceGrpc.AccountServiceBlockingStub accountServiceBlockingStub;
   private BalanceServiceGrpc.BalanceServiceBlockingStub balanceServiceBlockingStub;
   private IlpOverHttpServiceGrpc.IlpOverHttpServiceBlockingStub paymentServiceBlockingStub;
-
-  @Autowired
-  AccountGrpcHandler accountGrpcHandler;
-
-  @Autowired
-  BalanceGrpcHandler balanceGrpcHandler;
-
-  @Autowired
-  IlpOverHttpGrpcHandler ilpOverHttpGrpcHandler;
 
   @MockBean
   private NewAccountService accountService;
@@ -111,14 +108,17 @@ public class AuthContextInterceptorTests {
     mockClientInterceptor = mock(ClientInterceptor.class, delegatesTo(
       new ClientInterceptor() {
         @Override
-        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> methodDescriptor, CallOptions callOptions, Channel channel) {
-          return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(channel.newCall(methodDescriptor, callOptions)) {
+        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> methodDescriptor,
+          CallOptions callOptions, Channel channel) {
+          return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
+            channel.newCall(methodDescriptor, callOptions)) {
             @Override
             public void start(Listener<RespT> responseListener, Metadata headers) {
               headers.put(Metadata.Key.of(HttpHeaders.COOKIE, Metadata.ASCII_STRING_MARSHALLER),
                 "jwt=" + jwt);
 
-              super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {}, headers);
+              super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
+              }, headers);
             }
           };
         }
@@ -127,7 +127,6 @@ public class AuthContextInterceptorTests {
 
     registerGrpc();
   }
-
 
   @Test
   public void testCreateAccountWithCookieAuth() {
@@ -154,8 +153,8 @@ public class AuthContextInterceptorTests {
   }
 
   /**
-   * When a client sends a create account request with both an "Authorization" header and a jwt cookie,
-   * the {@link org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader} should give precedence to the "Authorization" header
+   * When a client sends a create account request with both an "Authorization" header and a jwt cookie, the {@link
+   * org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader} should give precedence to the "Authorization" header
    */
   @Test
   public void testCreateAccountWithCookieAuthAndAuthHeader() {

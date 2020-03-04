@@ -5,8 +5,6 @@ import static org.interledger.spsp.server.config.ConfigConstants.INTERLEDGER_HER
 
 public interface CryptoConfigConstants {
 
-  String INTERLEDGER_HERMES_PARENT_ACCOUNT = INTERLEDGER_HERMES + DOT + "parent-account";
-
   String INTERLEDGER_HERMES_KEYSTORE = INTERLEDGER_HERMES + DOT + "keystore";
 
   String INTERLEDGER_HERMES_KEYSTORE_GCP = INTERLEDGER_HERMES_KEYSTORE + ".gcpkms";

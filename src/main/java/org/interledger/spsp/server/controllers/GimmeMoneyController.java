@@ -1,6 +1,7 @@
 package org.interledger.spsp.server.controllers;
 
 import org.interledger.connector.accounts.AccountId;
+import org.interledger.core.InterledgerProtocolException;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.services.GimmeMoneyService;
 
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.zalando.problem.spring.common.MediaTypes;
+
+import java.util.concurrent.ExecutionException;
 
 
 /**
@@ -37,6 +40,7 @@ public class GimmeMoneyController extends AbstractController {
    * Gets the {@link AccountBalanceResponse} for the given {@code accountId}
    *
    * @param accountId
+   *
    * @return balance for account
    */
   @RequestMapping(
@@ -45,12 +49,10 @@ public class GimmeMoneyController extends AbstractController {
   )
   public UnsignedLong getBalance(@PathVariable("accountId") String accountId) {
     try {
-
       UnsignedLong amount = UnsignedLong.valueOf(ONE_XRP_IN_SCALE_9 * 10);
       return gimmeMoneyService.gimmeMoney(AccountId.of(accountId), amount);
-    }
-    catch (Exception e) {
-      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+    } catch (ExecutionException | InterruptedException e) {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
     }
   }
 

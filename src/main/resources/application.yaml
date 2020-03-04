@@ -17,6 +17,8 @@ spring:
     ansi:
       enabled: ALWAYS
   http:
+    encoding:
+      force: true
     log-request-details: false
   mvc:
     throw-exception-if-no-handler-found: true
