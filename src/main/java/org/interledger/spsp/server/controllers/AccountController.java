@@ -10,11 +10,9 @@ import org.interledger.spsp.server.client.AccountSettingsResponse;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
 
-import feign.FeignException;
 import okhttp3.HttpUrl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.server.ResponseStatusException;
 import org.zalando.problem.spring.common.MediaTypes;
 
 import java.util.Objects;
@@ -42,8 +39,8 @@ public class AccountController extends AbstractController {
   private final HttpUrl spspReceiverUrl;
 
   public AccountController(NewAccountService newAccountService,
-                           ConnectorAdminClient adminClient,
-                           HttpUrl spspReceiverUrl) {
+    ConnectorAdminClient adminClient,
+    HttpUrl spspReceiverUrl) {
     this.newAccountService = Objects.requireNonNull(newAccountService);
     this.adminClient = Objects.requireNonNull(adminClient);
     this.spspReceiverUrl = Objects.requireNonNull(spspReceiverUrl);
@@ -53,23 +50,19 @@ public class AccountController extends AbstractController {
     value = "/accounts", method = {RequestMethod.POST},
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
-  public @ResponseBody AccountSettingsResponse createAccount(@RequestHeader("Authorization") Optional<String> authToken,
-                                       @RequestBody Optional<CreateAccountRestRequest> createAccountRequest) {
+  public @ResponseBody
+  AccountSettingsResponse createAccount(@RequestHeader("Authorization") Optional<String> authToken,
+    @RequestBody Optional<CreateAccountRestRequest> createAccountRequest) {
 
-    try {
-      // Give a choice of passing in a JWT or simple auth token, or having Hermes generate a Simple token
-      AccountSettings accountSettings = newAccountService
-        .createAccount(authToken, createAccountRequest);
+    // Give a choice of passing in a JWT or simple auth token, or having Hermes generate a Simple token
+    AccountSettings accountSettings = newAccountService
+      .createAccount(authToken, createAccountRequest);
 
-      // Add a payment pointer to the response
-      return AccountSettingsResponse.builder()
-        .from(accountSettings)
-        .paymentPointer(paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()))
-        .build();
-    }
-    catch (FeignException e) {
-      throw new ResponseStatusException(HttpStatus.valueOf(e.status()), e.contentUTF8());
-    }
+    // Add a payment pointer to the response
+    return AccountSettingsResponse.builder()
+      .from(accountSettings)
+      .paymentPointer(paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()))
+      .build();
   }
 
   @RequestMapping(
@@ -77,21 +70,16 @@ public class AccountController extends AbstractController {
     method = {RequestMethod.GET},
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
-  public @ResponseBody AccountSettingsResponse getAccount(@PathVariable("accountId") String accountId) {
-    try {
-      AccountSettings accountSettings = adminClient.findAccount(accountId)
-        .orElseThrow(() -> new AccountNotFoundProblem(AccountId.of(accountId)));
+  public @ResponseBody
+  AccountSettingsResponse getAccount(@PathVariable("accountId") String accountId) {
+    AccountSettings accountSettings = adminClient.findAccount(accountId)
+      .orElseThrow(() -> new AccountNotFoundProblem(AccountId.of(accountId)));
 
-      // Add a payment pointer to the response
-      return AccountSettingsResponse.builder()
-        .from(accountSettings)
-        .paymentPointer(paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()))
-        .build();
-    } catch (AccountNotFoundProblem e) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-    } catch (FeignException e) {
-      throw new ResponseStatusException(HttpStatus.valueOf(e.status()), e.contentUTF8());
-    }
+    // Add a payment pointer to the response
+    return AccountSettingsResponse.builder()
+      .from(accountSettings)
+      .paymentPointer(paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()))
+      .build();
   }
 
   @RequestMapping(
@@ -99,11 +87,6 @@ public class AccountController extends AbstractController {
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
   public AccountSettings createRainmaker() {
-    try {
-      return newAccountService.createRainmaker();
-    }
-    catch (FeignException e) {
-      throw new ResponseStatusException(HttpStatus.valueOf(e.status()), e.contentUTF8());
-    }
+    return newAccountService.createRainmaker();
   }
 }

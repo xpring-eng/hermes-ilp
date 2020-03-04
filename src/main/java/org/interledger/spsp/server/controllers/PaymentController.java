@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.zalando.problem.spring.common.MediaTypes;
 
+import java.util.concurrent.ExecutionException;
+
 
 @RestController
 public class PaymentController extends AbstractController {
@@ -58,8 +60,8 @@ public class PaymentController extends AbstractController {
         .originalAmount(result.originalAmount())
         .successfulPayment(result.successfulPayment())
         .build();
-    } catch (Exception e) {
-      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+    } catch (ExecutionException | InterruptedException e) {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
     }
   }
 

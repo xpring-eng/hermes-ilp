@@ -1,17 +1,13 @@
 package org.interledger.spsp.server.config.web;
 
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.INTERLEDGER_HERMES_PARENT_ACCOUNT;
-import static org.interledger.spsp.server.config.crypto.CryptoConfigConstants.LINK_TYPE;
 import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM;
 
-import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -30,14 +26,10 @@ import java.util.List;
  * Web config for the Spring Connector.
  */
 @Configuration
-@ConditionalOnProperty(prefix = INTERLEDGER_HERMES_PARENT_ACCOUNT, name = LINK_TYPE, havingValue = IlpOverHttpLink.LINK_TYPE_STRING)
 @EnableWebMvc
 @ComponentScan(basePackages = "org.interledger.spsp.server.controllers")
 @Import({SecurityConfiguration.class})
 public class SpringSpspServerWebMvc implements WebMvcConfigurer {
-
-  // TODO: Configure TLS
-  // TODO: Configure HTTP/2
 
   @Autowired
   private ObjectMapper objectMapper;
