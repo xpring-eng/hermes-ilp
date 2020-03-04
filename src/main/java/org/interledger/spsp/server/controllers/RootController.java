@@ -26,7 +26,7 @@ public class RootController {
     method = RequestMethod.GET,
     produces = {APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
-  public ResponseEntity<HermesSettingsResponse> getConnectorMetaData() {
+  public ResponseEntity<HermesSettingsResponse> getServerSettings() {
     return new ResponseEntity<>(
       HermesSettingsResponse.builder()
         .version(this.buildProperties.getVersion())

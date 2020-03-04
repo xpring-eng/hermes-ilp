@@ -24,7 +24,7 @@ public class HermesServerApplication {
 
   @Autowired
   private Environment env;
-  
+
   @Autowired
   private BuildProperties buildProperties;
 
