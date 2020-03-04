@@ -146,6 +146,10 @@
             <artifactId>grpc-stub</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry-logback</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
@@ -404,6 +408,11 @@
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.sentry</groupId>
+                <artifactId>sentry-logback</artifactId>
+                <version>1.7.30</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>3.9</version>
@@ -646,6 +655,8 @@
 
                                     <!-- Not used for compile time, only for OkHttp 4 support-->
                                     <ignoredDependency>com.fasterxml.jackson.module:jackson-module-kotlin:jar</ignoredDependency>
+                                    <!-- Sentry is not used directly in code, but needs to be a dependency in order to work. -->
+                                    <ignoredDependency>io.sentry:sentry-logback:jar</ignoredDependency>
 
                                     <ignoredDependency>org.liquibase:liquibase-core:jar</ignoredDependency>
                                     <ignoredDependency>org.postgresql:postgresql:jar</ignoredDependency>
