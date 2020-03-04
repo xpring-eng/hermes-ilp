@@ -22,6 +22,7 @@ import org.interledger.spsp.server.controllers.AbstractControllerTest;
 import org.interledger.spsp.server.controllers.AccountController;
 import org.interledger.spsp.server.controllers.BalanceController;
 import org.interledger.spsp.server.controllers.PaymentController;
+import org.interledger.spsp.server.controllers.filters.CookieFilterTests.CookieFilterConfiguration;
 import org.interledger.spsp.server.model.PaymentRequest;
 import org.interledger.stream.SendMoneyResult;
 
@@ -33,30 +34,35 @@ import org.junit.runner.RunWith;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Properties;
+
 import javax.servlet.http.Cookie;
 
 /**
  * Test suite to test {@link CookieAuthenticationFilter}
  */
 @RunWith(SpringRunner.class)
-@WebMvcTest(controllers = {AccountController.class, BalanceController.class, PaymentController.class},
+@WebMvcTest(
+  controllers = {AccountController.class, BalanceController.class, PaymentController.class},
   excludeAutoConfiguration = {SecurityAutoConfiguration.class})
+@Import(CookieFilterConfiguration.class)
 public class CookieFilterTests extends AbstractControllerTest {
 
   @Autowired
   ApplicationContext applicationContext;
-
+  ObjectMapper objectMapper = ObjectMapperFactory.create();
   @Autowired
   private MockMvc mvc;
-
-  ObjectMapper objectMapper = ObjectMapperFactory.create();
 
   @Before
   public void setUp() {
@@ -122,8 +128,8 @@ public class CookieFilterTests extends AbstractControllerTest {
   }
 
   /**
-   * When a client sends a create account request with both an "Authorization" header and a jwt cookie,
-   * the CookieAuthenticationFilter should give precedence to the "Authorization" header
+   * When a client sends a create account request with both an "Authorization" header and a jwt cookie, the
+   * CookieAuthenticationFilter should give precedence to the "Authorization" header
    */
   @Test
   public void testCreateAccountWithCookieAndAuthHeader() throws Exception {
@@ -177,7 +183,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .headers(testJsonHeaders())
       .cookie(authCookie)
     )
-    .andExpect(status().isOk());
+      .andExpect(status().isOk());
 
     verify(balanceClient, times(1)).getBalance(eq("Bearer " + authToken), any());
   }
@@ -279,5 +285,13 @@ public class CookieFilterTests extends AbstractControllerTest {
       eq(authToken),
       any(),
       any());
+  }
+
+  static class CookieFilterConfiguration {
+
+    @Bean
+    public BuildProperties buildProperties() {
+      return new BuildProperties(new Properties());
+    }
   }
 }

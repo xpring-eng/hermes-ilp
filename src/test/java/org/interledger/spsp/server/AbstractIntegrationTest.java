@@ -19,21 +19,21 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
+import java.util.Properties;
+
 public abstract class AbstractIntegrationTest {
 
+  protected static TestIlpContainers containers;
   @Autowired
   protected AccountController accountController;
-
   @Autowired
   protected BalanceController balanceController;
-
   @Autowired
   protected PaymentController paymentController;
-
-  protected static TestIlpContainers containers;
 
   @BeforeClass
   public static void startContainers() {
@@ -46,6 +46,7 @@ public abstract class AbstractIntegrationTest {
   }
 
   public abstract static class TestConfig {
+
     /**
      * Overrides the adminClient bean for test purposes to connect to our Connector container
      *
@@ -87,9 +88,9 @@ public abstract class AbstractIntegrationTest {
     @Bean
     @Primary
     public SendMoneyService sendMoneyService(ObjectMapper objectMapper,
-                                             ConnectorAdminClient adminClient,
-                                             OkHttpClient okHttpClient,
-                                             SpspClient spspClient) {
+      ConnectorAdminClient adminClient,
+      OkHttpClient okHttpClient,
+      SpspClient spspClient) {
       return new SendMoneyService(containers.getNodeBaseUri(), objectMapper, adminClient, okHttpClient, spspClient);
     }
   }
