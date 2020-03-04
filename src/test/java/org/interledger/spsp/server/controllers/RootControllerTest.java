@@ -41,6 +41,7 @@ public class RootControllerTest extends AbstractIntegrationTest {
 
     JsonContentAssert assertJson = assertThat(jsonTester.from(metaDataResponse.getBody()));
     assertJson.hasJsonPath("version");
+    assertJson.hasJsonPath("ilpOverHttpUrl");
   }
 
 }
