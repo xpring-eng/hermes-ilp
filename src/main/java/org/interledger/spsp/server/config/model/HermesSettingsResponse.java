@@ -12,4 +12,7 @@ public interface HermesSettingsResponse {
   }
 
   String version();
+
+  String ilpOverHttpUrl();
+
 }
