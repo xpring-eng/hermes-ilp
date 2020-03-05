@@ -1,7 +1,6 @@
 package org.interledger.spsp.server.grpc;
 
 import org.interledger.connector.accounts.AccountId;
-import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
@@ -37,7 +36,7 @@ public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBas
   public void getBalance(GetBalanceRequest request, StreamObserver<GetBalanceResponse> responseObserver) {
     try {
       String bearerToken = ilpGrpcAuthContext.getAuthorizationHeader();
-      AccountBalanceResponse balanceResponse = balanceClient.getBalance(bearerToken, AccountId.of(request.getAccountId()));
+      AccountBalanceResponse balanceResponse = balanceClient.getBalance("Bearer " + bearerToken, AccountId.of(request.getAccountId()));
 
       final GetBalanceResponse reply = GetBalanceResponse.newBuilder()
         .setAssetScale(balanceResponse.assetScale())

@@ -200,10 +200,10 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq(jwt), any())).thenReturn(accountBalanceResponseMock);
+    when(balanceClient.getBalance(eq("Bearer " + jwt), any())).thenReturn(accountBalanceResponseMock);
 
     GetBalanceResponse response = balanceServiceBlockingStub.getBalance(request);
-    verify(balanceClient, times(1)).getBalance(eq(jwt), any());
+    verify(balanceClient, times(1)).getBalance(eq("Bearer " + jwt), any());
   }
 
   @Test
