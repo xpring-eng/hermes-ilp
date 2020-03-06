@@ -169,7 +169,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
 
   @Test
   public void createAccountWithHeaderTokenButNoRequest() {
-    String authToken = "password";
+    String authToken = "Bearer password";
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .build();
 
@@ -183,7 +183,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
     assertThat(reply.getAssetScale()).isEqualTo(9);
     assertThat(reply.getPaymentPointer()).isEqualTo(containers.paymentPointerBase() + "/" + reply.getAccountId());
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo(authToken);
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo(authToken.replace("Bearer ", ""));
   }
 
   @Test
@@ -217,7 +217,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
 
   @Test
   public void testCreateAccountWithOnlyAssetDetails() {
-    String authToken = "password";
+    String authToken = "Bearer password";
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .setAssetCode("XRP")
       .setAssetScale(9)
@@ -232,12 +232,12 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
     assertThat(reply.getAssetScale()).isEqualTo(9);
     assertThat(reply.getPaymentPointer()).isEqualTo(containers.paymentPointerBase() + "/" + reply.getAccountId());
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).isEqualTo(authToken);
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).isEqualTo(authToken.replace("Bearer ", ""));
   }
 
   @Test
   public void createAccountWithSimpleAuthAndFullRequest() {
-    String authToken = "password";
+    String authToken = "Bearer password";
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .setAccountId("foo")
       .setAssetCode("USD")
@@ -253,7 +253,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
     assertThat(reply.getAssetScale()).isEqualTo(4);
     assertThat(reply.getPaymentPointer()).isEqualTo(containers.paymentPointerBase() + "/" + reply.getAccountId());
     assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo(authToken);
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo(authToken.replace("Bearer ", ""));
   }
 
   /**
