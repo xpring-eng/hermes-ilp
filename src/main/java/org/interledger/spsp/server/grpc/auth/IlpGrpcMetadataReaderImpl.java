@@ -35,6 +35,8 @@ public class IlpGrpcMetadataReaderImpl implements IlpGrpcMetadataReader {
               .map(HttpCookie::getValue) // if JWT cookie exists, return the value
               .orElse(metadata.get(Metadata.Key.of(HttpHeaders.AUTHORIZATION, Metadata.ASCII_STRING_MARSHALLER))); // Otherwise get jwt from auth header
           })
+          // Strip Bearer prefix
+          .map(token -> token.replace("Bearer ", ""))
           // No cookies and no Authorization header, so just return null. This will signal to AccountGrpcHandler to
           // generate new credentials
           .orElse(null));
