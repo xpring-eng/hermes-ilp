@@ -1,7 +1,6 @@
 package org.interledger.spsp.server.grpc;
 
 import org.interledger.connector.accounts.AccountId;
-import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
