@@ -20,6 +20,7 @@ import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.SimpleAuthSettings;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.client.ConnectorTokensClient;
 import org.interledger.spsp.server.util.JwksServer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -95,7 +96,7 @@ public class TestIlpContainers {
   }
 
   private void startIlpNode() {
-    interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:0.3.0")
+    interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:0.3.2-SNAPSHOT")
       .withLogConsumer(new org.testcontainers.containers.output.Slf4jLogConsumer (logger))
       .withNetworkAliases("connector")
       .withExposedPorts(WEB_PORT)
@@ -131,6 +132,10 @@ public class TestIlpContainers {
 
   public ConnectorBalanceClient balanceClient() {
     return ConnectorBalanceClient.construct(getNodeBaseUri());
+  }
+
+  public ConnectorTokensClient tokensClient() {
+    return ConnectorTokensClient.construct(getNodeBaseUri());
   }
 
   /**

@@ -1,15 +1,16 @@
-package org.interledger.spsp.server;
+package org.interledger.spsp.server.controllers;
 
 import static org.interledger.spsp.server.config.ilp.IlpOverHttpConfig.SPSP;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
+import org.interledger.spsp.server.TestIlpContainers;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
-import org.interledger.spsp.server.controllers.AccountController;
-import org.interledger.spsp.server.controllers.BalanceController;
-import org.interledger.spsp.server.controllers.PaymentController;
+import org.interledger.spsp.server.client.ConnectorTokensClient;
 import org.interledger.spsp.server.services.SendMoneyService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,11 +20,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
-import java.util.Properties;
+import java.util.concurrent.Callable;
+import javax.servlet.http.HttpServletRequest;
 
 public abstract class AbstractIntegrationTest {
 
@@ -34,6 +35,8 @@ public abstract class AbstractIntegrationTest {
   protected BalanceController balanceController;
   @Autowired
   protected PaymentController paymentController;
+  @Autowired
+  protected AccountTokenController tokenController;
 
   @BeforeClass
   public static void startContainers() {
@@ -43,6 +46,31 @@ public abstract class AbstractIntegrationTest {
   @AfterClass
   public static void stopContainers() {
     containers.stop();
+  }
+
+  /**
+   * Hack to mock out the HttpRequest that the controller uses to get the Authorization header
+   *
+   * @param token auth token (sans Bearer prefix)
+   * @param callable to run with mocked credentials
+   */
+  protected <T> T withAuthToken(String token, Callable<T> callable) {
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
+    accountController.setRequest(request);
+    balanceController.setRequest(request);
+    paymentController.setRequest(request);
+    tokenController.setRequest(request);
+    try {
+      return callable.call();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    } finally {
+      accountController.setRequest(null);
+      balanceController.setRequest(null);
+      paymentController.setRequest(null);
+      tokenController.setRequest(null);
+    }
   }
 
   public abstract static class TestConfig {
@@ -68,6 +96,12 @@ public abstract class AbstractIntegrationTest {
     @Primary
     public ConnectorBalanceClient balanceClient() {
       return containers.balanceClient();
+    }
+
+    @Bean
+    @Primary
+    public ConnectorTokensClient tokensClient() {
+      return containers.tokensClient();
     }
 
     @Bean

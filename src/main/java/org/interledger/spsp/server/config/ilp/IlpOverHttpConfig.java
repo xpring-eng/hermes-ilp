@@ -14,6 +14,7 @@ import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.client.ConnectorTokensClient;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContextImpl;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
@@ -190,6 +191,11 @@ public class IlpOverHttpConfig {
   @Bean
   public ConnectorBalanceClient balanceClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl) {
     return ConnectorBalanceClient.construct(HttpUrl.parse(connectorHttpUrl));
+  }
+
+  @Bean
+  public ConnectorTokensClient tokensClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl) {
+    return ConnectorTokensClient.construct(HttpUrl.parse(connectorHttpUrl));
   }
 
   @Bean
