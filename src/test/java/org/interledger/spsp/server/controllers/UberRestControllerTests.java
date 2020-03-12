@@ -1,13 +1,10 @@
 package org.interledger.spsp.server.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.spsp.PaymentPointer;
-import org.interledger.spsp.server.AbstractIntegrationTest;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
@@ -23,7 +20,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Optional;
 import java.util.Random;
-import javax.servlet.http.HttpServletRequest;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
@@ -94,25 +90,6 @@ public class UberRestControllerTests extends AbstractIntegrationTest {
     withAuthToken(barToken, () ->
       assertThat(balanceController.getBalance(bar.accountId()).accountBalance().clearingBalance()).isEqualTo(1));
   }
-
-  /**
-   * Hack to mock out the HttpRequest that the controller uses to get the Authorization header
-   *
-   * @param token auth token (sans Bearer prefix)
-   * @param runnable to run with mocked credentials
-   */
-  protected void withAuthToken(String token, Runnable runnable) {
-    HttpServletRequest request = mock(HttpServletRequest.class);
-    when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
-    accountController.setRequest(request);
-    balanceController.setRequest(request);
-    paymentController.setRequest(request);
-    runnable.run();
-    accountController.setRequest(null);
-    balanceController.setRequest(null);
-    paymentController.setRequest(null);
-  }
-
 
   @Configuration
   public static class TestConfig extends AbstractIntegrationTest.TestConfig {};
