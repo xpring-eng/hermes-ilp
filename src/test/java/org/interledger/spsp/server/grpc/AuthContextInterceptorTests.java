@@ -158,7 +158,7 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
    */
   @Test
   public void testCreateAccountWithCookieAuthAndAuthHeader() {
-    String authHeaderToken = "asdfdfkjsdhfksdjh";
+    String authHeaderToken = "Bearer asdfdfkjsdhfksdjh";
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .build();
 
@@ -181,7 +181,8 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
       .withCallCredentials(IlpCallCredentials.build(authHeaderToken))
       .createAccount(request);
 
-    verify(accountService, times(1)).createAccount(eq(Optional.of(authHeaderToken)), any(Optional.class));
+    verify(accountService, times(1))
+      .createAccount(eq(Optional.of(authHeaderToken.replace("Bearer ", ""))), any(Optional.class));
     verify(accountService, times(0)).createAccount(eq(Optional.of(jwt)), any(Optional.class));
   }
 

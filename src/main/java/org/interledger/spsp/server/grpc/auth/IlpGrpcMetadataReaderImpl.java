@@ -23,6 +23,7 @@ public class IlpGrpcMetadataReaderImpl implements IlpGrpcMetadataReader {
     // If the "Authorization" header exists, use it. Otherwise, see if we can find a jwt Cookie. If that doesn't exist,
     // return null so the AccountGrpcHandler can generate credentials
     return authorizationHeader
+      .map(token -> token.replace("Bearer ", ""))
       .orElseGet(() ->
         cookieHeaders
           .map(c -> {
@@ -33,8 +34,10 @@ public class IlpGrpcMetadataReaderImpl implements IlpGrpcMetadataReader {
               .filter($ -> $.getName().equals(JWT_COOKIE_NAME)) // JWT cookie exists?
               .findFirst()
               .map(HttpCookie::getValue) // if JWT cookie exists, return the value
-              .orElse(metadata.get(Metadata.Key.of(HttpHeaders.AUTHORIZATION, Metadata.ASCII_STRING_MARSHALLER))); // Otherwise get jwt from auth header
+              .orElse(null);
           })
+          // Strip Bearer prefix
+          .map(token -> token.replace("Bearer ", ""))
           // No cookies and no Authorization header, so just return null. This will signal to AccountGrpcHandler to
           // generate new credentials
           .orElse(null));
