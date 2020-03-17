@@ -1,6 +1,7 @@
 package org.interledger.spsp.server.config.ilp;
 
 import static okhttp3.CookieJar.NO_COOKIES;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.client.ConnectorAdminClient;
@@ -202,7 +203,7 @@ public class IlpOverHttpConfig {
   public ConnectorAdminClient adminClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl,
                                           ConnectorAdminAuthProvider connectorAdminAuthProvider) {
     return ConnectorAdminClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
-      template.header("Authorization", connectorAdminAuthProvider.getAdminAuth());
+      template.header(AUTHORIZATION, connectorAdminAuthProvider.getAdminAuth());
     });
   }
 
@@ -210,7 +211,7 @@ public class IlpOverHttpConfig {
   public ConnectorRoutesClient routesClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl,
                                             ConnectorAdminAuthProvider connectorAdminAuthProvider) {
     return ConnectorRoutesClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
-      template.header("Authorization", connectorAdminAuthProvider.getAdminAuth());
+      template.header(AUTHORIZATION, connectorAdminAuthProvider.getAdminAuth());
     });
   }
 

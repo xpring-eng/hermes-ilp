@@ -3,6 +3,7 @@ package org.interledger.spsp.server.controllers;
 import static org.interledger.spsp.server.config.ilp.IlpOverHttpConfig.SPSP;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.spsp.client.SimpleSpspClient;
@@ -24,6 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
 import java.util.concurrent.Callable;
+
 import javax.servlet.http.HttpServletRequest;
 
 public abstract class AbstractIntegrationTest {
@@ -51,25 +53,16 @@ public abstract class AbstractIntegrationTest {
   /**
    * Hack to mock out the HttpRequest that the controller uses to get the Authorization header
    *
-   * @param token auth token (sans Bearer prefix)
+   * @param token    auth token (sans Bearer prefix)
    * @param callable to run with mocked credentials
    */
   protected <T> T withAuthToken(String token, Callable<T> callable) {
     HttpServletRequest request = mock(HttpServletRequest.class);
-    when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
-    accountController.setRequest(request);
-    balanceController.setRequest(request);
-    paymentController.setRequest(request);
-    tokenController.setRequest(request);
+    when(request.getHeader(AUTHORIZATION)).thenReturn("Bearer " + token);
     try {
       return callable.call();
     } catch (Exception e) {
       throw new RuntimeException(e);
-    } finally {
-      accountController.setRequest(null);
-      balanceController.setRequest(null);
-      paymentController.setRequest(null);
-      tokenController.setRequest(null);
     }
   }
 

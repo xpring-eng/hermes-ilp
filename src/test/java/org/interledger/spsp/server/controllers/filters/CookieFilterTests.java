@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -120,7 +121,7 @@ public class CookieFilterTests extends AbstractControllerTest {
 
     this.mvc.perform(post("/accounts")
       .headers(testJsonHeaders())
-      .header("Authorization", authToken)
+      .header(AUTHORIZATION, authToken)
     )
       .andExpect(status().isOk());
 
@@ -154,7 +155,7 @@ public class CookieFilterTests extends AbstractControllerTest {
 
     this.mvc.perform(post("/accounts")
       .headers(testJsonHeaders())
-      .header("Authorization", headerAuthToken)
+      .header(AUTHORIZATION, headerAuthToken)
       .cookie(authCookie))
       .andExpect(status().isOk());
 
@@ -205,7 +206,7 @@ public class CookieFilterTests extends AbstractControllerTest {
 
     this.mvc.perform(get("/accounts/foo/balance")
       .headers(testJsonHeaders())
-      .header("Authorization", "Bearer " + authToken)
+      .header(AUTHORIZATION, "Bearer " + authToken)
     )
       .andExpect(status().isOk());
 
@@ -276,7 +277,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .build();
     this.mvc.perform(post("/accounts/foo/pay")
       .headers(testJsonHeaders())
-      .header("Authorization", authToken)
+      .header(AUTHORIZATION, authToken)
       .content(objectMapper.writeValueAsString(request))
     )
       .andExpect(status().isOk());

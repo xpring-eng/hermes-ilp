@@ -1,6 +1,7 @@
 package org.interledger.spsp.server.controllers;
 
 import static org.interledger.spsp.server.services.HermesUtils.paymentPointerFromSpspUrl;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountNotFoundProblem;
@@ -26,9 +27,8 @@ import org.zalando.problem.spring.common.MediaTypes;
 import java.util.Objects;
 import java.util.Optional;
 
-
 @Controller
-public class AccountController extends AbstractController {
+public class AccountController {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -51,8 +51,10 @@ public class AccountController extends AbstractController {
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
   public @ResponseBody
-  AccountSettingsResponse createAccount(@RequestHeader("Authorization") Optional<String> authToken,
-    @RequestBody Optional<CreateAccountRestRequest> createAccountRequest) {
+  AccountSettingsResponse createAccount(
+    @RequestHeader(AUTHORIZATION) Optional<String> authToken,
+    @RequestBody Optional<CreateAccountRestRequest> createAccountRequest
+  ) {
 
     // Give a choice of passing in a JWT or simple auth token, or having Hermes generate a Simple token
     AccountSettings accountSettings = newAccountService

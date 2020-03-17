@@ -1,5 +1,7 @@
 package org.interledger.spsp.server.controllers.filters;
 
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -31,7 +33,6 @@ import javax.servlet.http.HttpServletRequest;
 public class CookieAuthenticationFilter implements Filter {
 
   private static final String JWT_COOKIE_NAME = "jwt";
-  public static final String AUTHORIZATION = "Authorization";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Override

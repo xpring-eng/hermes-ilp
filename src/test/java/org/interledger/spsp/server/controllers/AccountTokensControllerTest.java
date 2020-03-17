@@ -25,8 +25,7 @@ import java.util.Optional;
 public class AccountTokensControllerTest extends AbstractIntegrationTest {
 
   /**
-   * Test that accounts created with a fully populated {@link CreateAccountRestRequest}
-   * won't have anything overwritten
+   * Test that accounts created with a fully populated {@link CreateAccountRestRequest} won't have anything overwritten
    */
   @Test
   public void testCRUD() {
@@ -34,27 +33,35 @@ public class AccountTokensControllerTest extends AbstractIntegrationTest {
       .accountId("foo")
       .build();
 
-    accountController.createAccount(Optional.of("Bearer password"), Optional.of(request));
+    final String tokenValue = "password";
+    final Optional<String> authorizationHeader = Optional.of("Bearer " + tokenValue);
+    accountController.createAccount(authorizationHeader, Optional.of(request));
 
     CreateAccessTokenResponse accessTokenResponse =
-      withAuthToken("password", () -> tokenController.createToken(request.accountId()));
+      withAuthToken(tokenValue, () -> tokenController.createToken(authorizationHeader, request.accountId()));
 
     AccountBalanceResponse balanceResponse =
-      withAuthToken(accessTokenResponse.rawToken(), () -> balanceController.getBalance(request.accountId()));
+      withAuthToken(accessTokenResponse.rawToken(), () -> balanceController.getBalance(
+        authorizationHeader,
+        request.accountId())
+      );
 
-    assertThat(withAuthToken("password", () -> tokenController.getTokens(request.accountId())))
-      .hasSize(1);
+    assertThat(withAuthToken(tokenValue, () -> tokenController.getTokens(
+      authorizationHeader, request.accountId()))
+    ).hasSize(1);
 
     assertThat(balanceResponse.accountBalance()).isNotNull();
 
-    withAuthToken("password", () -> {
-      tokenController.deleteTokens(request.accountId());
-      assertThat(tokenController.getTokens(request.accountId())).isEmpty();
+    withAuthToken(tokenValue, () -> {
+      tokenController.deleteTokens(authorizationHeader, request.accountId());
+      assertThat(tokenController.getTokens(authorizationHeader, request.accountId())).isEmpty();
       return null;
     });
   }
 
   @Component
-  public static class TestConfig extends AbstractIntegrationTest.TestConfig {};
+  public static class TestConfig extends AbstractIntegrationTest.TestConfig {
+
+  }
 
 }
