@@ -32,7 +32,7 @@ import javax.annotation.PreDestroy;
 
 public class SendMoneyService {
 
-  public static final int SEND_TIMEOUT = 30;
+  public static final int SEND_TIMEOUT = 60;
   private final SpspClient spspClient;
 
   private final HttpUrl connectorUrl;
@@ -48,7 +48,7 @@ public class SendMoneyService {
     this.objectMapper = objectMapper;
     this.adminClient = adminClient;
     this.okHttpClient = okHttpClient;
-    this.executorService = Executors.newCachedThreadPool();
+    this.executorService = Executors.newFixedThreadPool(20);
     this.spspClient = spspClient;
   }
 
