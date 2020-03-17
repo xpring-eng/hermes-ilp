@@ -2,7 +2,6 @@ package org.interledger.spsp.server.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.interledger.spsp.server.AbstractIntegrationTest;
 import org.interledger.spsp.server.HermesServerApplication;
 
 import org.junit.Test;

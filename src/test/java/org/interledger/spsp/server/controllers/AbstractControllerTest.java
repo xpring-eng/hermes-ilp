@@ -3,9 +3,9 @@ package org.interledger.spsp.server.controllers;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.core.InterledgerAddressPrefix;
 import org.interledger.link.http.OutgoingLinkSettings;
-import org.interledger.spsp.server.AbstractIntegrationTest;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
+import org.interledger.spsp.server.client.ConnectorTokensClient;
 import org.interledger.spsp.server.services.GimmeMoneyService;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
@@ -44,6 +44,9 @@ public class AbstractControllerTest {
   protected ConnectorBalanceClient balanceClient;
 
   @MockBean
+  protected ConnectorTokensClient tokensClient;
+
+  @MockBean
   protected GimmeMoneyService gimmeMoneyService;
 
   @MockBean
@@ -70,4 +73,5 @@ public class AbstractControllerTest {
     headers.setContentType(MediaType.APPLICATION_JSON);
     return headers;
   }
+
 }
