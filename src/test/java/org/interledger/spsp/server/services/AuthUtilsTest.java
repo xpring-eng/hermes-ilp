@@ -39,7 +39,7 @@ public class AuthUtilsTest {
   @Test
   public void getAuthorizationAsBearerTokenWithNullToken() {
     expectedException.expect(NullPointerException.class);
-    AuthUtils.getAuthorizationAsBearerToken(null);
+    AuthUtils.getBearerTokenFromAuthorizationHeader(null);
 
   }
 
@@ -47,27 +47,27 @@ public class AuthUtilsTest {
   public void getAuthorizationAsBearerTokenWithEmptyToken() {
     expectedException.expect(BadCredentialsException.class);
     expectedException.expectMessage("Requests must have a valid Authorization header");
-    AuthUtils.getAuthorizationAsBearerToken(Optional.of(""));
+    AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of(""));
   }
 
   @Test
   public void getAuthorizationAsBearerTokenWithBlankToken() {
     expectedException.expect(BadCredentialsException.class);
-    AuthUtils.getAuthorizationAsBearerToken(Optional.of(" "));
+    AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of(" "));
   }
 
   @Test
   public void getAuthorizationAsBearerTokenWithInvalidBearerSpelling() {
     expectedException.expect(BadCredentialsException.class);
-    AuthUtils.getAuthorizationAsBearerToken(Optional.of("Bear foo"));
+    AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of("Bear foo"));
   }
 
   @Test
   public void getAuthorizationAsBearerTokenWithEmptyBearerToken() {
-    assertThat(AuthUtils.getAuthorizationAsBearerToken(Optional.of("Bearer  "))).isEqualTo(" ");
-    assertThat(AuthUtils.getAuthorizationAsBearerToken(Optional.of("Bearer f"))).isEqualTo("f");
-    assertThat(AuthUtils.getAuthorizationAsBearerToken(Optional.of("Bearer foo"))).isEqualTo("foo");
-    assertThat(AuthUtils.getAuthorizationAsBearerToken(Optional.of("Bearer foo bar"))).isEqualTo("foo bar");
+    assertThat(AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of("Bearer  "))).isEqualTo(" ");
+    assertThat(AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of("Bearer f"))).isEqualTo("f");
+    assertThat(AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of("Bearer foo"))).isEqualTo("foo");
+    assertThat(AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of("Bearer foo bar"))).isEqualTo("foo bar");
   }
 
   @Test

@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -24,6 +25,7 @@ import org.interledger.spsp.server.controllers.AccountController;
 import org.interledger.spsp.server.controllers.BalanceController;
 import org.interledger.spsp.server.controllers.PaymentController;
 import org.interledger.spsp.server.controllers.filters.CookieFilterTests.CookieFilterConfiguration;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.PaymentRequest;
 import org.interledger.stream.SendMoneyResult;
 
@@ -37,7 +39,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -59,9 +60,14 @@ import javax.servlet.http.Cookie;
 @Import(CookieFilterConfiguration.class)
 public class CookieFilterTests extends AbstractControllerTest {
 
-  @Autowired
-  ApplicationContext applicationContext;
-  ObjectMapper objectMapper = ObjectMapperFactory.create();
+  private static final String JWT_VALUE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0"
+    + ".dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U";
+
+  private static final BearerToken BEARER_TOKEN = BearerToken.fromRawToken(JWT_VALUE);
+  private static final Optional<BearerToken> OPT_BEARER_TOKEN = Optional.of(BEARER_TOKEN);
+
+  private ObjectMapper objectMapper = ObjectMapperFactory.create();
+
   @Autowired
   private MockMvc mvc;
 
@@ -72,9 +78,7 @@ public class CookieFilterTests extends AbstractControllerTest {
 
   @Test
   public void testCreateAccountWithCookieAuth() throws Exception {
-
-    String authToken = "fakejwt.asdlfkjasdf.blah";
-    Cookie authCookie = new Cookie("jwt", authToken);
+    Cookie authCookie = new Cookie("jwt", JWT_VALUE);
 
     AccountSettings accountSettingsMock = AccountSettings.builder()
       .accountId(AccountId.of("foo"))
@@ -88,7 +92,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .accountRelationship(AccountRelationship.PEER)
       .build();
 
-    when(accountService.createAccount(eq(Optional.of(authToken)), any(Optional.class)))
+    when(accountService.createAccount(eq(OPT_BEARER_TOKEN), any(Optional.class)))
       .thenReturn(accountSettingsMock);
 
     this.mvc.perform(post("/accounts")
@@ -97,13 +101,11 @@ public class CookieFilterTests extends AbstractControllerTest {
     )
       .andExpect(status().isOk());
 
-    verify(accountService, times(1)).createAccount(eq(Optional.of(authToken)), any(Optional.class));
+    verify(accountService, times(1)).createAccount(eq(OPT_BEARER_TOKEN), any(Optional.class));
   }
 
   @Test
   public void testCreateAccountWithHeaderAuth() throws Exception {
-    String authToken = "fakejwt.asdlfkjasdf.blah";
-
     AccountSettings accountSettingsMock = AccountSettings.builder()
       .accountId(AccountId.of("foo"))
       .linkType(IlpOverHttpLink.LINK_TYPE)
@@ -116,16 +118,16 @@ public class CookieFilterTests extends AbstractControllerTest {
       .accountRelationship(AccountRelationship.PEER)
       .build();
 
-    when(accountService.createAccount(eq(Optional.of(authToken)), any(Optional.class)))
+    when(accountService.createAccount(eq(OPT_BEARER_TOKEN), any(Optional.class)))
       .thenReturn(accountSettingsMock);
 
     this.mvc.perform(post("/accounts")
       .headers(testJsonHeaders())
-      .header(AUTHORIZATION, authToken)
+      .header(AUTHORIZATION, BEARER_TOKEN.toString())
     )
       .andExpect(status().isOk());
 
-    verify(accountService, times(1)).createAccount(eq(Optional.of(authToken)), any(Optional.class));
+    verify(accountService, times(1)).createAccount(eq(OPT_BEARER_TOKEN), any(Optional.class));
   }
 
   /**
@@ -134,9 +136,9 @@ public class CookieFilterTests extends AbstractControllerTest {
    */
   @Test
   public void testCreateAccountWithCookieAndAuthHeader() throws Exception {
-    String headerAuthToken = "asdfulahsdfkljh";
-    String cookieAuthToken = "fakejwt.asdlkfj.sdlkfjj";
-    Cookie authCookie = new Cookie("jwt", cookieAuthToken);
+    BearerToken headerAuthBearerToken = BearerToken.fromRawToken("shh");
+    String cookieAuthBearerTokenValue = JWT_VALUE;
+    Cookie authCookie = new Cookie("jwt", cookieAuthBearerTokenValue);
 
     AccountSettings accountSettingsMock = AccountSettings.builder()
       .accountId(AccountId.of("foo"))
@@ -155,19 +157,18 @@ public class CookieFilterTests extends AbstractControllerTest {
 
     this.mvc.perform(post("/accounts")
       .headers(testJsonHeaders())
-      .header(AUTHORIZATION, headerAuthToken)
+      .header(AUTHORIZATION, headerAuthBearerToken)
       .cookie(authCookie))
       .andExpect(status().isOk());
 
     // createAccount should have been called with the header auth, not the cookie auth
-    verify(accountService, times(1)).createAccount(eq(Optional.of(headerAuthToken)), any(Optional.class));
-    verify(accountService, times(0)).createAccount(eq(Optional.of(cookieAuthToken)), any(Optional.class));
+    verify(accountService).createAccount(eq(Optional.of(headerAuthBearerToken)), any(Optional.class));
+    verifyNoMoreInteractions(accountService);
   }
 
   @Test
   public void testGetBalanceWithCookieAuth() throws Exception {
-    String authToken = "fakejwt.asdlfkjasdf.blah";
-    Cookie authCookie = new Cookie("jwt", authToken);
+    Cookie authCookie = new Cookie("jwt", BEARER_TOKEN.rawToken());
 
     AccountBalanceResponse accountBalanceResponseMock = AccountBalanceResponse.builder()
       .assetCode("XRP")
@@ -178,7 +179,7 @@ public class CookieFilterTests extends AbstractControllerTest {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq("Bearer " + authToken), any())).thenReturn(accountBalanceResponseMock);
+    when(balanceClient.getBalance(eq(BEARER_TOKEN.toString()), any())).thenReturn(accountBalanceResponseMock);
 
     this.mvc.perform(get("/accounts/foo/balance")
       .headers(testJsonHeaders())
@@ -186,12 +187,12 @@ public class CookieFilterTests extends AbstractControllerTest {
     )
       .andExpect(status().isOk());
 
-    verify(balanceClient, times(1)).getBalance(eq("Bearer " + authToken), any());
+    verify(balanceClient, times(1)).getBalance(eq(BEARER_TOKEN.toString()), any());
   }
 
   @Test
   public void testGetBalanceWithHeaderAuth() throws Exception {
-    String authToken = "fakejwt.asdlfkjasdf.blah";
+    BearerToken bearerToken = BearerToken.fromRawToken("fakejwt.asdlfkjasdf.blah");
 
     AccountBalanceResponse accountBalanceResponseMock = AccountBalanceResponse.builder()
       .assetCode("XRP")
@@ -202,21 +203,20 @@ public class CookieFilterTests extends AbstractControllerTest {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq("Bearer " + authToken), any())).thenReturn(accountBalanceResponseMock);
+    when(balanceClient.getBalance(eq(bearerToken.toString()), any())).thenReturn(accountBalanceResponseMock);
 
     this.mvc.perform(get("/accounts/foo/balance")
       .headers(testJsonHeaders())
-      .header(AUTHORIZATION, "Bearer " + authToken)
+      .header(AUTHORIZATION, bearerToken.toString())
     )
       .andExpect(status().isOk());
 
-    verify(balanceClient, times(1)).getBalance(eq("Bearer " + authToken), any());
+    verify(balanceClient, times(1)).getBalance(eq(bearerToken.toString()), any());
   }
 
   @Test
   public void testSendMoneyWithCookieAuth() throws Exception {
-    String authToken = "fakejwt";
-    Cookie authCookie = new Cookie("jwt", authToken);
+    Cookie authCookie = new Cookie("jwt", JWT_VALUE);
 
     SendMoneyResult sendMoneyResultMock = SendMoneyResult.builder()
       .originalAmount(UnsignedLong.valueOf(10))
@@ -230,7 +230,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq(authToken),
+      eq(BEARER_TOKEN),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
@@ -246,15 +246,13 @@ public class CookieFilterTests extends AbstractControllerTest {
       .andExpect(status().isOk());
 
     verify(sendMoneyService, times(1)).sendMoney(any(),
-      eq(authToken),
+      eq(BEARER_TOKEN),
       any(),
       any());
   }
 
   @Test
   public void testSendMoneyWithHeaderAuth() throws Exception {
-    String authToken = "fakejwt";
-
     SendMoneyResult sendMoneyResultMock = SendMoneyResult.builder()
       .originalAmount(UnsignedLong.valueOf(10))
       .amountDelivered(UnsignedLong.valueOf(10))
@@ -267,7 +265,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq(authToken),
+      eq(BEARER_TOKEN),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
@@ -277,13 +275,13 @@ public class CookieFilterTests extends AbstractControllerTest {
       .build();
     this.mvc.perform(post("/accounts/foo/pay")
       .headers(testJsonHeaders())
-      .header(AUTHORIZATION, authToken)
+      .header(AUTHORIZATION, BEARER_TOKEN.value())
       .content(objectMapper.writeValueAsString(request))
     )
       .andExpect(status().isOk());
 
     verify(sendMoneyService, times(1)).sendMoney(any(),
-      eq(authToken),
+      eq(BEARER_TOKEN),
       any(),
       any());
   }

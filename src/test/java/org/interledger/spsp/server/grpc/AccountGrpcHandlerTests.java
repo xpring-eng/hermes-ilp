@@ -17,6 +17,7 @@ import org.interledger.spsp.server.controllers.AbstractIntegrationTest;
 import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
+import org.interledger.spsp.server.model.BearerToken;
 
 import feign.FeignException;
 import io.grpc.Status;
@@ -47,36 +48,28 @@ import java.util.stream.Collectors;
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
 @SpringBootTest(
-    classes = {HermesServerApplication.class, AccountGrpcHandlerTests.TestConfig.class},
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {"spring.main.allow-bean-definition-overriding=true"})
-public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
-
-  private Logger logger = LoggerFactory.getLogger(this.getClass());
-
-  @Rule
-  public ExpectedException expectedException = ExpectedException.none();
+  classes = {HermesServerApplication.class, AccountGrpcHandlerTests.TestConfig.class},
+  webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+  properties = {"spring.main.allow-bean-definition-overriding=true"})
+public class AccountGrpcHandlerTests extends AbstractIntegrationTest {
 
   /**
-   * This rule manages automatic graceful shutdown for the registered servers and channels at the
-   * end of test.
+   * This rule manages automatic graceful shutdown for the registered servers and channels at the end of test.
    */
   @Rule
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
-  private AccountServiceGrpc.AccountServiceBlockingStub blockingStub;
-
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
   @Autowired
   AccountGrpcHandler accountGrpcHandler;
-
-  @Autowired
-  private OutgoingLinkSettings outgoingLinkSettings;
-
   @Autowired
   HttpUrl spspReceiverUrl;
-
   @Autowired
   IlpGrpcMetadataReader ilpGrpcMetadataReader;
+  private Logger logger = LoggerFactory.getLogger(this.getClass());
+  private AccountServiceGrpc.AccountServiceBlockingStub blockingStub;
+  @Autowired
+  private OutgoingLinkSettings outgoingLinkSettings;
   private AccountId accountIdHermes;
 
   @Before
@@ -107,7 +100,8 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
       if (e.status() != 409) {
         throw e;
       } else {
-        logger.warn("Hermes account already exists. If you want to update the account, delete it and try again with new settings.");
+        logger.warn(
+          "Hermes account already exists. If you want to update the account, delete it and try again with new settings.");
       }
     }
 
@@ -139,7 +133,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
   public void getAccountForHermes() {
 
     GetAccountResponse reply =
-        blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId(accountIdHermes.value()).build());
+      blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId(accountIdHermes.value()).build());
 
     logger.info(reply.toString());
     assertThat(reply.getAccountId()).isEqualTo("hermes");
@@ -161,7 +155,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
       GetAccountResponse reply =
         blockingStub.getAccount(GetAccountRequest.newBuilder().setAccountId(accountId.value()).build());
       fail();
-    } catch (StatusRuntimeException e){
+    } catch (StatusRuntimeException e) {
       logger.info("Failed successfully.  Error status: " + e.getStatus());
       assertEquals(e.getStatus(), Status.NOT_FOUND);
     }
@@ -169,7 +163,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
 
   @Test
   public void createAccountWithHeaderTokenButNoRequest() {
-    String authToken = "Bearer password";
+    BearerToken authToken = BearerToken.fromBearerTokenValue("Bearer password");
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .build();
 
@@ -182,8 +176,10 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
     assertThat(reply.getAssetCode()).isEqualTo("XRP");
     assertThat(reply.getAssetScale()).isEqualTo(9);
     assertThat(reply.getPaymentPointer()).isEqualTo(containers.paymentPointerBase() + "/" + reply.getAccountId());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo(authToken.replace("Bearer ", ""));
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE))
+      .isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString()
+      .isEqualTo(authToken.rawToken());
   }
 
   @Test
@@ -195,9 +191,12 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
     assertThat(reply.getAssetCode()).isEqualTo("XRP");
     assertThat(reply.getAssetScale()).isEqualTo(9);
     assertThat(reply.getPaymentPointer()).isEqualTo(containers.paymentPointerBase() + "/" + reply.getAccountId());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isNotEmpty();
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().doesNotStartWith("enc:jks");
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE))
+      .isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString()
+      .isNotEmpty();
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString()
+      .doesNotStartWith("enc:jks");
   }
 
   @Test
@@ -217,7 +216,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
 
   @Test
   public void testCreateAccountWithOnlyAssetDetails() {
-    String authToken = "Bearer password";
+    BearerToken authToken = BearerToken.fromBearerTokenValue("Bearer password");
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .setAssetCode("XRP")
       .setAssetScale(9)
@@ -231,13 +230,15 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
     assertThat(reply.getAssetCode()).isEqualTo("XRP");
     assertThat(reply.getAssetScale()).isEqualTo(9);
     assertThat(reply.getPaymentPointer()).isEqualTo(containers.paymentPointerBase() + "/" + reply.getAccountId());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).isEqualTo(authToken.replace("Bearer ", ""));
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE))
+      .isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN))
+      .isEqualTo(authToken.rawToken());
   }
 
   @Test
   public void createAccountWithSimpleAuthAndFullRequest() {
-    String authToken = "Bearer password";
+    BearerToken authToken = BearerToken.fromBearerTokenValue("Bearer password");
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .setAccountId("foo")
       .setAssetCode("USD")
@@ -252,8 +253,10 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
     assertThat(reply.getAssetCode()).isEqualTo("USD");
     assertThat(reply.getAssetScale()).isEqualTo(4);
     assertThat(reply.getPaymentPointer()).isEqualTo(containers.paymentPointerBase() + "/" + reply.getAccountId());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo(authToken.replace("Bearer ", ""));
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE))
+      .isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString()
+      .isEqualTo(authToken.rawToken());
   }
 
   /**
@@ -265,10 +268,11 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
     String accountDescription = "Noah's test account";
 
     JwtAuthSettings jwtAuthSettings = containers.defaultJwtAuthSettings(accountID);
-    String jwt = containers.createJwt(accountID, 10);
+    BearerToken jwt = BearerToken.fromRawToken(containers.createJwt(accountID, 10));
 
     Map<String, String> customSettings = new HashMap<>();
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
+    customSettings
+      .put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, jwtAuthSettings.tokenIssuer().get().toString());
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE, jwtAuthSettings.tokenAudience().get());
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT, jwtAuthSettings.tokenSubject());
@@ -313,14 +317,20 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest  {
 
     assertThat(expected)
       .isEqualToIgnoringGivenFields(reply, "customSettings_", "createdAt_", "memoizedHashCode", "modifiedAt_");
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER)).isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE)).isEqualTo(jwtAuthSettings.tokenAudience().get());
-    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT)).isEqualTo(jwtAuthSettings.tokenSubject());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE))
+      .isEqualTo(IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER))
+      .isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE))
+      .isEqualTo(jwtAuthSettings.tokenAudience().get());
+    assertThat(reply.getCustomSettingsMap().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT))
+      .isEqualTo(jwtAuthSettings.tokenSubject());
   }
 
   @Configuration
-  public static class TestConfig extends AbstractIntegrationTest.TestConfig {}
+  public static class TestConfig extends AbstractIntegrationTest.TestConfig {
+
+  }
 }
 
 

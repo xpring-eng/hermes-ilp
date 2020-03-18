@@ -14,6 +14,7 @@ import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.grpc.CreateAccountResponse;
 import org.interledger.spsp.server.grpc.GetAccountResponse;
 import org.interledger.spsp.server.grpc.SendPaymentResponse;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.services.HermesUtils;
 import org.interledger.stream.SendMoneyResult;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -34,7 +36,8 @@ public class AccountRequestResponseConverter {
 
   private static Logger logger = LoggerFactory.getLogger(AccountRequestResponseConverter.class);
 
-  public static GetAccountResponse createGetAccountResponseFromAccountSettings(AccountSettings accountSettings, HttpUrl spspReceiverUrl) {
+  public static GetAccountResponse createGetAccountResponseFromAccountSettings(AccountSettings accountSettings,
+    HttpUrl spspReceiverUrl) {
 
     long maxPacketAmount = accountSettings.maximumPacketAmount().isPresent() ?
       accountSettings.maximumPacketAmount().get().longValue() : 0L;
@@ -60,7 +63,6 @@ public class AccountRequestResponseConverter {
       .setIsReceiveRoutes(accountSettings.isReceiveRoutes())
       .setPaymentPointer(paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()).toString());
 
-
     GetAccountResponse.BalanceSettings.Builder balanceSettingsBuilder = GetAccountResponse.BalanceSettings.newBuilder()
       .setSettleTo(accountBalanceSettings.settleTo());
     accountBalanceSettings.minBalance().ifPresent(
@@ -73,20 +75,25 @@ public class AccountRequestResponseConverter {
     protoResponseBuilder.setBalanceSettings(balanceSettingsBuilder.build());
 
     accountSettings.rateLimitSettings().maxPacketsPerSecond().ifPresent(
-      max -> protoResponseBuilder.setMaximumPacketAmount(accountSettings.rateLimitSettings().maxPacketsPerSecond().get())
+      max -> protoResponseBuilder
+        .setMaximumPacketAmount(accountSettings.rateLimitSettings().maxPacketsPerSecond().get())
     );
 
     Optional<SettlementEngineDetails> settlementEngineDetails = accountSettings.settlementEngineDetails();
-    GetAccountResponse.SettlementEngineDetails.Builder settlementEngineBuilder = GetAccountResponse.SettlementEngineDetails.newBuilder();
+    GetAccountResponse.SettlementEngineDetails.Builder settlementEngineBuilder = GetAccountResponse.SettlementEngineDetails
+      .newBuilder();
     settlementEngineDetails.ifPresent(
       settle -> {
         settlementEngineDetails.get().settlementEngineAccountId().ifPresent(
-          accountId -> settlementEngineBuilder.setSettlementEngineAccountId(settlementEngineDetails.get().settlementEngineAccountId().get().value())
+          accountId -> settlementEngineBuilder
+            .setSettlementEngineAccountId(settlementEngineDetails.get().settlementEngineAccountId().get().value())
         );
 
-        settlementEngineBuilder.setBaseUrl(settlementEngineDetails.get().baseUrl() == null ? null : settlementEngineDetails.get().baseUrl().toString());
+        settlementEngineBuilder.setBaseUrl(
+          settlementEngineDetails.get().baseUrl() == null ? null : settlementEngineDetails.get().baseUrl().toString());
 
-        settlementEngineBuilder.putAllCustomSettings(settingsMapToGrpcSettingsMap(settlementEngineDetails.get().customSettings()));
+        settlementEngineBuilder
+          .putAllCustomSettings(settingsMapToGrpcSettingsMap(settlementEngineDetails.get().customSettings()));
       });
 
     return protoResponseBuilder
@@ -98,8 +105,9 @@ public class AccountRequestResponseConverter {
       .build();
   }
 
-  public static CreateAccountResponse.Builder generateCreateAccountResponseFromAccountSettings(AccountSettings accountSettings,
-                                                                                               HttpUrl spspReceiverUrl) {
+  public static CreateAccountResponse.Builder generateCreateAccountResponseFromAccountSettings(
+    AccountSettings accountSettings,
+    HttpUrl spspReceiverUrl) {
 
     long maxPacketAmount = accountSettings.maximumPacketAmount().isPresent() ?
       accountSettings.maximumPacketAmount().get().longValue() : 0L;
@@ -123,10 +131,11 @@ public class AccountRequestResponseConverter {
       .setIlpAddressSegment(accountSettings.ilpAddressSegment())
       .setIsSendRoutes(accountSettings.isSendRoutes())
       .setIsReceiveRoutes(accountSettings.isReceiveRoutes())
-      .setPaymentPointer(HermesUtils.paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()).toString());
+      .setPaymentPointer(
+        HermesUtils.paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()).toString());
 
-
-    CreateAccountResponse.BalanceSettings.Builder balanceSettingsBuilder = CreateAccountResponse.BalanceSettings.newBuilder()
+    CreateAccountResponse.BalanceSettings.Builder balanceSettingsBuilder = CreateAccountResponse.BalanceSettings
+      .newBuilder()
       .setSettleTo(accountBalanceSettings.settleTo());
     accountBalanceSettings.minBalance().ifPresent(
       minBalance -> balanceSettingsBuilder.setMinBalance(accountBalanceSettings.minBalance().get())
@@ -138,20 +147,25 @@ public class AccountRequestResponseConverter {
     protoResponseBuilder.setBalanceSettings(balanceSettingsBuilder.build());
 
     accountSettings.rateLimitSettings().maxPacketsPerSecond().ifPresent(
-      max -> protoResponseBuilder.setMaximumPacketAmount(accountSettings.rateLimitSettings().maxPacketsPerSecond().get())
+      max -> protoResponseBuilder
+        .setMaximumPacketAmount(accountSettings.rateLimitSettings().maxPacketsPerSecond().get())
     );
 
     Optional<SettlementEngineDetails> settlementEngineDetails = accountSettings.settlementEngineDetails();
-    CreateAccountResponse.SettlementEngineDetails.Builder settlementEngineBuilder = CreateAccountResponse.SettlementEngineDetails.newBuilder();
+    CreateAccountResponse.SettlementEngineDetails.Builder settlementEngineBuilder = CreateAccountResponse.SettlementEngineDetails
+      .newBuilder();
     settlementEngineDetails.ifPresent(
       settle -> {
         settlementEngineDetails.get().settlementEngineAccountId().ifPresent(
-          accountId -> settlementEngineBuilder.setSettlementEngineAccountId(settlementEngineDetails.get().settlementEngineAccountId().get().value())
+          accountId -> settlementEngineBuilder
+            .setSettlementEngineAccountId(settlementEngineDetails.get().settlementEngineAccountId().get().value())
         );
 
-        settlementEngineBuilder.setBaseUrl(settlementEngineDetails.get().baseUrl() == null ? null : settlementEngineDetails.get().baseUrl().toString());
+        settlementEngineBuilder.setBaseUrl(
+          settlementEngineDetails.get().baseUrl() == null ? null : settlementEngineDetails.get().baseUrl().toString());
 
-        settlementEngineBuilder.putAllCustomSettings(settingsMapToGrpcSettingsMap(settlementEngineDetails.get().customSettings()));
+        settlementEngineBuilder
+          .putAllCustomSettings(settingsMapToGrpcSettingsMap(settlementEngineDetails.get().customSettings()));
       });
 
     return protoResponseBuilder
@@ -162,10 +176,11 @@ public class AccountRequestResponseConverter {
       .putAllCustomSettings(settingsMapToGrpcSettingsMap(accountSettings.customSettings()));
   }
 
-  public static AccountSettings accountSettingsFromCreateAccountRequest(String authToken,
-                                                                        CreateAccountRestRequest createAccountRequest,
-                                                                        OutgoingLinkSettings outgoingLinkSettings) {
-
+  public static AccountSettings accountSettingsFromCreateAccountRequest(
+    BearerToken bearerToken,
+    CreateAccountRestRequest createAccountRequest,
+    OutgoingLinkSettings outgoingLinkSettings
+  ) {
     return AccountSettings.builder()
       .accountId(AccountId.of(createAccountRequest.accountId()))
       .assetCode(createAccountRequest.assetCode())
@@ -173,9 +188,9 @@ public class AccountRequestResponseConverter {
       .description(createAccountRequest.description())
       .accountRelationship(AccountRelationship.CHILD)
       .linkType(IlpOverHttpLink.LINK_TYPE)
-      .customSettings(customSettingsFromAuthToken(authToken, outgoingLinkSettings))
+      .customSettings(customSettingsFromBearerToken(bearerToken, outgoingLinkSettings))
       .build();
-}
+  }
 
   private static Map<String, String> settingsMapToGrpcSettingsMap(Map<String, Object> settingsMap) {
     return settingsMap.entrySet()
@@ -183,36 +198,32 @@ public class AccountRequestResponseConverter {
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
   }
 
-  private static Map<String, Object> customSettingsFromAuthToken(String authHeader,
-                                                                 OutgoingLinkSettings outgoingLinkSettings) {
+  private static Map<String, Object> customSettingsFromBearerToken(
+    final BearerToken bearerToken, final OutgoingLinkSettings outgoingLinkSettings
+  ) {
     Map<String, Object> customSettings;
-    String authToken = getToken(authHeader);
     try {
-      DecodedJWT maybeDecodedJwt = JWT.decode(authToken);
+      DecodedJWT maybeDecodedJwt = JWT.decode(bearerToken.rawToken());
       customSettings = customSettingsFromJwt(maybeDecodedJwt);
     } catch (JWTDecodeException e) {
-      logger.debug("Unable to decode auth token as JWT. Treating auth token as SIMPLE.");
-      customSettings = customSettingsFromSimpleToken(authToken);
+      logger.debug("Unable to decode Bearer token as JWT. Treating auth token as SIMPLE.");
+      customSettings = customSettingsFromSimpleToken(bearerToken);
     }
 
     customSettings.putAll(outgoingLinkSettings.toCustomSettingsMap());
     return customSettings;
   }
 
-  private static String getToken(String authToken) {
-    return authToken.replace("Bearer ", "");
-  }
-
-  private static Map<String, Object> customSettingsFromSimpleToken(String simpleAuthToken) {
+  private static Map<String, Object> customSettingsFromSimpleToken(final BearerToken simpleAuthBearerToken) {
+    Objects.requireNonNull(simpleAuthBearerToken);
     Map<String, Object> customSettings = new HashMap<>();
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.SIMPLE);
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN, simpleAuthToken);
+    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN, simpleAuthBearerToken.rawToken());
 
     return customSettings;
   }
 
   private static Map<String, Object> customSettingsFromJwt(DecodedJWT decodedJwt) {
-
     Map<String, Object> customSettings = new HashMap<>();
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.JWT_RS_256);
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER, decodedJwt.getIssuer());

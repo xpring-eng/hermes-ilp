@@ -1,19 +1,17 @@
 package org.interledger.spsp.server.controllers;
 
-import static org.interledger.spsp.server.services.AuthUtils.getAuthorizationAsBearerToken;
 import static org.interledger.spsp.server.services.AuthUtils.getJwt;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.PaymentPointer;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.ImmutablePaymentRequest;
 import org.interledger.spsp.server.model.PaymentRequest;
 import org.interledger.spsp.server.model.PaymentResponse;
 import org.interledger.spsp.server.services.SendMoneyService;
 import org.interledger.stream.SendMoneyResult;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,11 +28,8 @@ import java.util.concurrent.ExecutionException;
 
 import javax.servlet.http.HttpServletRequest;
 
-
 @RestController
 public class PaymentController {
-
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private final SendMoneyService sendMoneyService;
 
@@ -57,14 +52,14 @@ public class PaymentController {
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
   public PaymentResponse sendPayment(
-    @RequestHeader(AUTHORIZATION) Optional<String> authorizationHeader,
+    @RequestHeader(AUTHORIZATION) String authorizationHeader,
     @PathVariable("accountId") String accountId,
     @RequestBody ImmutablePaymentRequest paymentRequest
   ) {
     try {
-      getJwt(authorizationHeader); // hack to make sure JWT isn't expired
+      getJwt(Optional.ofNullable(authorizationHeader)); // hack to make sure JWT isn't expired
       SendMoneyResult result = sendMoneyService.sendMoney(AccountId.of(accountId),
-        getAuthorizationAsBearerToken(authorizationHeader),
+        BearerToken.fromBearerTokenValue(authorizationHeader),
         paymentRequest.amount(),
         PaymentPointer.of(paymentRequest.destinationPaymentPointer()));
 

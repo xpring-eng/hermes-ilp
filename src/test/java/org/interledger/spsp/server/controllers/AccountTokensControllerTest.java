@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.client.CreateAccessTokenResponse;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
 import org.junit.Test;
@@ -34,27 +35,27 @@ public class AccountTokensControllerTest extends AbstractIntegrationTest {
       .build();
 
     final String tokenValue = "password";
-    final Optional<String> authorizationHeader = Optional.of("Bearer " + tokenValue);
-    accountController.createAccount(authorizationHeader, Optional.of(request));
+    final BearerToken authorizationHeader = BearerToken.fromRawToken(tokenValue);
+    accountController.createAccount(Optional.of(authorizationHeader.value()), Optional.of(request));
 
     CreateAccessTokenResponse accessTokenResponse =
-      withAuthToken(tokenValue, () -> tokenController.createToken(authorizationHeader, request.accountId()));
+      withAuthToken(tokenValue, () -> tokenController.createToken(authorizationHeader.value(), request.accountId()));
 
     AccountBalanceResponse balanceResponse =
       withAuthToken(accessTokenResponse.rawToken(), () -> balanceController.getBalance(
-        authorizationHeader,
+        authorizationHeader.value(),
         request.accountId())
       );
 
     assertThat(withAuthToken(tokenValue, () -> tokenController.getTokens(
-      authorizationHeader, request.accountId()))
+      authorizationHeader.value(), request.accountId()))
     ).hasSize(1);
 
     assertThat(balanceResponse.accountBalance()).isNotNull();
 
     withAuthToken(tokenValue, () -> {
-      tokenController.deleteTokens(authorizationHeader, request.accountId());
-      assertThat(tokenController.getTokens(authorizationHeader, request.accountId())).isEmpty();
+      tokenController.deleteTokens(authorizationHeader.value(), request.accountId());
+      assertThat(tokenController.getTokens(authorizationHeader.value(), request.accountId())).isEmpty();
       return null;
     });
   }

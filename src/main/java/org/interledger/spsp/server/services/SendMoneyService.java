@@ -12,6 +12,7 @@ import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.StreamConnectionDetails;
 import org.interledger.spsp.client.SpspClient;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.stream.Denomination;
 import org.interledger.stream.SendMoneyRequest;
 import org.interledger.stream.SendMoneyResult;
@@ -58,7 +59,7 @@ public class SendMoneyService {
   }
 
   public SendMoneyResult sendMoney(AccountId senderAccountId,
-                                   String bearerToken,
+                                   BearerToken bearerToken,
                                    UnsignedLong amount,
                                    PaymentPointer destination)
     throws ExecutionException, InterruptedException {
@@ -72,7 +73,7 @@ public class SendMoneyService {
       InterledgerAddress.of("test.jc.money").with(senderAccountId.value());
 
     // Use ILP over HTTP for our underlying link
-    IlpOverHttpLink link = newIlpOverHttpLink(senderAddress, senderAccountId, bearerToken);
+    IlpOverHttpLink link = newIlpOverHttpLink(senderAddress, senderAccountId, bearerToken.rawToken());
 
     // Create SimpleStreamSender for sending STREAM payments
     SimpleStreamSender simpleStreamSender = new SimpleStreamSender(new JavaxStreamEncryptionService(),

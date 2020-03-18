@@ -19,6 +19,7 @@ import org.interledger.spsp.server.controllers.AbstractIntegrationTest;
 import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.services.NewAccountService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -49,31 +50,24 @@ import java.util.stream.Collectors;
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
 @SpringBootTest(
-    classes = {HermesServerApplication.class, IlpHttpGrpcTests.TestConfig.class},
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {"spring.main.allow-bean-definition-overriding=true"})
+  classes = {HermesServerApplication.class, IlpHttpGrpcTests.TestConfig.class},
+  webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+  properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class IlpHttpGrpcTests extends AbstractIntegrationTest {
 
-  private Logger logger = LoggerFactory.getLogger(this.getClass());
-
-  @Rule
-  public ExpectedException expectedException = ExpectedException.none();
-
   /**
-   * This rule manages automatic graceful shutdown for the registered servers and channels at the
-   * end of test.
+   * This rule manages automatic graceful shutdown for the registered servers and channels at the end of test.
    */
   @Rule
   public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
-  private IlpOverHttpServiceGrpc.IlpOverHttpServiceBlockingStub blockingStub;
-
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
   @Autowired
   IlpOverHttpGrpcHandler ilpOverHttpGrpcHandler;
-
   @Autowired
   IlpGrpcMetadataReader ilpGrpcMetadataReader;
-
+  private Logger logger = LoggerFactory.getLogger(this.getClass());
+  private IlpOverHttpServiceGrpc.IlpOverHttpServiceBlockingStub blockingStub;
   @Autowired
   private NewAccountService newAccountService;
 
@@ -107,8 +101,8 @@ public class IlpHttpGrpcTests extends AbstractIntegrationTest {
     );
 
     blockingStub = IlpOverHttpServiceGrpc.newBlockingStub(
-        // Create a client channel and register for automatic graceful shutdown.
-        grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
+      // Create a client channel and register for automatic graceful shutdown.
+      grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
   }
 
   private void createTestAccount(String jwtSubject) {
@@ -144,7 +138,8 @@ public class IlpHttpGrpcTests extends AbstractIntegrationTest {
       if (e.status() != 409) {
         throw e;
       } else {
-        logger.warn("Hermes account already exists. If you want to update the account, delete it and try again with new settings.");
+        logger.warn(
+          "Hermes account already exists. If you want to update the account, delete it and try again with new settings.");
       }
     }
   }
@@ -152,7 +147,7 @@ public class IlpHttpGrpcTests extends AbstractIntegrationTest {
   @Test
   public void sendMoneyTest() throws JsonProcessingException {
     int sendAmount = 10000;
-    String aliceJwt = containers.createJwt("alice", 10);
+    BearerToken aliceJwt = BearerToken.fromRawToken(containers.createJwt("alice", 10));
 
     SendPaymentRequest sendMoneyRequest = SendPaymentRequest.newBuilder()
       .setAccountId("alice")
@@ -179,9 +174,9 @@ public class IlpHttpGrpcTests extends AbstractIntegrationTest {
 
     assertThat(response).isEqualToComparingFieldByField(expected);
 
-    String bobJwt = containers.createJwt("bob", 10);
-    AccountBalanceResponse aliceBalance = balanceClient.getBalance("Bearer " + aliceJwt, AccountId.of("alice"));
-    AccountBalanceResponse bobBalance = balanceClient.getBalance("Bearer " + bobJwt, AccountId.of("bob"));
+    BearerToken bobJwt = BearerToken.fromRawToken(containers.createJwt("bob", 10));
+    AccountBalanceResponse aliceBalance = balanceClient.getBalance(aliceJwt.value(), AccountId.of("alice"));
+    AccountBalanceResponse bobBalance = balanceClient.getBalance(bobJwt.value(), AccountId.of("bob"));
 
     logger.info("Alice's balance after sending payment: ");
     logger.info(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(aliceBalance));
@@ -195,7 +190,9 @@ public class IlpHttpGrpcTests extends AbstractIntegrationTest {
   }
 
   @Configuration
-  public static class TestConfig extends AbstractIntegrationTest.TestConfig {}
+  public static class TestConfig extends AbstractIntegrationTest.TestConfig {
+
+  }
 }
 
 

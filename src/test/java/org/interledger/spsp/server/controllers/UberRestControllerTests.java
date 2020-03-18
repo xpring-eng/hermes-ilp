@@ -7,6 +7,7 @@ import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.model.PaymentRequest;
 
@@ -58,11 +59,11 @@ public class UberRestControllerTests extends AbstractIntegrationTest {
       .accountId("bar" + random.nextInt())
       .build();
 
-    final Optional<String> fooAuthorizationHeader = Optional.of("Bearer " + fooToken);
-    final Optional<String> barAuthorizationHeader = Optional.of("Bearer " + barToken);
+    final BearerToken fooAuthorizationHeader = BearerToken.fromRawToken(fooToken);
+    final BearerToken barAuthorizationHeader = BearerToken.fromRawToken(barToken);
 
     AccountSettingsResponse fooResponse =
-      accountController.createAccount(fooAuthorizationHeader, Optional.of(foo));
+      accountController.createAccount(Optional.of(fooAuthorizationHeader.value()), Optional.of(foo));
     assertThat(fooResponse.accountId().value()).isEqualTo(foo.accountId());
     assertThat(fooResponse.assetCode()).isEqualTo("XRP");
     assertThat(fooResponse.assetScale()).isEqualTo(6);
@@ -72,20 +73,20 @@ public class UberRestControllerTests extends AbstractIntegrationTest {
       .isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/" + foo.accountId()));
 
     AccountSettingsResponse barResponse =
-      accountController.createAccount(barAuthorizationHeader, Optional.of(bar));
+      accountController.createAccount(Optional.of(barAuthorizationHeader.value()), Optional.of(bar));
 
     withAuthToken(fooToken, () ->
       assertThat(
-        balanceController.getBalance(fooAuthorizationHeader, foo.accountId()).accountBalance().clearingBalance())
+        balanceController.getBalance(fooAuthorizationHeader.value(), foo.accountId()).accountBalance().clearingBalance())
         .isEqualTo(0));
 
     withAuthToken(barToken, () ->
       assertThat(
-        balanceController.getBalance(barAuthorizationHeader, bar.accountId()).accountBalance().clearingBalance())
+        balanceController.getBalance(barAuthorizationHeader.value(), bar.accountId()).accountBalance().clearingBalance())
         .isEqualTo(0));
 
     withAuthToken(fooToken, () ->
-      paymentController.sendPayment(fooAuthorizationHeader, foo.accountId(), PaymentRequest.builder()
+      paymentController.sendPayment(fooAuthorizationHeader.value(), foo.accountId(), PaymentRequest.builder()
         .destinationPaymentPointer(barResponse.paymentPointer().toString())
         .amount(UnsignedLong.ONE)
         .build()
@@ -94,12 +95,12 @@ public class UberRestControllerTests extends AbstractIntegrationTest {
 
     withAuthToken(fooToken, () ->
       assertThat(
-        balanceController.getBalance(fooAuthorizationHeader, foo.accountId()).accountBalance().clearingBalance())
+        balanceController.getBalance(fooAuthorizationHeader.value(), foo.accountId()).accountBalance().clearingBalance())
         .isEqualTo(-1));
 
     withAuthToken(barToken, () ->
       assertThat(
-        balanceController.getBalance(barAuthorizationHeader, bar.accountId()).accountBalance().clearingBalance())
+        balanceController.getBalance(barAuthorizationHeader.value(), bar.accountId()).accountBalance().clearingBalance())
         .isEqualTo(1));
   }
 

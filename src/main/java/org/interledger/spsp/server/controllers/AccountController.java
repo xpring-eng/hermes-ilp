@@ -8,12 +8,11 @@ import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
 
 import okhttp3.HttpUrl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,8 +28,6 @@ import java.util.Optional;
 
 @Controller
 public class AccountController {
-
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private final NewAccountService newAccountService;
 
@@ -55,10 +52,9 @@ public class AccountController {
     @RequestHeader(AUTHORIZATION) Optional<String> authToken,
     @RequestBody Optional<CreateAccountRestRequest> createAccountRequest
   ) {
-
     // Give a choice of passing in a JWT or simple auth token, or having Hermes generate a Simple token
     AccountSettings accountSettings = newAccountService
-      .createAccount(authToken, createAccountRequest);
+      .createAccount(authToken.map(BearerToken::fromBearerTokenValue), createAccountRequest);
 
     // Add a payment pointer to the response
     return AccountSettingsResponse.builder()
