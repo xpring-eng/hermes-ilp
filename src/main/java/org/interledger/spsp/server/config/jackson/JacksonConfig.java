@@ -11,7 +11,7 @@ public class JacksonConfig {
   @Bean
   @Primary
   protected ObjectMapper objectMapper() {
-    return ObjectMapperFactory.create();
+    return ObjectMapperFactory.createObjectMapperForProblemsJson();
   }
 
 }
