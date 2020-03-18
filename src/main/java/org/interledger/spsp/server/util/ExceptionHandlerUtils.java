@@ -74,6 +74,9 @@ public class ExceptionHandlerUtils {
     } else if (AccountNotFoundProblem.class.isAssignableFrom(exception.getClass())) {
       logger.info(exception.getMessage(), exception);
       responseObserver.onError(new StatusRuntimeException(Status.NOT_FOUND));
+    } else if (NullPointerException.class.isAssignableFrom(exception.getClass())) {
+      logger.info(exception.getMessage(), exception);
+      responseObserver.onError(new StatusRuntimeException(Status.INVALID_ARGUMENT));
     }
     //else if (InterruptedException.class.isAssignableFrom(exception.getClass())) {
     //else if (ExecutionException.class.isAssignableFrom(exception.getClass())) {

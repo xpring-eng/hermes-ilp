@@ -2,10 +2,10 @@ package org.interledger.spsp.server.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.springframework.security.authentication.BadCredentialsException;
 
 /**
  * Unit tests for {@link BearerToken}.
@@ -17,21 +17,21 @@ public class BearerTokenTest {
 
   @Test
   public void fromBearerTokenValueWithInvalidPrefix() {
-    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expect(BadCredentialsException.class);
     expectedException.expectMessage("BearerTokens must start with the prefix \"Bearer \"");
     BearerToken.fromBearerTokenValue("foo");
   }
 
   @Test
   public void fromBearerTokenValueWithShortPrefix() {
-    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expect(BadCredentialsException.class);
     expectedException.expectMessage("BearerTokens must start with the prefix \"Bearer \"");
     BearerToken.fromBearerTokenValue("Bearerfoo");
   }
 
   @Test
   public void fromBearerTokenValueWithPrefixButNoToken() {
-    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expect(BadCredentialsException.class);
     expectedException.expectMessage("BearerTokens must have a non-empty raw token");
     BearerToken.fromBearerTokenValue("Bearer ");
   }
@@ -45,7 +45,7 @@ public class BearerTokenTest {
 
   @Test
   public void fromBearerTokenValue() {
-    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expect(BadCredentialsException.class);
     expectedException.expectMessage("BearerTokens must start with the prefix \"Bearer \"");
     BearerToken.fromBearerTokenValue("foo");
   }
