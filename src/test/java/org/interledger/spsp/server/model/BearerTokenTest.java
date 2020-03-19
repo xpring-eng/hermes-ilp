@@ -50,12 +50,12 @@ public class BearerTokenTest {
     BearerToken.fromBearerTokenValue("foo");
   }
 
- @Test
- public void fromRawTokenWithPrefixAndToken() {
-   assertThat(BearerToken.fromRawToken("BearerFoo").rawToken()).isEqualTo("BearerFoo");
-   assertThat(BearerToken.fromRawToken("BearerFoo ").value()).isEqualTo("Bearer BearerFoo ");
-   assertThat(BearerToken.fromRawToken("BearerFoo ").toString()).isEqualTo("Bearer BearerFoo ");
- }
+  @Test
+  public void fromRawTokenWithPrefixAndToken() {
+    assertThat(BearerToken.fromRawToken("BearerFoo").rawToken()).isEqualTo("BearerFoo");
+    assertThat(BearerToken.fromRawToken("BearerFoo ").value()).isEqualTo("Bearer BearerFoo ");
+    assertThat(BearerToken.fromRawToken("BearerFoo ").toString()).isEqualTo("Bearer BearerFoo ");
+  }
 
   @Test
   public void fromRawTokenWithPrefixButNoToken() {
