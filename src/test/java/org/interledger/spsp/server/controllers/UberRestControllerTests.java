@@ -93,7 +93,7 @@ public class UberRestControllerTests extends AbstractIntegrationTest {
         .isEqualTo(0));
 
     withAuthToken(fooToken, () ->
-      paymentController.sendPayment(fooAuthorizationHeader.get(), foo.accountId(), PaymentRequest.builder()
+      paymentController.sendPayment(fooAuthorizationHeader, foo.accountId(), PaymentRequest.builder()
         .destinationPaymentPointer(barResponse.paymentPointer().toString())
         .amount(UnsignedLong.ONE)
         .build()

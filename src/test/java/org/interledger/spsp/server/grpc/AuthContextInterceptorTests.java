@@ -100,6 +100,7 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
   private String JWT = "eyJraWQiOiJrZXkxIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJhdWQiOiJiYXIiLCJzdWIiOiJmb28iLCJpc3MiOiJodHRwOi8vaG9zdC50ZXN0Y29udGFpbmVycy5pbnRlcm5hbDozMjQ1Ni8iLCJleHAiOjI0ODI2Nzg5MTJ9.dXLB6f4Kw-VuY0-gbD50bsk9yHrvP50fUpcbnGFsPfyEXugCMT0FdzuftmvhkVz3DRSLeeIX2_vVpG8_18tHK-lqAvZDU-eX5hiJdNCOrfp9epM6Fh6ZcpOJWLC5E1WonDU8S7FrpXnVmN9iuBZH-4Z5gmd65P_xqcPRECgseyg2Hr4XcGg7zQ95tKzNx0KnQfIuHiKLcDFXUWKwMxMhoiNoWpxuH-g_vbaUE0bpoIUSbLHkpoEKpc9RrY2SLOXo1oOSCGgoRZg7p9AN_I1iG4-60nfRH4tQNDMdDxkuZcqjQ6SQfJ9jufwvMLhirUGPplvaXf3DtqpN03RkOpkR_A";
 
   private BearerToken BEARER_TOKEN_JWT = BearerToken.fromRawToken(JWT);
+  private Optional<BearerToken> OPT_BEARER_TOKEN = Optional.of(BEARER_TOKEN_JWT);
 
   @Before
   public void setUp() throws IOException {
@@ -202,10 +203,10 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
         .prepaidAmount(10000)
         .build())
       .build();
-    //when(balanceClient.getBalance(eq(BEARER_TOKEN_JWT.value()), any())).thenReturn(accountBalanceResponseMock);
+    when(balanceClient.getBalance(eq(OPT_BEARER_TOKEN), any())).thenReturn(accountBalanceResponseMock);
 
     balanceServiceBlockingStub.getBalance(request);
-    //verify(balanceClient, times(1)).getBalance(eq(BEARER_TOKEN_JWT.value()), any());
+    verify(balanceClient, times(1)).getBalance(eq(OPT_BEARER_TOKEN), any());
   }
 
   @Test
@@ -229,12 +230,12 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq(BEARER_TOKEN_JWT),
+      eq(OPT_BEARER_TOKEN),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
     paymentServiceBlockingStub.sendMoney(sendMoneyRequest);
-    verify(sendMoneyService, times(1)).sendMoney(any(), eq(BEARER_TOKEN_JWT), any(), any());
+    verify(sendMoneyService, times(1)).sendMoney(any(), eq(OPT_BEARER_TOKEN), any(), any());
   }
 
   private void registerGrpc() throws IOException {

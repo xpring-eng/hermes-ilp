@@ -28,9 +28,9 @@ import org.springframework.web.servlet.mvc.AbstractController;
 @ContextConfiguration(classes = {
   ControllerTestConfig.class // For custom Beans.
 })
-//@ComponentScan(basePackages = "org.interledger.spsp.server.controllers",
-//  excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
-//    value = AbstractIntegrationTest.TestConfig.class)})
+@ComponentScan(basePackages = "org.interledger.spsp.server.controllers",
+  excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
+    value = AbstractIntegrationTest.TestConfig.class)})
 public abstract class AbstractControllerTest {
 
   @MockBean

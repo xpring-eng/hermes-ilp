@@ -32,7 +32,7 @@ public class AuthUtils {
   public static Optional<DecodedJWT> getJwt(final Optional<BearerToken> authorizationHeader) {
     Objects.requireNonNull(authorizationHeader);
     try {
-      final DecodedJWT jwt = JWT.decode(authorizationHeader.map(BearerToken::value).orElse(null));
+      final DecodedJWT jwt = JWT.decode(authorizationHeader.map(BearerToken::rawToken).orElse(null));
       if (jwt.getExpiresAt().before(new Date())) {
         throw new BadCredentialsException("JWT is expired");
       }

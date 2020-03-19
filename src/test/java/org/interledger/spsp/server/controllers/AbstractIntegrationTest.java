@@ -15,6 +15,7 @@ import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.client.ConnectorTokensClient;
 import org.interledger.spsp.server.config.jackson.JacksonConfig;
 import org.interledger.spsp.server.model.BearerToken;
+import org.interledger.spsp.server.model.BearerTokenHeaderConverter;
 import org.interledger.spsp.server.services.SendMoneyService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -75,6 +76,11 @@ public abstract class AbstractIntegrationTest {
   @Import(JacksonConfig.class)
   public abstract static class TestConfig {
 
+    @Bean
+    @Primary
+    public BearerTokenHeaderConverter bearerTokenHeaderConverter() {
+      return new BearerTokenHeaderConverter();
+    }
     /**
      * Overrides the adminClient bean for test purposes to connect to our Connector container
      *

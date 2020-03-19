@@ -7,6 +7,7 @@ import org.interledger.spsp.server.model.BearerToken;
 import com.google.common.primitives.UnsignedLong;
 import okhttp3.HttpUrl;
 
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 public class GimmeMoneyService {
@@ -28,7 +29,7 @@ public class GimmeMoneyService {
 
   public UnsignedLong gimmeMoney(AccountId destinationAccount, UnsignedLong amount)
     throws ExecutionException, InterruptedException {
-    return sendMoneyService.sendMoney(rainmakerAccountId, rainmakerBearerToken, amount,
+    return sendMoneyService.sendMoney(rainmakerAccountId, Optional.of(rainmakerBearerToken), amount,
       PaymentPointer.of("$" + spspUrl.host() + "/" + destinationAccount.value())).amountSent();
   }
 }

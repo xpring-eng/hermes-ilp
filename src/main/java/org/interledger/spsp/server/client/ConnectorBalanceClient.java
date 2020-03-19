@@ -48,7 +48,7 @@ public interface ConnectorBalanceClient {
     "Authorization: {authorizationHeader}"
   })
   AccountBalanceResponse getBalance(
-    @Param("authorizationHeader") Optional<BearerToken> authorizationHeader,
+    @Param(value = "authorizationHeader", expander = OptionalBearerTokenExpander.class) Optional<BearerToken> authorizationHeader,
     @Param(ID) AccountId accountId
   );
 }

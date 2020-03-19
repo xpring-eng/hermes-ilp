@@ -26,6 +26,7 @@ import org.interledger.spsp.server.controllers.BalanceController;
 import org.interledger.spsp.server.controllers.PaymentController;
 import org.interledger.spsp.server.controllers.filters.CookieFilterTests.CookieFilterConfiguration;
 import org.interledger.spsp.server.model.BearerToken;
+import org.interledger.spsp.server.model.BearerTokenHeaderConverter;
 import org.interledger.spsp.server.model.PaymentRequest;
 import org.interledger.spsp.server.util.ExceptionHandlerUtils;
 import org.interledger.stream.SendMoneyResult;
@@ -236,7 +237,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq(BEARER_TOKEN),
+      eq(OPT_BEARER_TOKEN),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
@@ -252,7 +253,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .andExpect(status().isOk());
 
     verify(sendMoneyService, times(1)).sendMoney(any(),
-      eq(BEARER_TOKEN),
+      eq(OPT_BEARER_TOKEN),
       any(),
       any());
   }
@@ -271,7 +272,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq(BEARER_TOKEN),
+      eq(OPT_BEARER_TOKEN),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
@@ -287,7 +288,7 @@ public class CookieFilterTests extends AbstractControllerTest {
       .andExpect(status().isOk());
 
     verify(sendMoneyService, times(1)).sendMoney(any(),
-      eq(BEARER_TOKEN),
+      eq(OPT_BEARER_TOKEN),
       any(),
       any());
   }
@@ -296,8 +297,16 @@ public class CookieFilterTests extends AbstractControllerTest {
   static class CookieFilterConfiguration {
 
     @Bean
+    public BearerTokenHeaderConverter bearerTokenHeaderConverter() {
+      return new BearerTokenHeaderConverter();
+    }
+
+    @Bean
     public BuildProperties buildProperties() {
-      return new BuildProperties(new Properties());
+      Properties entries = new Properties();
+      entries.put("version", "1.0.0");
+      entries.put("ilpOverHttpUrl", "https://hermes.com");
+      return new BuildProperties(entries);
     }
 
     @Bean

@@ -52,12 +52,12 @@ public class PaymentController {
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
   public PaymentResponse sendPayment(
-    @RequestHeader(AUTHORIZATION) BearerToken authorizationHeader,
+    @RequestHeader(AUTHORIZATION) Optional<BearerToken> authorizationHeader,
     @PathVariable("accountId") AccountId accountId,
     @RequestBody ImmutablePaymentRequest paymentRequest
   ) {
     try {
-      getJwt(Optional.ofNullable(authorizationHeader)); // hack to make sure JWT isn't expired
+      getJwt(authorizationHeader); // hack to make sure JWT isn't expired
       SendMoneyResult result = sendMoneyService.sendMoney(
         accountId,
         authorizationHeader,

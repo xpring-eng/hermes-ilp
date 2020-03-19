@@ -4,6 +4,7 @@ package org.interledger.spsp.server.client;
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
 import org.interledger.spsp.server.model.BearerToken;
+import org.interledger.spsp.server.model.BearerTokenHeaderConverter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Feign;
@@ -48,7 +49,7 @@ public interface ConnectorTokensClient {
     "Authorization: {authorizationHeader}"
   })
   CreateAccessTokenResponse createToken(
-    @Param("authorizationHeader") Optional<BearerToken> authorizationHeader,
+    @Param(value = "authorizationHeader", expander = OptionalBearerTokenExpander.class) Optional<BearerToken> authorizationHeader,
     @Param("accountId") AccountId accountId
   ) throws ThrowableProblem;
 
@@ -58,7 +59,7 @@ public interface ConnectorTokensClient {
     "Authorization: {authorizationHeader}"
   })
   void deleteTokens(
-    @Param("authorizationHeader") Optional<BearerToken> authorizationHeader,
+    @Param(value = "authorizationHeader", expander = OptionalBearerTokenExpander.class) Optional<BearerToken> authorizationHeader,
     @Param("accountId") AccountId accountId
   ) throws ThrowableProblem;
 
@@ -68,7 +69,7 @@ public interface ConnectorTokensClient {
     "Authorization: {authorizationHeader}"
   })
   List<AccessToken> getTokens(
-    @Param("authorizationHeader") Optional<BearerToken> authorizationHeader,
+    @Param(value = "authorizationHeader", expander = OptionalBearerTokenExpander.class) Optional<BearerToken> authorizationHeader,
     @Param("accountId") AccountId accountId
   ) throws ThrowableProblem;
 

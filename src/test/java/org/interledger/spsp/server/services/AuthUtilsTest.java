@@ -47,14 +47,13 @@ public class AuthUtilsTest {
   @Test
   public void getgetJwtWithEmptyToken() {
     expectedException.expect(BadCredentialsException.class);
-    expectedException.expectMessage("Requests must have a valid Authorization header");
+    expectedException.expectMessage("Bearer tokens must not be null");
     AuthUtils.getJwt(Optional.of(BearerToken.fromRawToken("")));
   }
 
   @Test
   public void getgetJwtWithBlankToken() {
-    expectedException.expect(BadCredentialsException.class);
-    AuthUtils.getJwt(Optional.of(BearerToken.fromRawToken(" ")));
+    assertThat(AuthUtils.getJwt(Optional.of(BearerToken.fromRawToken(" ")))).isEmpty();
   }
 
   @Test

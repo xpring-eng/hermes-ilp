@@ -24,6 +24,8 @@ import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.services.GimmeMoneyService;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
+import org.interledger.stream.receiver.ServerSecretSupplier;
+import org.interledger.stream.receiver.SpspStreamConnectionGenerator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.ConnectionPool;
@@ -186,7 +188,7 @@ public class IlpOverHttpConfig {
     OkHttpClient okHttpClient,
     SpspClient spspClient,
     @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix
-  ) {
+    ) {
     return new SendMoneyService(
       HttpUrl.parse(connectorUrl), objectMapper, adminClient, okHttpClient, spspClient, spspAddressPrefix
     );

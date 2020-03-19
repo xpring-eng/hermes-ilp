@@ -58,8 +58,7 @@ public class SendMoneyService {
     ConnectorAdminClient adminClient,
     OkHttpClient okHttpClient,
     SpspClient spspClient,
-    InterledgerAddressPrefix spspAddressPrefix
-  ) {
+    InterledgerAddressPrefix spspAddressPrefix) {
     this.connectorUrl = connectorUrl;
     this.objectMapper = objectMapper;
     this.adminClient = adminClient;
@@ -89,7 +88,7 @@ public class SendMoneyService {
    */
   public SendMoneyResult sendMoney(
     final AccountId senderAccountId,
-    final BearerToken bearerToken,
+    final Optional<BearerToken> bearerToken,
     final UnsignedLong amount,
     final PaymentPointer destination
   ) throws ExecutionException, InterruptedException {
@@ -105,14 +104,14 @@ public class SendMoneyService {
     AccountSettings senderAccountSettings = adminClient.findAccount(senderAccountId.value())
       .orElseThrow(() -> new AccountNotFoundProblem(senderAccountId));
 
+    // TODO: https://github.com/xpring-eng/hermes-ilp/issues/50
     // SenderAddress is {connectorIlpAddress}.{spsp-prefix}.{accountId}.{shared_secret}
     final InterledgerAddress senderAddress = InterledgerAddress.of(
-      spspAddressPrefix.with(senderAccountId.value())
-        .with(connectionDetails.sharedSecret().value()).getValue()
-    );
+        spspAddressPrefix.with(senderAccountId.value()
+      ).with("NotYetImplemented").getValue());
 
     // Use ILP over HTTP for our underlying link
-    IlpOverHttpLink link = newIlpOverHttpLink(senderAddress, senderAccountId, bearerToken.rawToken());
+    IlpOverHttpLink link = newIlpOverHttpLink(senderAddress, senderAccountId, bearerToken.map(BearerToken::rawToken).orElse(""));
 
     // Create SimpleStreamSender for sending STREAM payments
     SimpleStreamSender simpleStreamSender = new SimpleStreamSender(
