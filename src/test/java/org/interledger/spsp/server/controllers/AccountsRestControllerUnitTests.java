@@ -9,6 +9,7 @@ import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
 import org.junit.Test;
@@ -27,7 +28,7 @@ import java.util.Optional;
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
   properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
-  
+
   /**
    * Test that accounts created with a fully populated {@link org.interledger.spsp.server.model.CreateAccountRestRequest}
    * won't have anything overwritten
@@ -38,12 +39,15 @@ public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
       .accountId("foo")
       .build();
 
-    AccountSettingsResponse response = accountController.createAccount(Optional.of("Bearer password"), Optional.of(request));
+    AccountSettingsResponse response = accountController
+      .createAccount(Optional.of("Bearer password"), Optional.of(request));
     assertThat(response.accountId()).isEqualTo(AccountId.of("foo"));
     assertThat(response.assetCode()).isEqualTo("USD");
     assertThat(response.assetScale()).isEqualTo(6);
-    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).isEqualTo("password");
+    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE))
+      .isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN))
+      .isEqualTo("password");
     assertThat(response.paymentPointer()).isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/foo"));
   }
 
@@ -52,13 +56,17 @@ public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
    */
   @Test
   public void testCreateAccountWithTokenButNoRequest() {
-    AccountSettingsResponse response = accountController.createAccount(Optional.of("Bearer password"), Optional.empty());
+    AccountSettingsResponse response = accountController
+      .createAccount(Optional.of("Bearer password"), Optional.empty());
     assertThat(response.accountId().value()).startsWith("user_");
     assertThat(response.assetCode()).isEqualTo("XRP");
     assertThat(response.assetScale()).isEqualTo(9);
-    assertThat(response.paymentPointer()).isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/" + response.accountId()));
-    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().isEqualTo("password");
+    assertThat(response.paymentPointer())
+      .isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/" + response.accountId()));
+    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE))
+      .isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString()
+      .isEqualTo("password");
   }
 
   /**
@@ -70,9 +78,12 @@ public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
     assertThat(response.accountId().value()).startsWith("user_");
     assertThat(response.assetCode()).isEqualTo("XRP");
     assertThat(response.assetScale()).isEqualTo(9);
-    assertThat(response.paymentPointer()).isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/" + response.accountId()));
-    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().doesNotStartWith("enc:jks");
+    assertThat(response.paymentPointer())
+      .isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/" + response.accountId()));
+    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE))
+      .isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString()
+      .doesNotStartWith("enc:jks");
   }
 
   @Test
@@ -83,14 +94,17 @@ public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
     assertThat(response.accountId().value()).startsWith("user_");
     assertThat(response.assetCode()).isEqualTo("USD");
     assertThat(response.assetScale()).isEqualTo(2);
-    assertThat(response.paymentPointer()).isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/" + response.accountId()));
-    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
-    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString().doesNotStartWith("enc:jks");
+    assertThat(response.paymentPointer())
+      .isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/" + response.accountId()));
+    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE))
+      .isEqualTo(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    assertThat(response.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)).asString()
+      .doesNotStartWith("enc:jks");
   }
 
   /**
-   * Test that we can still create an account using a JWT and full account settings.
-   * Tests compatibility with the xpring ilp wallet
+   * Test that we can still create an account using a JWT and full account settings. Tests compatibility with the xpring
+   * ilp wallet
    */
   @Test
   public void testCreateAccountWithJwtAndFullRequest() {
@@ -98,22 +112,33 @@ public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
     String accountDescription = "Noah's test account";
 
     JwtAuthSettings jwtAuthSettings = containers.defaultJwtAuthSettings(accountID);
-    String jwt = containers.createJwt(accountID);
+    BearerToken jwt = BearerToken.fromRawToken(containers.createJwt(accountID));
 
     CreateAccountRestRequest request = CreateAccountRestRequest.builder("XRP", 9)
       .accountId(accountID)
       .description(accountDescription)
       .build();
 
-    AccountSettingsResponse createdAccountSettings = accountController.createAccount(Optional.of("Bearer " + jwt), Optional.of(request));
-    assertThat(createdAccountSettings.paymentPointer()).isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/" + createdAccountSettings.accountId()));
-    assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)).isEqualTo(IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
-    assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER)).isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());
-    assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE)).isEqualTo(jwtAuthSettings.tokenAudience().get());
-    assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT)).isEqualTo(jwtAuthSettings.tokenSubject());
+    AccountSettingsResponse createdAccountSettings = accountController
+      .createAccount(Optional.of(jwt.value()), Optional.of(request));
+
+    assertThat(createdAccountSettings.paymentPointer())
+      .isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/" + createdAccountSettings.accountId()));
+    assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE))
+      .isEqualTo(IlpOverHttpLinkSettings.AuthType.JWT_RS_256.toString());
+    assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_ISSUER))
+      .isEqualTo(jwtAuthSettings.tokenIssuer().get().toString());
+    assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_AUDIENCE))
+      .isEqualTo(jwtAuthSettings.tokenAudience().get());
+    assertThat(createdAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_TOKEN_SUBJECT))
+      .isEqualTo(jwtAuthSettings.tokenSubject());
   }
 
   @Component
-  public static class TestConfig extends AbstractIntegrationTest.TestConfig {};
+  public static class TestConfig extends AbstractIntegrationTest.TestConfig {
+
+  }
+
+  ;
 
 }

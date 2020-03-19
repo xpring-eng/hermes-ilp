@@ -20,7 +20,11 @@ public class AccountGeneratorService {
    *
    * TODO: Use a library that generates more secure tokens
    * @return Random alphanumeric simple auth token with 13 characters
+   *
+   * @deprecated This functionality should be controlled by the Connector so it can ensure the quality of its auth
+   * tokens.
    */
+  @Deprecated
   public static String generateSimpleAuthCredentials() {
     return RandomStringUtils.randomAlphanumeric(13);
   }

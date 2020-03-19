@@ -7,6 +7,7 @@ import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.model.PaymentRequest;
 
@@ -42,8 +43,9 @@ public class UberRestControllerTests extends AbstractIntegrationTest {
   }
 
   /**
-   * Runs a scenario where Foo and Bar accounts are created, the balances of each are checked,
-   * Foo pays Bar, and then the balances are checked again to validate payment occurred.
+   * Runs a scenario where Foo and Bar accounts are created, the balances of each are checked, Foo pays Bar, and then
+   * the balances are checked again to validate payment occurred.
+   *
    * @param fooToken auth token for Foo
    * @param barToken auth token for Bar
    */
@@ -57,8 +59,11 @@ public class UberRestControllerTests extends AbstractIntegrationTest {
       .accountId("bar" + random.nextInt())
       .build();
 
+    final BearerToken fooAuthorizationHeader = BearerToken.fromRawToken(fooToken);
+    final BearerToken barAuthorizationHeader = BearerToken.fromRawToken(barToken);
+
     AccountSettingsResponse fooResponse =
-      accountController.createAccount(Optional.of("Bearer " + fooToken), Optional.of(foo));
+      accountController.createAccount(Optional.of(fooAuthorizationHeader.value()), Optional.of(foo));
     assertThat(fooResponse.accountId().value()).isEqualTo(foo.accountId());
     assertThat(fooResponse.assetCode()).isEqualTo("XRP");
     assertThat(fooResponse.assetScale()).isEqualTo(6);
@@ -68,16 +73,20 @@ public class UberRestControllerTests extends AbstractIntegrationTest {
       .isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/" + foo.accountId()));
 
     AccountSettingsResponse barResponse =
-      accountController.createAccount(Optional.of("Bearer " + barToken), Optional.of(bar));
+      accountController.createAccount(Optional.of(barAuthorizationHeader.value()), Optional.of(bar));
 
     withAuthToken(fooToken, () ->
-      assertThat(balanceController.getBalance(foo.accountId()).accountBalance().clearingBalance()).isEqualTo(0));
+      assertThat(
+        balanceController.getBalance(fooAuthorizationHeader.value(), foo.accountId()).accountBalance().clearingBalance())
+        .isEqualTo(0));
 
     withAuthToken(barToken, () ->
-      assertThat(balanceController.getBalance(bar.accountId()).accountBalance().clearingBalance()).isEqualTo(0));
+      assertThat(
+        balanceController.getBalance(barAuthorizationHeader.value(), bar.accountId()).accountBalance().clearingBalance())
+        .isEqualTo(0));
 
     withAuthToken(fooToken, () ->
-      paymentController.sendPayment(foo.accountId(), PaymentRequest.builder()
+      paymentController.sendPayment(fooAuthorizationHeader.value(), foo.accountId(), PaymentRequest.builder()
         .destinationPaymentPointer(barResponse.paymentPointer().toString())
         .amount(UnsignedLong.ONE)
         .build()
@@ -85,13 +94,19 @@ public class UberRestControllerTests extends AbstractIntegrationTest {
     );
 
     withAuthToken(fooToken, () ->
-      assertThat(balanceController.getBalance(foo.accountId()).accountBalance().clearingBalance()).isEqualTo(-1));
+      assertThat(
+        balanceController.getBalance(fooAuthorizationHeader.value(), foo.accountId()).accountBalance().clearingBalance())
+        .isEqualTo(-1));
 
     withAuthToken(barToken, () ->
-      assertThat(balanceController.getBalance(bar.accountId()).accountBalance().clearingBalance()).isEqualTo(1));
+      assertThat(
+        balanceController.getBalance(barAuthorizationHeader.value(), bar.accountId()).accountBalance().clearingBalance())
+        .isEqualTo(1));
   }
 
   @Configuration
-  public static class TestConfig extends AbstractIntegrationTest.TestConfig {};
+  public static class TestConfig extends AbstractIntegrationTest.TestConfig {
+
+  }
 
 }

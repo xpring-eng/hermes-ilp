@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 
 public interface ConnectorTokensClient {
+
   String ACCEPT = "Accept:";
   String APPLICATION_JSON = "application/json";
 
@@ -26,6 +27,7 @@ public interface ConnectorTokensClient {
    * Static constructor to build a new instance of this Connector Balance client.
    *
    * @param connectorHttpUrl The {@link HttpUrl} of the Connector.
+   *
    * @return A {@link ConnectorTokensClient}.
    */
   static ConnectorTokensClient construct(final HttpUrl connectorHttpUrl) {
@@ -39,28 +41,33 @@ public interface ConnectorTokensClient {
   }
 
   @RequestLine("POST /accounts/{accountId}/tokens")
-  @Headers( {
+  @Headers({
     ACCEPT + APPLICATION_JSON,
     "Authorization: {authorizationHeader}"
   })
-  CreateAccessTokenResponse createToken(@Param("authorizationHeader") String authorizationHeader,
-                                        @Param("accountId") AccountId accountId) throws ThrowableProblem;
-
+  CreateAccessTokenResponse createToken(
+    @Param("authorizationHeader") String authorizationHeader,
+    @Param("accountId") AccountId accountId
+  ) throws ThrowableProblem;
 
   @RequestLine("DELETE /accounts/{accountId}/tokens")
-  @Headers( {
+  @Headers({
     ACCEPT + APPLICATION_JSON,
     "Authorization: {authorizationHeader}"
   })
-  void deleteTokens(@Param("authorizationHeader") String authorizationHeader,
-                    @Param("accountId") AccountId accountId) throws ThrowableProblem;
+  void deleteTokens(
+    @Param("authorizationHeader") String authorizationHeader,
+    @Param("accountId") AccountId accountId
+  ) throws ThrowableProblem;
 
   @RequestLine("GET /accounts/{accountId}/tokens")
-  @Headers( {
+  @Headers({
     ACCEPT + APPLICATION_JSON,
     "Authorization: {authorizationHeader}"
   })
-  List<AccessToken> getTokens(@Param("authorizationHeader") String authorizationHeader,
-                              @Param("accountId") AccountId accountId) throws ThrowableProblem;
+  List<AccessToken> getTokens(
+    @Param("authorizationHeader") String authorizationHeader,
+    @Param("accountId") AccountId accountId
+  ) throws ThrowableProblem;
 
 }

@@ -4,22 +4,18 @@ import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.PaymentPointer;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.services.SendMoneyService;
+import org.interledger.spsp.server.util.ExceptionHandlerUtils;
 import org.interledger.stream.SendMoneyResult;
 
 import com.google.common.primitives.UnsignedLong;
 import io.grpc.stub.StreamObserver;
 import org.lognet.springboot.grpc.GRpcService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.concurrent.ExecutionException;
 
 @GRpcService
 public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpServiceImplBase {
-
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Autowired
   protected SendMoneyService sendMoneyService;
@@ -27,27 +23,27 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
   @Autowired
   protected IlpGrpcAuthContext ilpGrpcAuthContext;
 
+  @Autowired
+  protected ExceptionHandlerUtils exceptionHandlerUtils;
+
   @Override
   public void sendMoney(SendPaymentRequest request, StreamObserver<SendPaymentResponse> responseObserver) {
     // Send payment using STREAM
-    SendMoneyResult result = null;
-
     try {
-      String bearerToken = ilpGrpcAuthContext.getAuthorizationHeader();
-      result = sendMoneyService.sendMoney(AccountId.of(request.getAccountId()),
+      final BearerToken bearerToken = BearerToken.fromBearerTokenValue(ilpGrpcAuthContext.getAuthorizationHeader());
+      final SendMoneyResult result = sendMoneyService.sendMoney(
+        AccountId.of(request.getAccountId()),
         bearerToken,
         UnsignedLong.valueOf(request.getAmount()),
-        PaymentPointer.of(request.getDestinationPaymentPointer()));
-    } catch (InterruptedException | ExecutionException e) {
-      responseObserver.onError(e);
-      return;
+        PaymentPointer.of(request.getDestinationPaymentPointer())
+      );
+
+      final SendPaymentResponse sendPaymentResponse = AccountRequestResponseConverter
+        .sendPaymentResponseFromSendMoneyResult(result);
+      responseObserver.onNext(sendPaymentResponse);
+      responseObserver.onCompleted();
+    } catch (Exception e) {
+      exceptionHandlerUtils.handleException(e, responseObserver);
     }
-
-    SendPaymentResponse sendPaymentResponse = AccountRequestResponseConverter.sendPaymentResponseFromSendMoneyResult(result);
-    System.out.println("Send Payment Response: " + sendPaymentResponse);
-    responseObserver.onNext(sendPaymentResponse);
-
-    responseObserver.onCompleted();
   }
-
 }

@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -23,6 +24,7 @@ import org.interledger.spsp.server.controllers.AbstractIntegrationTest;
 import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
 import org.interledger.stream.SendMoneyResult;
@@ -93,15 +95,15 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
 
   private ClientInterceptor mockClientInterceptor;
 
-  private String jwt;
+  // Just a sample RS256 JWT.  We don't do any signature validation in these tests, but the JWT still needs to be
+  // decoded.
+  private String JWT = "eyJraWQiOiJrZXkxIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJhdWQiOiJiYXIiLCJzdWIiOiJmb28iLCJpc3MiOiJodHRwOi8vaG9zdC50ZXN0Y29udGFpbmVycy5pbnRlcm5hbDozMjQ1Ni8iLCJleHAiOjI0ODI2Nzg5MTJ9.dXLB6f4Kw-VuY0-gbD50bsk9yHrvP50fUpcbnGFsPfyEXugCMT0FdzuftmvhkVz3DRSLeeIX2_vVpG8_18tHK-lqAvZDU-eX5hiJdNCOrfp9epM6Fh6ZcpOJWLC5E1WonDU8S7FrpXnVmN9iuBZH-4Z5gmd65P_xqcPRECgseyg2Hr4XcGg7zQ95tKzNx0KnQfIuHiKLcDFXUWKwMxMhoiNoWpxuH-g_vbaUE0bpoIUSbLHkpoEKpc9RrY2SLOXo1oOSCGgoRZg7p9AN_I1iG4-60nfRH4tQNDMdDxkuZcqjQ6SQfJ9jufwvMLhirUGPplvaXf3DtqpN03RkOpkR_A";
+
+  private BearerToken BEARER_TOKEN_JWT = BearerToken.fromRawToken(JWT);
 
   @Before
   public void setUp() throws IOException {
     initMocks(this);
-
-    // Just a sample RS256 JWT.  We don't do any signature validation in these tests, but the JWT still needs to be
-    // decoded.
-    jwt = "eyJraWQiOiJrZXkxIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJhdWQiOiJiYXIiLCJzdWIiOiJmb28iLCJpc3MiOiJodHRwOi8vaG9zdC50ZXN0Y29udGFpbmVycy5pbnRlcm5hbDozMjQ1Ni8iLCJleHAiOjI0ODI2Nzg5MTJ9.dXLB6f4Kw-VuY0-gbD50bsk9yHrvP50fUpcbnGFsPfyEXugCMT0FdzuftmvhkVz3DRSLeeIX2_vVpG8_18tHK-lqAvZDU-eX5hiJdNCOrfp9epM6Fh6ZcpOJWLC5E1WonDU8S7FrpXnVmN9iuBZH-4Z5gmd65P_xqcPRECgseyg2Hr4XcGg7zQ95tKzNx0KnQfIuHiKLcDFXUWKwMxMhoiNoWpxuH-g_vbaUE0bpoIUSbLHkpoEKpc9RrY2SLOXo1oOSCGgoRZg7p9AN_I1iG4-60nfRH4tQNDMdDxkuZcqjQ6SQfJ9jufwvMLhirUGPplvaXf3DtqpN03RkOpkR_A";
 
     // This mock ClientInterceptor will add a COOKIE header with a jwt to the grpc Metadata.
     // This mocks the behavior of the Envoy proxy when receiving an HTTP request with cookies
@@ -115,7 +117,7 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
             @Override
             public void start(Listener<RespT> responseListener, Metadata headers) {
               headers.put(Metadata.Key.of(HttpHeaders.COOKIE, Metadata.ASCII_STRING_MARSHALLER),
-                "jwt=" + jwt);
+                "jwt=" + JWT);
 
               super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
               }, headers);
@@ -145,11 +147,11 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
       .accountRelationship(AccountRelationship.PEER)
       .build();
 
-    when(accountService.createAccount(eq(Optional.of(jwt)), any(Optional.class)))
+    when(accountService.createAccount(eq(Optional.of(BEARER_TOKEN_JWT)), any(Optional.class)))
       .thenReturn(accountSettingsMock);
-    CreateAccountResponse reply = accountServiceBlockingStub.createAccount(request);
+    accountServiceBlockingStub.createAccount(request);
 
-    verify(accountService, times(1)).createAccount(eq(Optional.of(jwt)), any(Optional.class));
+    verify(accountService, times(1)).createAccount(eq(Optional.of(BEARER_TOKEN_JWT)), any(Optional.class));
   }
 
   /**
@@ -158,7 +160,7 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
    */
   @Test
   public void testCreateAccountWithCookieAuthAndAuthHeader() {
-    String authHeaderToken = "Bearer asdfdfkjsdhfksdjh";
+    BearerToken authToken = BearerToken.fromRawToken("asdfdfkjsdhfksdjh");
     CreateAccountRequest request = CreateAccountRequest.newBuilder()
       .build();
 
@@ -178,12 +180,11 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
       .thenReturn(accountSettingsMock);
 
     accountServiceBlockingStub
-      .withCallCredentials(IlpCallCredentials.build(authHeaderToken))
+      .withCallCredentials(IlpCallCredentials.build(authToken))
       .createAccount(request);
 
-    verify(accountService, times(1))
-      .createAccount(eq(Optional.of(authHeaderToken.replace("Bearer ", ""))), any(Optional.class));
-    verify(accountService, times(0)).createAccount(eq(Optional.of(jwt)), any(Optional.class));
+    verify(accountService, times(1)).createAccount(eq(Optional.of(authToken)), any(Optional.class));
+    verifyNoMoreInteractions(accountService);
   }
 
   @Test
@@ -201,10 +202,10 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq("Bearer " + jwt), any())).thenReturn(accountBalanceResponseMock);
+    when(balanceClient.getBalance(eq(BEARER_TOKEN_JWT.value()), any())).thenReturn(accountBalanceResponseMock);
 
-    GetBalanceResponse response = balanceServiceBlockingStub.getBalance(request);
-    verify(balanceClient, times(1)).getBalance(eq("Bearer " + jwt), any());
+    balanceServiceBlockingStub.getBalance(request);
+    verify(balanceClient, times(1)).getBalance(eq(BEARER_TOKEN_JWT.value()), any());
   }
 
   @Test
@@ -228,12 +229,12 @@ public class AuthContextInterceptorTests extends AbstractIntegrationTest {
       .build();
 
     when(sendMoneyService.sendMoney(any(),
-      eq(jwt),
+      eq(BEARER_TOKEN_JWT),
       any(),
       any())).thenReturn(sendMoneyResultMock);
 
-    SendPaymentResponse response = paymentServiceBlockingStub.sendMoney(sendMoneyRequest);
-    verify(sendMoneyService, times(1)).sendMoney(any(), eq(jwt), any(), any());
+    paymentServiceBlockingStub.sendMoney(sendMoneyRequest);
+    verify(sendMoneyService, times(1)).sendMoney(any(), eq(BEARER_TOKEN_JWT), any(), any());
   }
 
   private void registerGrpc() throws IOException {

@@ -11,8 +11,8 @@ import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.client.ConnectorRoutesClient;
-import org.interledger.spsp.server.grpc.CreateAccountRequest;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
 import org.slf4j.Logger;
@@ -34,26 +34,31 @@ public class NewAccountService {
 
   private final InterledgerAddressPrefix spspAddressPrefix;
 
-  public NewAccountService(ConnectorAdminClient adminClient,
-                           ConnectorRoutesClient connectorRoutesClient,
-                           OutgoingLinkSettings spspLinkSettings,
-                           InterledgerAddressPrefix spspAddressPrefix) {
+  public NewAccountService(
+    final ConnectorAdminClient adminClient,
+    final ConnectorRoutesClient connectorRoutesClient,
+    final OutgoingLinkSettings spspLinkSettings,
+    final InterledgerAddressPrefix spspAddressPrefix
+  ) {
     this.adminClient = adminClient;
     this.connectorRoutesClient = connectorRoutesClient;
     this.spspLinkSettings = spspLinkSettings;
     this.spspAddressPrefix = spspAddressPrefix;
   }
 
-  public AccountSettings createAccount(Optional<String> authToken, Optional<CreateAccountRestRequest> request) {
+  public AccountSettings createAccount(Optional<BearerToken> bearerToken, Optional<CreateAccountRestRequest> request) {
 
     // Generate a random alpha-numeric string as a simple auth token
     // after removing the token prefix from a possibly present auth token
-    String credentials = authToken.orElse(AccountGeneratorService.generateSimpleAuthCredentials());
+    final BearerToken generatedCredentials = bearerToken
+      .orElseGet(() -> BearerToken.fromRawToken(AccountGeneratorService.generateSimpleAuthCredentials()));
 
-    AccountSettings populatedAccountSettings =
-      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(credentials,
+    final AccountSettings populatedAccountSettings =
+      AccountRequestResponseConverter.accountSettingsFromCreateAccountRequest(
+        generatedCredentials,
         request.orElseGet(AccountGeneratorService::newDefaultCreateAccountRequest),
-        spspLinkSettings);
+        spspLinkSettings
+      );
 
     return revertSimpleAuthTokenUnencrypted(populatedAccountSettings, createAccount(populatedAccountSettings));
   }
@@ -80,10 +85,14 @@ public class NewAccountService {
     return returnedAccountSettings;
   }
 
-  private AccountSettings revertSimpleAuthTokenUnencrypted(AccountSettings populatedAccountSettings, AccountSettings returnedAccountSettings) {
-    if (returnedAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE).equals(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString())) {
-      String simpleAuthToken = populatedAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN).toString();
-      Map<String, Object> customSettingsUnencrypted = revertSimpleAuthTokenCustomSetting(returnedAccountSettings.customSettings(), simpleAuthToken);
+  private AccountSettings revertSimpleAuthTokenUnencrypted(AccountSettings populatedAccountSettings,
+    AccountSettings returnedAccountSettings) {
+    if (returnedAccountSettings.customSettings().get(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE)
+      .equals(IlpOverHttpLinkSettings.AuthType.SIMPLE.toString())) {
+      String simpleAuthToken = populatedAccountSettings.customSettings()
+        .get(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN).toString();
+      Map<String, Object> customSettingsUnencrypted = revertSimpleAuthTokenCustomSetting(
+        returnedAccountSettings.customSettings(), simpleAuthToken);
 
       return AccountSettings.builder()
         .from(returnedAccountSettings)
@@ -94,7 +103,8 @@ public class NewAccountService {
     return returnedAccountSettings;
   }
 
-  private Map<String, Object> revertSimpleAuthTokenCustomSetting(Map<String, Object> encryptedCustomSettings, String simpleAuthToken) {
+  private Map<String, Object> revertSimpleAuthTokenCustomSetting(Map<String, Object> encryptedCustomSettings,
+    String simpleAuthToken) {
     Map<String, Object> newCustomSettings = new HashMap<>();
     encryptedCustomSettings.forEach((k, v) -> {
       if (k.equals(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN)) {
@@ -110,7 +120,8 @@ public class NewAccountService {
   public AccountSettings createRainmaker() {
     Map<String, Object> customSettings = new HashMap<>();
     customSettings.put(IncomingLinkSettings.HTTP_INCOMING_SIMPLE_AUTH_TOKEN, "password");
-    customSettings.put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
+    customSettings
+      .put(IncomingLinkSettings.HTTP_INCOMING_AUTH_TYPE, IlpOverHttpLinkSettings.AuthType.SIMPLE.toString());
     customSettings.putAll(spspLinkSettings.toCustomSettingsMap());
 
     // Convert request to AccountSettings

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.interledger.spsp.server.HermesServerApplication;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.client.CreateAccessTokenResponse;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
 import org.junit.Test;
@@ -25,8 +26,7 @@ import java.util.Optional;
 public class AccountTokensControllerTest extends AbstractIntegrationTest {
 
   /**
-   * Test that accounts created with a fully populated {@link CreateAccountRestRequest}
-   * won't have anything overwritten
+   * Test that accounts created with a fully populated {@link CreateAccountRestRequest} won't have anything overwritten
    */
   @Test
   public void testCRUD() {
@@ -34,27 +34,35 @@ public class AccountTokensControllerTest extends AbstractIntegrationTest {
       .accountId("foo")
       .build();
 
-    accountController.createAccount(Optional.of("Bearer password"), Optional.of(request));
+    final String tokenValue = "password";
+    final BearerToken authorizationHeader = BearerToken.fromRawToken(tokenValue);
+    accountController.createAccount(Optional.of(authorizationHeader.value()), Optional.of(request));
 
     CreateAccessTokenResponse accessTokenResponse =
-      withAuthToken("password", () -> tokenController.createToken(request.accountId()));
+      withAuthToken(tokenValue, () -> tokenController.createToken(authorizationHeader.value(), request.accountId()));
 
     AccountBalanceResponse balanceResponse =
-      withAuthToken(accessTokenResponse.rawToken(), () -> balanceController.getBalance(request.accountId()));
+      withAuthToken(accessTokenResponse.rawToken(), () -> balanceController.getBalance(
+        authorizationHeader.value(),
+        request.accountId())
+      );
 
-    assertThat(withAuthToken("password", () -> tokenController.getTokens(request.accountId())))
-      .hasSize(1);
+    assertThat(withAuthToken(tokenValue, () -> tokenController.getTokens(
+      authorizationHeader.value(), request.accountId()))
+    ).hasSize(1);
 
     assertThat(balanceResponse.accountBalance()).isNotNull();
 
-    withAuthToken("password", () -> {
-      tokenController.deleteTokens(request.accountId());
-      assertThat(tokenController.getTokens(request.accountId())).isEmpty();
+    withAuthToken(tokenValue, () -> {
+      tokenController.deleteTokens(authorizationHeader.value(), request.accountId());
+      assertThat(tokenController.getTokens(authorizationHeader.value(), request.accountId())).isEmpty();
       return null;
     });
   }
 
   @Component
-  public static class TestConfig extends AbstractIntegrationTest.TestConfig {};
+  public static class TestConfig extends AbstractIntegrationTest.TestConfig {
+
+  }
 
 }

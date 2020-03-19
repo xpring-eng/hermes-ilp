@@ -15,6 +15,7 @@ import org.interledger.spsp.server.controllers.AbstractIntegrationTest;
 import org.interledger.spsp.server.grpc.auth.IlpCallCredentials;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.utils.InterceptedService;
+import org.interledger.spsp.server.model.BearerToken;
 
 import feign.FeignException;
 import io.grpc.Status;
@@ -48,8 +49,11 @@ import java.util.Map;
   properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
 
-  private Logger logger = LoggerFactory.getLogger(this.getClass());
-
+  /**
+   * This rule manages automatic graceful shutdown for the registered servers and channels at the end of test.
+   */
+  @Rule
+  public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
 
@@ -57,19 +61,11 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
    * gRpc stubs to test Hermes
    */
   BalanceServiceGrpc.BalanceServiceBlockingStub blockingStub;
-
-  /**
-   * This rule manages automatic graceful shutdown for the registered servers and channels at the
-   * end of test.
-   */
-  @Rule
-  public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
-
   @Autowired
   BalanceGrpcHandler balanceGrpcHandler;
-
   @Autowired
   IlpGrpcMetadataReader ilpGrpcMetadataReader;
+  private Logger logger = LoggerFactory.getLogger(this.getClass());
   private AccountId accountIdHermes;
 
   @Before
@@ -101,7 +97,8 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
       if (e.status() != 409) {
         throw e;
       } else {
-        logger.warn("Hermes account already exists. If you want to update the account, delete it and try again with new settings.");
+        logger.warn(
+          "Hermes account already exists. If you want to update the account, delete it and try again with new settings.");
       }
     }
 
@@ -135,15 +132,15 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
   @Test
   public void getBalanceTest() {
 
-    String jwt = containers.createJwt(accountIdHermes.value(), 10);
+    BearerToken jwt = BearerToken.fromRawToken(containers.createJwt(accountIdHermes.value(), 10));
 
     GetBalanceResponse reply =
       blockingStub
         .withCallCredentials(IlpCallCredentials.build(jwt))
         .getBalance(
           GetBalanceRequest.newBuilder()
-          .setAccountId(accountIdHermes.value())
-          .build()
+            .setAccountId(accountIdHermes.value())
+            .build()
         );
 
     assertThat(reply.getAccountId()).isEqualTo(accountIdHermes.value());
@@ -163,7 +160,7 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
   public void getBalanceTestFailsNoJwt() {
 
     expectedException.expect(StatusRuntimeException.class);
-    expectedException.expectMessage(Status.PERMISSION_DENIED.getCode().name());
+    expectedException.expectMessage(Status.UNAUTHENTICATED.getCode().name());
 
     blockingStub
       .getBalance(
@@ -184,7 +181,7 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
     expectedException.expect(StatusRuntimeException.class);
     expectedException.expectMessage(Status.NOT_FOUND.getCode().name());
 
-    String jwt = containers.createJwt("foo");
+    BearerToken jwt = BearerToken.fromRawToken(containers.createJwt("foo"));
 
     blockingStub
       .withCallCredentials(IlpCallCredentials.build(jwt))
@@ -196,7 +193,9 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
   }
 
   @Configuration
-  public static class TestConfig extends AbstractIntegrationTest.TestConfig {}
+  public static class TestConfig extends AbstractIntegrationTest.TestConfig {
+
+  }
 }
 
 

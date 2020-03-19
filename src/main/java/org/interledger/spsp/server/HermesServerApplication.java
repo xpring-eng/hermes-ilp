@@ -2,14 +2,17 @@ package org.interledger.spsp.server;
 
 import org.interledger.spsp.server.config.ilp.IlpOverHttpConfig;
 import org.interledger.spsp.server.config.web.SpringSpspServerWebMvc;
+import org.interledger.spsp.server.util.ExceptionHandlerUtils;
 
 import ch.qos.logback.classic.LoggerContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.web.servlet.error.ErrorMvcAutoConfiguration;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 
@@ -30,6 +33,11 @@ public class HermesServerApplication {
 
   public static void main(String[] args) {
     SpringApplication.run(HermesServerApplication.class, args);
+  }
+
+  @Bean
+  public ExceptionHandlerUtils exceptionHandlerUtils(final ObjectMapper objectMapper) {
+    return new ExceptionHandlerUtils(objectMapper);
   }
 
   /**

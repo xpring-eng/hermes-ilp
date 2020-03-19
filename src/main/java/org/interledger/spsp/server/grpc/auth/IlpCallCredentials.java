@@ -1,5 +1,7 @@
 package org.interledger.spsp.server.grpc.auth;
 
+import org.interledger.spsp.server.model.BearerToken;
+
 import io.grpc.CallCredentials;
 import io.grpc.Metadata;
 import io.grpc.Status;
@@ -11,13 +13,13 @@ import java.util.concurrent.Executor;
 public class IlpCallCredentials extends CallCredentials {
   private static Logger LOGGER = LoggerFactory.getLogger(IlpCallCredentials.class);
 
-  private final String jwtToken;
+  private final BearerToken jwtToken;
 
-  private IlpCallCredentials(String jwtToken) {
+  private IlpCallCredentials(final BearerToken jwtToken) {
     this.jwtToken = jwtToken;
   }
 
-  public static IlpCallCredentials build(String token) {
+  public static IlpCallCredentials build(BearerToken token) {
     return new IlpCallCredentials(token);
   }
 
@@ -33,9 +35,9 @@ public class IlpCallCredentials extends CallCredentials {
   @Override
   public void thisUsesUnstableApi() {}
 
-  protected void applyToken(MetadataApplier applier, String jwtToken) {
+  protected void applyToken(MetadataApplier applier, BearerToken jwtToken) {
     Metadata metadata = new Metadata();
-    metadata.put(Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), jwtToken);
+    metadata.put(Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), jwtToken.toString());
     applier.apply(metadata);
   }
 

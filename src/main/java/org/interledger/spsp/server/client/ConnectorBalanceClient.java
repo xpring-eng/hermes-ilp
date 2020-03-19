@@ -1,8 +1,8 @@
 package org.interledger.spsp.server.client;
 
 
-import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
 import org.interledger.connector.accounts.AccountId;
+import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Feign;
@@ -17,6 +17,7 @@ import okhttp3.HttpUrl;
 import java.util.Objects;
 
 public interface ConnectorBalanceClient {
+
   String ACCEPT = "Accept:";
   String CONTENT_TYPE = "Content-Type:";
   String ID = "id";
@@ -25,8 +26,7 @@ public interface ConnectorBalanceClient {
   /**
    * Static constructor to build a new instance of this Connector Balance client.
    *
-   * @param connectorHttpUrl                     The {@link HttpUrl} of the Connector.
-   *
+   * @param connectorHttpUrl The {@link HttpUrl} of the Connector.
    *
    * @return A {@link ConnectorBalanceClient}.
    */
@@ -41,10 +41,12 @@ public interface ConnectorBalanceClient {
   }
 
   @RequestLine("GET /accounts/{id}/balance")
-  @Headers( {
+  @Headers({
     ACCEPT + APPLICATION_JSON,
     "Authorization: {authorizationHeader}"
   })
-  AccountBalanceResponse getBalance(@Param("authorizationHeader") String authorizationHeader,
-                                                      @Param(ID) AccountId accountId);
+  AccountBalanceResponse getBalance(
+    @Param("authorizationHeader") String authorizationHeader,
+    @Param(ID) AccountId accountId
+  );
 }

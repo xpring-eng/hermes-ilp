@@ -1,18 +1,18 @@
 package org.interledger.spsp.server.controllers;
 
 import static org.interledger.spsp.server.services.HermesUtils.paymentPointerFromSpspUrl;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
 
 import okhttp3.HttpUrl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,11 +26,8 @@ import org.zalando.problem.spring.common.MediaTypes;
 import java.util.Objects;
 import java.util.Optional;
 
-
 @Controller
-public class AccountController extends AbstractController {
-
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+public class AccountController {
 
   private final NewAccountService newAccountService;
 
@@ -51,12 +48,13 @@ public class AccountController extends AbstractController {
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
   public @ResponseBody
-  AccountSettingsResponse createAccount(@RequestHeader("Authorization") Optional<String> authToken,
-    @RequestBody Optional<CreateAccountRestRequest> createAccountRequest) {
-
+  AccountSettingsResponse createAccount(
+    @RequestHeader(AUTHORIZATION) Optional<String> authToken,
+    @RequestBody Optional<CreateAccountRestRequest> createAccountRequest
+  ) {
     // Give a choice of passing in a JWT or simple auth token, or having Hermes generate a Simple token
     AccountSettings accountSettings = newAccountService
-      .createAccount(authToken, createAccountRequest);
+      .createAccount(authToken.map(BearerToken::fromBearerTokenValue), createAccountRequest);
 
     // Add a payment pointer to the response
     return AccountSettingsResponse.builder()

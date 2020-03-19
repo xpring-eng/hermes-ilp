@@ -1,6 +1,7 @@
 package org.interledger.spsp.server.config.ilp;
 
 import static okhttp3.CookieJar.NO_COOKIES;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.client.ConnectorAdminClient;
@@ -19,6 +20,7 @@ import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContextImpl;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReader;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcMetadataReaderImpl;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.services.GimmeMoneyService;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.services.SendMoneyService;
@@ -132,7 +134,7 @@ public class IlpOverHttpConfig {
   @Bean
   @Qualifier(SPSP)
   OutgoingLinkSettings spspSettings(@Qualifier(SPSP) HttpUrl receiverUrl,
-                                    @Value("${interledger.spsp.auth-token}") String spspAuthToken) {
+    @Value("${interledger.spsp.auth-token}") String spspAuthToken) {
     return OutgoingLinkSettings.builder()
       .authType(IlpOverHttpLinkSettings.AuthType.SIMPLE)
       .url(receiverUrl.newBuilder().addPathSegment("ilp").build())
@@ -147,7 +149,8 @@ public class IlpOverHttpConfig {
   }
 
   @Bean
-  SpspClient spspClient(OkHttpClient okHttpClient, PaymentPointerResolver paymentPointerResolver, ObjectMapper objectMapper) {
+  SpspClient spspClient(OkHttpClient okHttpClient, PaymentPointerResolver paymentPointerResolver,
+    ObjectMapper objectMapper) {
     return new SimpleSpspClient(okHttpClient, paymentPointerResolver, objectMapper);
   }
 
@@ -156,8 +159,7 @@ public class IlpOverHttpConfig {
     return (paymentPointer) -> {
       if (paymentPointer.host().contains("cluster.local")) {
         return HttpUrl.parse("http://" + paymentPointer.host() + paymentPointer.path());
-      }
-      else {
+      } else {
         return HttpUrl.parse("https://" + paymentPointer.host() + paymentPointer.path());
       }
     };
@@ -175,21 +177,25 @@ public class IlpOverHttpConfig {
 
   @Bean
   public SendMoneyService sendMoneyService(@Value("${interledger.connector.connector-url}") String connectorUrl,
-                                           ObjectMapper objectMapper,
-                                           ConnectorAdminClient adminClient,
-                                           OkHttpClient okHttpClient,
-                                           SpspClient spspClient) {
+    ObjectMapper objectMapper,
+    ConnectorAdminClient adminClient,
+    OkHttpClient okHttpClient,
+    SpspClient spspClient) {
     return new SendMoneyService(HttpUrl.parse(connectorUrl), objectMapper, adminClient, okHttpClient, spspClient);
   }
 
   @Bean
-  public GimmeMoneyService gimmeMoneyService(SendMoneyService sendMoneyService,
-                                             @Qualifier(SPSP) HttpUrl spspUrl) {
-    return new GimmeMoneyService(sendMoneyService, AccountId.of("rainmaker"), "password", spspUrl);
+  public GimmeMoneyService gimmeMoneyService(
+    SendMoneyService sendMoneyService, @Qualifier(SPSP) HttpUrl spspUrl
+  ) {
+    return new GimmeMoneyService(
+      sendMoneyService, AccountId.of("rainmaker"), BearerToken.fromRawToken("password"), spspUrl
+    );
   }
 
   @Bean
-  public ConnectorBalanceClient balanceClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl) {
+  public ConnectorBalanceClient balanceClient(
+    @Value("${interledger.connector.connector-url}") String connectorHttpUrl) {
     return ConnectorBalanceClient.construct(HttpUrl.parse(connectorHttpUrl));
   }
 
@@ -200,17 +206,17 @@ public class IlpOverHttpConfig {
 
   @Bean
   public ConnectorAdminClient adminClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl,
-                                          ConnectorAdminAuthProvider connectorAdminAuthProvider) {
+    ConnectorAdminAuthProvider connectorAdminAuthProvider) {
     return ConnectorAdminClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
-      template.header("Authorization", connectorAdminAuthProvider.getAdminAuth());
+      template.header(AUTHORIZATION, connectorAdminAuthProvider.getAdminAuth());
     });
   }
 
   @Bean
   public ConnectorRoutesClient routesClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl,
-                                            ConnectorAdminAuthProvider connectorAdminAuthProvider) {
+    ConnectorAdminAuthProvider connectorAdminAuthProvider) {
     return ConnectorRoutesClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
-      template.header("Authorization", connectorAdminAuthProvider.getAdminAuth());
+      template.header(AUTHORIZATION, connectorAdminAuthProvider.getAdminAuth());
     });
   }
 

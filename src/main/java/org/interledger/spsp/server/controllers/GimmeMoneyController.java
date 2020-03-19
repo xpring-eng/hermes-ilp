@@ -1,7 +1,6 @@
 package org.interledger.spsp.server.controllers;
 
 import org.interledger.connector.accounts.AccountId;
-import org.interledger.core.InterledgerProtocolException;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.services.GimmeMoneyService;
 
@@ -24,7 +23,7 @@ import java.util.concurrent.ExecutionException;
  *
  */
 @RestController
-public class GimmeMoneyController extends AbstractController {
+public class GimmeMoneyController {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
