@@ -35,7 +35,6 @@ public class AuthUtils {
   @Deprecated
   public static String getBearerTokenFromAuthorizationHeader(final Optional<String> authorizationHeader) {
     return Objects.requireNonNull(authorizationHeader)
-      .filter(authHeader -> authHeader.length() > 7)
       .filter(authHeader -> authHeader.startsWith("Bearer "))
       .map(authHeader -> authHeader.substring(7))
       .orElseThrow(() -> new BadCredentialsException("Requests must have a valid Authorization header"));
