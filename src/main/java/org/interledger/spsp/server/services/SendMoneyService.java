@@ -6,6 +6,7 @@ import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.core.InterledgerAddress;
+import org.interledger.core.InterledgerAddressPrefix;
 import org.interledger.core.SharedSecret;
 import org.interledger.link.LinkId;
 import org.interledger.link.http.IlpOverHttpLink;
@@ -26,9 +27,12 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 
 import java.time.Duration;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import javax.annotation.PreDestroy;
 
 public class SendMoneyService {
@@ -41,16 +45,28 @@ public class SendMoneyService {
   private final ObjectMapper objectMapper;
 
   private final ConnectorAdminClient adminClient;
-  private OkHttpClient okHttpClient;
   private final ExecutorService executorService;
+  private OkHttpClient okHttpClient;
 
-  public SendMoneyService(HttpUrl connectorUrl, ObjectMapper objectMapper, ConnectorAdminClient adminClient, OkHttpClient okHttpClient, SpspClient spspClient) {
+  // Used by STREAM sender to tell the receiver what it's ILP address is so that the receiver can theoretically send
+  // packets back to the sender, if desired.
+  private InterledgerAddressPrefix spspAddressPrefix;
+
+  public SendMoneyService(
+    HttpUrl connectorUrl,
+    ObjectMapper objectMapper,
+    ConnectorAdminClient adminClient,
+    OkHttpClient okHttpClient,
+    SpspClient spspClient,
+    InterledgerAddressPrefix spspAddressPrefix
+  ) {
     this.connectorUrl = connectorUrl;
     this.objectMapper = objectMapper;
     this.adminClient = adminClient;
     this.okHttpClient = okHttpClient;
     this.executorService = Executors.newFixedThreadPool(20);
     this.spspClient = spspClient;
+    this.spspAddressPrefix = Objects.requireNonNull(spspAddressPrefix);
   }
 
   @PreDestroy
@@ -58,46 +74,70 @@ public class SendMoneyService {
     executorService.shutdown();
   }
 
-  public SendMoneyResult sendMoney(AccountId senderAccountId,
-                                   BearerToken bearerToken,
-                                   UnsignedLong amount,
-                                   PaymentPointer destination)
-    throws ExecutionException, InterruptedException {
+  /**
+   * Send money using ILP STREAM and SPSP.
+   *
+   * @param senderAccountId The {@link AccountId} of the sender of this payment.
+   * @param bearerToken     The {@link BearerToken} for the sender's account to authorize payment sending.
+   * @param amount          An {@link UnsignedLong} for the amount of the payment.
+   * @param destination     The {@link PaymentPointer} representing the destination of the payment.
+   *
+   * @return A {@link SendMoneyResult} with the details of the payment.
+   *
+   * @throws ExecutionException
+   * @throws InterruptedException
+   */
+  public SendMoneyResult sendMoney(
+    final AccountId senderAccountId,
+    final BearerToken bearerToken,
+    final UnsignedLong amount,
+    final PaymentPointer destination
+  ) throws ExecutionException, InterruptedException {
+
+    Objects.requireNonNull(senderAccountId);
+    Objects.requireNonNull(bearerToken);
+    Objects.requireNonNull(amount);
+    Objects.requireNonNull(destination);
+
     // Fetch shared secret and destination address using SPSP client
     StreamConnectionDetails connectionDetails = spspClient.getStreamConnectionDetails(destination);
 
     AccountSettings senderAccountSettings = adminClient.findAccount(senderAccountId.value())
       .orElseThrow(() -> new AccountNotFoundProblem(senderAccountId));
 
-    final InterledgerAddress senderAddress =
-      InterledgerAddress.of("test.jc.money").with(senderAccountId.value());
+    // SenderAddress is {connectorIlpAddress}.{spsp-prefix}.{accountId}.{shared_secret}
+    final InterledgerAddress senderAddress = InterledgerAddress.of(
+      spspAddressPrefix.with(senderAccountId.value())
+        .with(connectionDetails.sharedSecret().value()).getValue()
+    );
 
     // Use ILP over HTTP for our underlying link
     IlpOverHttpLink link = newIlpOverHttpLink(senderAddress, senderAccountId, bearerToken.rawToken());
 
     // Create SimpleStreamSender for sending STREAM payments
-    SimpleStreamSender simpleStreamSender = new SimpleStreamSender(new JavaxStreamEncryptionService(),
-      link,
-      executorService);
+    SimpleStreamSender simpleStreamSender = new SimpleStreamSender(
+      new JavaxStreamEncryptionService(), link, executorService
+    );
 
     // Send payment using STREAM
     return simpleStreamSender.sendMoney(
-        SendMoneyRequest.builder()
-          .sourceAddress(senderAddress)
-          .amount(amount)
-          .denomination(Denomination.builder()
-            .assetCode(senderAccountSettings.assetCode())
-            .assetScale((short) senderAccountSettings.assetScale())
-            .build())
-          .destinationAddress(connectionDetails.destinationAddress())
-          .timeout(Duration.ofSeconds(SEND_TIMEOUT))
-          .paymentTracker(new FixedSenderAmountPaymentTracker(amount))
-          .sharedSecret(SharedSecret.of(connectionDetails.sharedSecret().value()))
-          .build()
-      ).get();
+      SendMoneyRequest.builder()
+        .sourceAddress(senderAddress)
+        .amount(amount)
+        .denomination(Denomination.builder()
+          .assetCode(senderAccountSettings.assetCode())
+          .assetScale((short) senderAccountSettings.assetScale())
+          .build())
+        .destinationAddress(connectionDetails.destinationAddress())
+        .timeout(Duration.ofSeconds(SEND_TIMEOUT))
+        .paymentTracker(new FixedSenderAmountPaymentTracker(amount))
+        .sharedSecret(SharedSecret.of(connectionDetails.sharedSecret().value()))
+        .build()
+    ).get();
   }
 
-  private IlpOverHttpLink newIlpOverHttpLink(InterledgerAddress senderAddress, AccountId senderAccountId, String bearerToken) {
+  private IlpOverHttpLink newIlpOverHttpLink(InterledgerAddress senderAddress, AccountId senderAccountId,
+    String bearerToken) {
     HttpUrl ilpHttpUrl = new HttpUrl.Builder()
       .scheme(connectorUrl.scheme())
       .host(connectorUrl.host())

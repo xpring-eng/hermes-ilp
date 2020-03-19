@@ -3,6 +3,7 @@ package org.interledger.spsp.server.client;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
+import org.interledger.spsp.server.model.BearerToken;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Feign;
@@ -17,6 +18,7 @@ import org.zalando.problem.ThrowableProblem;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public interface ConnectorTokensClient {
 
@@ -46,7 +48,7 @@ public interface ConnectorTokensClient {
     "Authorization: {authorizationHeader}"
   })
   CreateAccessTokenResponse createToken(
-    @Param("authorizationHeader") String authorizationHeader,
+    @Param("authorizationHeader") Optional<BearerToken> authorizationHeader,
     @Param("accountId") AccountId accountId
   ) throws ThrowableProblem;
 
@@ -56,7 +58,7 @@ public interface ConnectorTokensClient {
     "Authorization: {authorizationHeader}"
   })
   void deleteTokens(
-    @Param("authorizationHeader") String authorizationHeader,
+    @Param("authorizationHeader") Optional<BearerToken> authorizationHeader,
     @Param("accountId") AccountId accountId
   ) throws ThrowableProblem;
 
@@ -66,7 +68,7 @@ public interface ConnectorTokensClient {
     "Authorization: {authorizationHeader}"
   })
   List<AccessToken> getTokens(
-    @Param("authorizationHeader") String authorizationHeader,
+    @Param("authorizationHeader") Optional<BearerToken> authorizationHeader,
     @Param("accountId") AccountId accountId
   ) throws ThrowableProblem;
 

@@ -44,7 +44,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
 @SpringBootTest(
@@ -76,7 +75,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest {
   public void setUp() throws IOException {
     // Create an admin client to create a test account
     accountIdHermes = AccountId.of("hermes");
-    JwtAuthSettings jwtAuthSettings = containers.defaultJwtAuthSettings(accountIdHermes.value());
+    JwtAuthSettings jwtAuthSettings = containers.defaultJwtAuthSettings(accountIdHermes);
 
     // Set up auth settings to use JWT_RS_256
     Map<String, Object> customSettings = new HashMap<>();
@@ -264,11 +263,11 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest {
    */
   @Test
   public void createAccountTestWithJwtTokenAndFullRequest() {
-    String accountID = "AccountServiceGRPCTest";
+    AccountId accountID = AccountId.of("AccountServiceGRPCTest");
     String accountDescription = "Noah's test account";
 
     JwtAuthSettings jwtAuthSettings = containers.defaultJwtAuthSettings(accountID);
-    BearerToken jwt = BearerToken.fromRawToken(containers.createJwt(accountID, 10));
+    BearerToken jwt = containers.createJwt(accountID, 10);
 
     Map<String, String> customSettings = new HashMap<>();
     customSettings
@@ -288,11 +287,11 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest {
       .setAssetCode("XRP")
       .setAssetScale(9)
       .putAllCustomSettings(customSettings)
-      .setAccountId(accountID)
+      .setAccountId(accountID.value())
       .setDescription(accountDescription)
       .setLinkType(IlpOverHttpLink.LINK_TYPE_STRING)
       .setIsConnectionInitiator(true)
-      .setIlpAddressSegment(accountID)
+      .setIlpAddressSegment(accountID.value())
       .setBalanceSettings(CreateAccountResponse.BalanceSettings.newBuilder().build())
       .setIsChildAccount(true)
       .setIsInternal(false)
@@ -306,7 +305,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest {
       .build();
 
     CreateAccountRequest.Builder request = CreateAccountRequest.newBuilder()
-      .setAccountId(accountID)
+      .setAccountId(accountID.value())
       .setAssetCode("XRP")
       .setAssetScale(9)
       .setDescription(accountDescription);

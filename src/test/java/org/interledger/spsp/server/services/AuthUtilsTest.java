@@ -2,6 +2,8 @@ package org.interledger.spsp.server.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.interledger.spsp.server.model.BearerToken;
+
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import org.junit.Before;
@@ -37,40 +39,6 @@ public class AuthUtilsTest {
   }
 
   @Test
-  public void getAuthorizationAsBearerTokenWithNullToken() {
-    expectedException.expect(NullPointerException.class);
-    AuthUtils.getBearerTokenFromAuthorizationHeader(null);
-
-  }
-
-  @Test
-  public void getAuthorizationAsBearerTokenWithEmptyToken() {
-    expectedException.expect(BadCredentialsException.class);
-    expectedException.expectMessage("Requests must have a valid Authorization header");
-    AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of(""));
-  }
-
-  @Test
-  public void getAuthorizationAsBearerTokenWithBlankToken() {
-    expectedException.expect(BadCredentialsException.class);
-    AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of(" "));
-  }
-
-  @Test
-  public void getAuthorizationAsBearerTokenWithInvalidBearerSpelling() {
-    expectedException.expect(BadCredentialsException.class);
-    AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of("Bear foo"));
-  }
-
-  @Test
-  public void getAuthorizationAsBearerTokenWithEmptyBearerToken() {
-    assertThat(AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of("Bearer  "))).isEqualTo(" ");
-    assertThat(AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of("Bearer f"))).isEqualTo("f");
-    assertThat(AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of("Bearer foo"))).isEqualTo("foo");
-    assertThat(AuthUtils.getBearerTokenFromAuthorizationHeader(Optional.of("Bearer foo bar"))).isEqualTo("foo bar");
-  }
-
-  @Test
   public void getJwtWithNullToken() {
     expectedException.expect(NullPointerException.class);
     AuthUtils.getJwt(null);
@@ -80,19 +48,19 @@ public class AuthUtilsTest {
   public void getgetJwtWithEmptyToken() {
     expectedException.expect(BadCredentialsException.class);
     expectedException.expectMessage("Requests must have a valid Authorization header");
-    AuthUtils.getJwt(Optional.of(""));
+    AuthUtils.getJwt(Optional.of(BearerToken.fromRawToken("")));
   }
 
   @Test
   public void getgetJwtWithBlankToken() {
     expectedException.expect(BadCredentialsException.class);
-    AuthUtils.getJwt(Optional.of(" "));
+    AuthUtils.getJwt(Optional.of(BearerToken.fromRawToken(" ")));
   }
 
   @Test
   public void getgetJwtWithInvalidBearerSpelling() {
     expectedException.expect(BadCredentialsException.class);
-    AuthUtils.getJwt(Optional.of("Bear foo"));
+    AuthUtils.getJwt(Optional.of(BearerToken.fromBearerTokenValue("Bear foo")));
   }
 
   @Test
@@ -100,13 +68,13 @@ public class AuthUtilsTest {
     expectedException.expect(BadCredentialsException.class);
     expectedException.expectMessage("JWT is expired");
 
-    assertThat(AuthUtils.getJwt(Optional.of("Bearer " + EXPIRED_TEST_JWT)));
+    assertThat(AuthUtils.getJwt(Optional.of(BearerToken.fromBearerTokenValue("Bearer " + EXPIRED_TEST_JWT))));
   }
 
   @Test
   public void getJwtWithBearerToken() {
     DecodedJWT expectedJwt = JWT.decode(TEST_JWT);
-    DecodedJWT actualJwt = AuthUtils.getJwt(Optional.of("Bearer " + TEST_JWT)).get();
+    DecodedJWT actualJwt = AuthUtils.getJwt(Optional.of(BearerToken.fromBearerTokenValue("Bearer " + TEST_JWT))).get();
     assertThat(actualJwt.getToken()).isEqualTo(expectedJwt.getToken());
   }
 

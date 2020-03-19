@@ -27,6 +27,7 @@ import org.interledger.spsp.server.controllers.PaymentController;
 import org.interledger.spsp.server.controllers.filters.CookieFilterTests.CookieFilterConfiguration;
 import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.PaymentRequest;
+import org.interledger.spsp.server.util.ExceptionHandlerUtils;
 import org.interledger.stream.SendMoneyResult;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +41,7 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -55,8 +57,13 @@ import javax.servlet.http.Cookie;
  */
 @RunWith(SpringRunner.class)
 @WebMvcTest(
-  controllers = {AccountController.class, BalanceController.class, PaymentController.class},
-  excludeAutoConfiguration = {SecurityAutoConfiguration.class})
+  controllers = {
+    AccountController.class,
+    BalanceController.class,
+    PaymentController.class
+  },
+  excludeAutoConfiguration = {SecurityAutoConfiguration.class}
+)
 @Import(CookieFilterConfiguration.class)
 public class CookieFilterTests extends AbstractControllerTest {
 
@@ -66,7 +73,7 @@ public class CookieFilterTests extends AbstractControllerTest {
   private static final BearerToken BEARER_TOKEN = BearerToken.fromRawToken(JWT_VALUE);
   private static final Optional<BearerToken> OPT_BEARER_TOKEN = Optional.of(BEARER_TOKEN);
 
-  private ObjectMapper objectMapper = ObjectMapperFactory.create();
+  private ObjectMapper objectMapper = ObjectMapperFactory.createObjectMapperForProblemsJson();
 
   @Autowired
   private MockMvc mvc;
@@ -179,7 +186,7 @@ public class CookieFilterTests extends AbstractControllerTest {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq(BEARER_TOKEN.toString()), any())).thenReturn(accountBalanceResponseMock);
+    when(balanceClient.getBalance(eq(OPT_BEARER_TOKEN), any())).thenReturn(accountBalanceResponseMock);
 
     this.mvc.perform(get("/accounts/foo/balance")
       .headers(testJsonHeaders())
@@ -187,13 +194,11 @@ public class CookieFilterTests extends AbstractControllerTest {
     )
       .andExpect(status().isOk());
 
-    verify(balanceClient, times(1)).getBalance(eq(BEARER_TOKEN.toString()), any());
+    verify(balanceClient, times(1)).getBalance(eq(OPT_BEARER_TOKEN), any());
   }
 
   @Test
   public void testGetBalanceWithHeaderAuth() throws Exception {
-    BearerToken bearerToken = BearerToken.fromRawToken("fakejwt.asdlfkjasdf.blah");
-
     AccountBalanceResponse accountBalanceResponseMock = AccountBalanceResponse.builder()
       .assetCode("XRP")
       .assetScale(9)
@@ -203,15 +208,16 @@ public class CookieFilterTests extends AbstractControllerTest {
         .prepaidAmount(10000)
         .build())
       .build();
-    when(balanceClient.getBalance(eq(bearerToken.toString()), any())).thenReturn(accountBalanceResponseMock);
+    when(balanceClient.getBalance(eq(OPT_BEARER_TOKEN), any()))
+      .thenReturn(accountBalanceResponseMock);
 
     this.mvc.perform(get("/accounts/foo/balance")
       .headers(testJsonHeaders())
-      .header(AUTHORIZATION, bearerToken.toString())
+      .header(AUTHORIZATION, BEARER_TOKEN.value())
     )
       .andExpect(status().isOk());
 
-    verify(balanceClient, times(1)).getBalance(eq(bearerToken.toString()), any());
+    verify(balanceClient, times(1)).getBalance(eq(OPT_BEARER_TOKEN), any());
   }
 
   @Test
@@ -286,11 +292,17 @@ public class CookieFilterTests extends AbstractControllerTest {
       any());
   }
 
+  @Configuration
   static class CookieFilterConfiguration {
 
     @Bean
     public BuildProperties buildProperties() {
       return new BuildProperties(new Properties());
+    }
+
+    @Bean
+    public ExceptionHandlerUtils exceptionHandlerUtils(ObjectMapper objectMapper) {
+      return new ExceptionHandlerUtils(objectMapper);
     }
   }
 }

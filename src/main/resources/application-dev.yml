@@ -8,6 +8,8 @@ interledger:
   connector:
     connector-url: http://localhost:8000
     admin-password: admin:password
+  # SPSP settings below are used to create new accounts on the Connector so that they forward and route proplery to
+  # the remote SPSP server.
   spsp:
     spsp-url: https://money.ilpv4.dev
     auth-token: placeholder:c2ho

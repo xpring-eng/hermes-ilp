@@ -35,9 +35,11 @@ public class AccountController {
 
   private final HttpUrl spspReceiverUrl;
 
-  public AccountController(NewAccountService newAccountService,
+  public AccountController(
+    NewAccountService newAccountService,
     ConnectorAdminClient adminClient,
-    HttpUrl spspReceiverUrl) {
+    HttpUrl spspReceiverUrl
+  ) {
     this.newAccountService = Objects.requireNonNull(newAccountService);
     this.adminClient = Objects.requireNonNull(adminClient);
     this.spspReceiverUrl = Objects.requireNonNull(spspReceiverUrl);
@@ -49,12 +51,11 @@ public class AccountController {
   )
   public @ResponseBody
   AccountSettingsResponse createAccount(
-    @RequestHeader(AUTHORIZATION) Optional<String> authToken,
+    @RequestHeader(AUTHORIZATION) Optional<BearerToken> authToken,
     @RequestBody Optional<CreateAccountRestRequest> createAccountRequest
   ) {
     // Give a choice of passing in a JWT or simple auth token, or having Hermes generate a Simple token
-    AccountSettings accountSettings = newAccountService
-      .createAccount(authToken.map(BearerToken::fromBearerTokenValue), createAccountRequest);
+    AccountSettings accountSettings = newAccountService.createAccount(authToken, createAccountRequest);
 
     // Add a payment pointer to the response
     return AccountSettingsResponse.builder()
@@ -69,9 +70,9 @@ public class AccountController {
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
   public @ResponseBody
-  AccountSettingsResponse getAccount(@PathVariable("accountId") String accountId) {
-    AccountSettings accountSettings = adminClient.findAccount(accountId)
-      .orElseThrow(() -> new AccountNotFoundProblem(AccountId.of(accountId)));
+  AccountSettingsResponse getAccount(@PathVariable("accountId") AccountId accountId) {
+    AccountSettings accountSettings = adminClient.findAccount(accountId.value())
+      .orElseThrow(() -> new AccountNotFoundProblem(AccountId.of(accountId.value())));
 
     // Add a payment pointer to the response
     return AccountSettingsResponse.builder()

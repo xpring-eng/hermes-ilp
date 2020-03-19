@@ -109,7 +109,7 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
       ImmutableCreateAccountRestRequest.Builder requestBuilder = CreateAccountRestRequest
         .builder(assetCode, assetScale);
       if (!request.getAccountId().isEmpty()) {
-        requestBuilder.accountId(request.getAccountId());
+        requestBuilder.accountId(AccountId.of(request.getAccountId()));
       }
 
       if (!request.getDescription().isEmpty()) {

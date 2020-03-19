@@ -6,6 +6,7 @@ import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.client.AccessToken;
 import org.interledger.spsp.server.client.ConnectorTokensClient;
 import org.interledger.spsp.server.client.CreateAccessTokenResponse;
+import org.interledger.spsp.server.model.BearerToken;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.zalando.problem.spring.common.MediaTypes;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -42,10 +44,10 @@ public class AccountTokenController {
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
   public CreateAccessTokenResponse createToken(
-    @RequestHeader(AUTHORIZATION) String authorizationHeader,
-    @PathVariable("accountId") String accountId
+    @RequestHeader(AUTHORIZATION) Optional<BearerToken> authorizationHeader,
+    @PathVariable("accountId") AccountId accountId
   ) {
-    return tokensClient.createToken(authorizationHeader, AccountId.of(accountId));
+    return tokensClient.createToken(authorizationHeader, accountId);
   }
 
   /**
@@ -61,10 +63,10 @@ public class AccountTokenController {
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
   public List<AccessToken> getTokens(
-    @RequestHeader(AUTHORIZATION) String authorizationHeader,
-    @PathVariable("accountId") String accountId
+    @RequestHeader(AUTHORIZATION) Optional<BearerToken> authorizationHeader,
+    @PathVariable("accountId") AccountId accountId
   ) {
-    return tokensClient.getTokens(authorizationHeader, AccountId.of(accountId));
+    return tokensClient.getTokens(authorizationHeader, accountId);
   }
 
   /**
@@ -78,10 +80,10 @@ public class AccountTokenController {
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
   public void deleteTokens(
-    @RequestHeader(AUTHORIZATION) String authorizationHeader,
-    @PathVariable("accountId") String accountId
+    @RequestHeader(AUTHORIZATION) Optional<BearerToken> authorizationHeader,
+    @PathVariable("accountId") AccountId accountId
   ) {
-    tokensClient.deleteTokens(authorizationHeader, AccountId.of(accountId));
+    tokensClient.deleteTokens(authorizationHeader, accountId);
   }
 
 }

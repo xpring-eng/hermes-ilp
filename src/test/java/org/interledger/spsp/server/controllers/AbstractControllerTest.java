@@ -20,6 +20,7 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.web.servlet.mvc.AbstractController;
 
 /**
  * An abstract super class for all Controller tests that inherit {@link AbstractController}.
@@ -27,9 +28,9 @@ import org.springframework.test.context.ContextConfiguration;
 @ContextConfiguration(classes = {
   ControllerTestConfig.class // For custom Beans.
 })
-@ComponentScan(basePackages = "org.interledger.spsp.server.controllers",
-  excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
-    value = AbstractIntegrationTest.TestConfig.class)})
+//@ComponentScan(basePackages = "org.interledger.spsp.server.controllers",
+//  excludeFilters = {@ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
+//    value = AbstractIntegrationTest.TestConfig.class)})
 public abstract class AbstractControllerTest {
 
   @MockBean
@@ -64,11 +65,6 @@ public abstract class AbstractControllerTest {
     headers.setAccept(Lists.newArrayList(MediaType.APPLICATION_JSON));
     headers.setContentType(MediaType.APPLICATION_JSON);
     return headers;
-  }
-
-  @Test
-  public void testGetAuthorizationAsBearerToken(){
-
   }
 
 }

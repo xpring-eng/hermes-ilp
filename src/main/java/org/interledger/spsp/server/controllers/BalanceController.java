@@ -5,6 +5,7 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.client.AccountBalanceResponse;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
+import org.interledger.spsp.server.model.BearerToken;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.zalando.problem.spring.common.MediaTypes;
+
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -39,10 +42,10 @@ public class BalanceController {
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
   public AccountBalanceResponse getBalance(
-    @RequestHeader(AUTHORIZATION) String authorizationHeader,
-    @PathVariable("accountId") String accountId
+    @RequestHeader(AUTHORIZATION) Optional<BearerToken> authorizationHeader,
+    @PathVariable("accountId") AccountId accountId
   ) {
-    return balanceClient.getBalance(authorizationHeader, AccountId.of(accountId));
+    return balanceClient.getBalance(authorizationHeader, accountId);
   }
 
 }

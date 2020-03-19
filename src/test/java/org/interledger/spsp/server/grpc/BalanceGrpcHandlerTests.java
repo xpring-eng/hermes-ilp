@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-
 @RunWith(SpringRunner.class)
 @ActiveProfiles("test")
 @SpringBootTest(
@@ -73,7 +72,7 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
 
     // Create an admin client to create a test account
     accountIdHermes = AccountId.of("hermes");
-    JwtAuthSettings jwtAuthSettings = containers.defaultJwtAuthSettings(accountIdHermes.value());
+    JwtAuthSettings jwtAuthSettings = containers.defaultJwtAuthSettings(accountIdHermes);
 
     // Set up auth settings to use JWT_RS_256
     Map<String, Object> customSettings = new HashMap<>();
@@ -132,7 +131,7 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
   @Test
   public void getBalanceTest() {
 
-    BearerToken jwt = BearerToken.fromRawToken(containers.createJwt(accountIdHermes.value(), 10));
+    BearerToken jwt = containers.createJwt(accountIdHermes, 10);
 
     GetBalanceResponse reply =
       blockingStub
@@ -181,7 +180,7 @@ public class BalanceGrpcHandlerTests extends AbstractIntegrationTest {
     expectedException.expect(StatusRuntimeException.class);
     expectedException.expectMessage(Status.NOT_FOUND.getCode().name());
 
-    BearerToken jwt = BearerToken.fromRawToken(containers.createJwt("foo"));
+    BearerToken jwt = containers.createJwt(AccountId.of("foo"));
 
     blockingStub
       .withCallCredentials(IlpCallCredentials.build(jwt))

@@ -1,7 +1,6 @@
 package org.interledger.spsp.server.grpc;
 
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -27,6 +26,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 
 import java.util.HashMap;
 
+/**
+ * Unit tests for {@link ExceptionHandlerUtils}.
+ */
 public class ExceptionHandlerUtilsTest {
 
   /**

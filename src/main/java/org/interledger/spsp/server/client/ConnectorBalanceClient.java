@@ -3,6 +3,7 @@ package org.interledger.spsp.server.client;
 
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
+import org.interledger.spsp.server.model.BearerToken;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Feign;
@@ -15,6 +16,7 @@ import feign.optionals.OptionalDecoder;
 import okhttp3.HttpUrl;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public interface ConnectorBalanceClient {
 
@@ -46,7 +48,7 @@ public interface ConnectorBalanceClient {
     "Authorization: {authorizationHeader}"
   })
   AccountBalanceResponse getBalance(
-    @Param("authorizationHeader") String authorizationHeader,
+    @Param("authorizationHeader") Optional<BearerToken> authorizationHeader,
     @Param(ID) AccountId accountId
   );
 }
