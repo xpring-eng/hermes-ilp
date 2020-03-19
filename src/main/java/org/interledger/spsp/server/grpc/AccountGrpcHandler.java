@@ -13,8 +13,6 @@ import org.interledger.spsp.server.model.ImmutableCreateAccountRestRequest;
 import org.interledger.spsp.server.services.NewAccountService;
 import org.interledger.spsp.server.util.ExceptionHandlerUtils;
 
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import okhttp3.HttpUrl;
 import org.lognet.springboot.grpc.GRpcService;
