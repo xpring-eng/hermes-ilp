@@ -210,7 +210,7 @@ public class AccountGrpcHandlerTests extends AbstractIntegrationTest {
       fail();
     } catch (StatusRuntimeException e) {
       logger.info("Failed successfully. Error status: " + e.getStatus());
-      assertThat(e.getStatus()).isEqualTo(Status.UNKNOWN);
+      assertThat(e.getStatus()).isEqualTo(Status.INTERNAL);
     }
   }
 

@@ -23,14 +23,14 @@ public abstract class BearerToken {
   public static final String BEARER_SPACE = "Bearer ";
 
   public static BearerToken fromRawToken(final String rawToken) {
-    if(rawToken == null){
+    if (rawToken == null) {
       throw new BadCredentialsException("Bearer tokens must not be null");
     }
     return builder().value(BEARER_SPACE + rawToken).build();
   }
 
   public static BearerToken fromBearerTokenValue(final String bearerTokenValue) {
-    if(bearerTokenValue == null){
+    if (bearerTokenValue == null) {
       throw new BadCredentialsException("Bearer tokens must not be null");
     }
     return builder().value(bearerTokenValue).build();
