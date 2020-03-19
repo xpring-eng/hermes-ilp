@@ -1,12 +1,9 @@
 package org.interledger.spsp.server.grpc;
 
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import org.interledger.connector.accounts.AccountId;
@@ -14,25 +11,21 @@ import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
 import org.interledger.spsp.server.util.ExceptionHandlerUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.gax.rpc.ResponseObserver;
 import feign.FeignException;
 import feign.Request;
+import feign.Request.HttpMethod;
 import feign.RequestTemplate;
 import feign.Response;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeAll;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.testcontainers.shaded.org.apache.commons.lang.ObjectUtils;
 
-import java.util.Map;
+import java.util.HashMap;
 
 public class ExceptionHandlerUtilsTest {
 
@@ -47,16 +40,20 @@ public class ExceptionHandlerUtilsTest {
   @Mock
   private StreamObserver responseObserverMock;
 
-  private ObjectMapper objectMapper;
   private ExceptionHandlerUtils exceptionHandlerUtils;
   private Request request;
 
   @Before
   public void setUp() {
     initMocks(this);
-    this.objectMapper = ObjectMapperFactory.createObjectMapperForProblemsJson();
-    this.exceptionHandlerUtils = new ExceptionHandlerUtils(this.objectMapper);
-    request = Request.create(mock(Request.HttpMethod.class), "https://ughfeign.com", mock(Map.class), null, mock(RequestTemplate.class));
+    this.exceptionHandlerUtils = new ExceptionHandlerUtils(ObjectMapperFactory.createObjectMapperForProblemsJson());
+    request = Request.create(
+      HttpMethod.GET,
+      "https://ughfeign.com",
+      new HashMap<>(),
+      null,
+      new RequestTemplate()
+    );
   }
 
   @Test
@@ -150,12 +147,13 @@ public class ExceptionHandlerUtilsTest {
   }
 
   private void verifyStatusRuntimeException(Status expectedStatus) {
-    verify(responseObserverMock, times(1))
+    verify(responseObserverMock)
       .onError(argThat(new StatusRuntimeExceptionMatcher(new StatusRuntimeException(expectedStatus))));
     verifyNoMoreInteractions(responseObserverMock);
   }
 
   private class StatusRuntimeExceptionMatcher implements ArgumentMatcher<StatusRuntimeException> {
+
     private StatusRuntimeException left;
 
     public StatusRuntimeExceptionMatcher(StatusRuntimeException left) {
