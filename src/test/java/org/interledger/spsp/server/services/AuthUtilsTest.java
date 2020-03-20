@@ -47,7 +47,7 @@ public class AuthUtilsTest {
   @Test
   public void getgetJwtWithEmptyToken() {
     expectedException.expect(BadCredentialsException.class);
-    expectedException.expectMessage("Bearer tokens must not be null");
+    expectedException.expectMessage("BearerTokens must have a non-empty raw token");
     AuthUtils.getJwt(Optional.of(BearerToken.fromRawToken("")));
   }
 
