@@ -10,7 +10,6 @@ import org.interledger.link.http.IlpOverHttpLink;
 import org.interledger.link.http.IlpOverHttpLinkSettings;
 import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.OutgoingLinkSettings;
-import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
@@ -28,20 +27,16 @@ public class NewAccountService {
 
   private final ConnectorAdminClient adminClient;
 
-  private final ConnectorRoutesClient connectorRoutesClient;
-
   private final OutgoingLinkSettings spspLinkSettings;
 
   private final InterledgerAddressPrefix spspAddressPrefix;
 
   public NewAccountService(
     final ConnectorAdminClient adminClient,
-    final ConnectorRoutesClient connectorRoutesClient,
     final OutgoingLinkSettings spspLinkSettings,
     final InterledgerAddressPrefix spspAddressPrefix
   ) {
     this.adminClient = adminClient;
-    this.connectorRoutesClient = connectorRoutesClient;
     this.spspLinkSettings = spspLinkSettings;
     this.spspAddressPrefix = spspAddressPrefix;
   }
@@ -71,7 +66,7 @@ public class NewAccountService {
 
     try {
       InterledgerAddressPrefix routePrefix = spspAddressPrefix.with(returnedAccountSettings.accountId().value());
-      connectorRoutesClient.createStaticRoute(
+      adminClient.createStaticRoute(
         routePrefix.getValue(),
         StaticRoute.builder()
           .routePrefix(routePrefix)

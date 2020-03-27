@@ -4,7 +4,6 @@ import org.interledger.connector.client.ConnectorAdminClient;
 import org.interledger.core.InterledgerAddressPrefix;
 import org.interledger.link.http.OutgoingLinkSettings;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
-import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.client.ConnectorTokensClient;
 import org.interledger.spsp.server.services.GimmeMoneyService;
 import org.interledger.spsp.server.services.NewAccountService;
@@ -22,7 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 
 /**
- * An abstract super class for all Controller tests that inherit {@link AbstractController}.
+ * An abstract super class for all Controller tests.
  */
 @ContextConfiguration(classes = {
   ControllerTestConfig.class // For custom Beans.
@@ -46,8 +45,6 @@ public abstract class AbstractControllerTest {
   protected GimmeMoneyService gimmeMoneyService;
   @MockBean
   protected SendMoneyService sendMoneyService;
-  @MockBean
-  protected ConnectorRoutesClient connectorRoutesClient;
   @MockBean
   protected OutgoingLinkSettings spspLinkSettings;
   @MockBean
