@@ -1,0 +1,38 @@
+stages:
+  - test
+
+variables:
+  GCR_PROJECT_ID: xpring-dev-sandbox
+  GCLOUD_PROJECT_ID: xpring-dev-sandbox
+  CLUSTER_NAME: poc1-cluster
+  CLUSTER_REGION: us-central1
+  RELEASE_NAME: spsp-server
+  RELEASE_ENV: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+
+include:
+  - project: 'xpring/xpring-ci-templates'
+    file: '/templates/build_for_gcr.yml'
+
+.test:
+  image: circleci/openjdk:8-jdk
+  stage: test
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - ~/.m2
+    policy: pull
+  variables:
+    MAVEN_OPTS: -Xmx4096m
+    JAVA_HOME: /usr/lib/jvm/jdk1.8.0/
+  before_script:
+    - curl -L --cookie 'oraclelicense=accept-securebackup-cookie;'  http://download.oracle.com/otn-pub/java/jce/8/jce_policy-8.zip -o /tmp/jce_policy.zip
+    - unzip -o /tmp/jce_policy.zip -d /tmp
+    - sudo mv -f /tmp/UnlimitedJCEPolicyJDK8/US_export_policy.jar $JAVA_HOME/jre/lib/security/US_export_policy.jar
+    - sudo mv -f /tmp/UnlimitedJCEPolicyJDK8/local_policy.jar $JAVA_HOME/jre/lib/security/local_policy.jar
+  script:
+    - mvn dependency:go-offline -DskipITs install
+  artifacts:
+    reports:
+      junit: 
+        - .*/target/surefire-reports/.*xml
+        - .*/target/checkstyle-reports/.*xml
