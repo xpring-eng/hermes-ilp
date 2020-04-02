@@ -14,7 +14,6 @@ import org.interledger.spsp.PaymentPointerResolver;
 import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
-import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.client.ConnectorTokensClient;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContextImpl;
@@ -171,11 +170,10 @@ public class IlpOverHttpConfig {
   @Bean
   public NewAccountService newAccountService(
     ConnectorAdminClient adminClient,
-    ConnectorRoutesClient connectorRoutesClient,
     @Qualifier(SPSP) OutgoingLinkSettings spspLinkSettings,
     @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix
   ) {
-    return new NewAccountService(adminClient, connectorRoutesClient, spspLinkSettings, spspAddressPrefix);
+    return new NewAccountService(adminClient, spspLinkSettings, spspAddressPrefix);
   }
 
   @Bean
@@ -216,14 +214,6 @@ public class IlpOverHttpConfig {
   public ConnectorAdminClient adminClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl,
     ConnectorAdminAuthProvider connectorAdminAuthProvider) {
     return ConnectorAdminClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
-      template.header(AUTHORIZATION, connectorAdminAuthProvider.getAdminAuth());
-    });
-  }
-
-  @Bean
-  public ConnectorRoutesClient routesClient(@Value("${interledger.connector.connector-url}") String connectorHttpUrl,
-    ConnectorAdminAuthProvider connectorAdminAuthProvider) {
-    return ConnectorRoutesClient.construct(HttpUrl.parse(connectorHttpUrl), template -> {
       template.header(AUTHORIZATION, connectorAdminAuthProvider.getAdminAuth());
     });
   }

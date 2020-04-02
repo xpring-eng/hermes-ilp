@@ -19,7 +19,6 @@ import org.interledger.link.http.IncomingLinkSettings;
 import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.SimpleAuthSettings;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
-import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.client.ConnectorTokensClient;
 import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.util.JwksServer;
@@ -119,12 +118,6 @@ public class TestIlpContainers {
 
   public ConnectorAdminClient adminClient() {
     return ConnectorAdminClient.construct(getNodeBaseUri(), template -> {
-      template.header(AUTHORIZATION, "Basic " + ADMIN_AUTH_TOKEN);
-    });
-  }
-
-  public ConnectorRoutesClient routesClient() {
-    return ConnectorRoutesClient.construct(getNodeBaseUri(), template -> {
       template.header(AUTHORIZATION, "Basic " + ADMIN_AUTH_TOKEN);
     });
   }

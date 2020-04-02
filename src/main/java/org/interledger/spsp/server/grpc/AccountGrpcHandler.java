@@ -4,7 +4,6 @@ import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
-import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.grpc.auth.IlpGrpcAuthContext;
 import org.interledger.spsp.server.grpc.services.AccountRequestResponseConverter;
 import org.interledger.spsp.server.model.BearerToken;
@@ -28,9 +27,6 @@ public class AccountGrpcHandler extends AccountServiceGrpc.AccountServiceImplBas
 
   @Autowired
   protected NewAccountService newAccountService;
-
-  @Autowired
-  protected ConnectorRoutesClient routesClient;
 
   @Autowired
   protected HttpUrl spspReceiverUrl;

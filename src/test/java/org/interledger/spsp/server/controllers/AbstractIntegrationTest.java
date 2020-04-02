@@ -11,7 +11,6 @@ import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.TestIlpContainers;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
-import org.interledger.spsp.server.client.ConnectorRoutesClient;
 import org.interledger.spsp.server.client.ConnectorTokensClient;
 import org.interledger.spsp.server.config.jackson.JacksonConfig;
 import org.interledger.spsp.server.model.BearerToken;
@@ -31,7 +30,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 
 import java.util.concurrent.Callable;
-
 import javax.servlet.http.HttpServletRequest;
 
 public abstract class AbstractIntegrationTest {
@@ -90,12 +88,6 @@ public abstract class AbstractIntegrationTest {
     @Primary
     public ConnectorAdminClient adminClient() {
       return containers.adminClient();
-    }
-
-    @Bean
-    @Primary
-    public ConnectorRoutesClient routesClient() {
-      return containers.routesClient();
     }
 
     @Bean
