@@ -6,11 +6,15 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 import org.interledger.connector.client.ConnectorAdminClient;
+import org.interledger.core.InterledgerAddressPrefix;
 import org.interledger.spsp.client.SimpleSpspClient;
 import org.interledger.spsp.client.SpspClient;
 import org.interledger.spsp.server.TestIlpContainers;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorTokensClient;
+import org.interledger.spsp.server.config.jackson.JacksonConfig;
+import org.interledger.spsp.server.model.BearerToken;
+import org.interledger.spsp.server.model.BearerTokenHeaderConverter;
 import org.interledger.spsp.server.services.SendMoneyService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +25,8 @@ import org.junit.BeforeClass;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 
 import java.util.concurrent.Callable;
@@ -51,12 +57,12 @@ public abstract class AbstractIntegrationTest {
   /**
    * Hack to mock out the HttpRequest that the controller uses to get the Authorization header
    *
-   * @param token    auth token (sans Bearer prefix)
-   * @param callable to run with mocked credentials
+   * @param bearerToken A {@link BearerToken}.
+   * @param callable    to run with mocked credentials
    */
-  protected <T> T withAuthToken(String token, Callable<T> callable) {
+  protected <T> T withAuthToken(BearerToken bearerToken, Callable<T> callable) {
     HttpServletRequest request = mock(HttpServletRequest.class);
-    when(request.getHeader(AUTHORIZATION)).thenReturn("Bearer " + token);
+    when(request.getHeader(AUTHORIZATION)).thenReturn(bearerToken.value());
     try {
       return callable.call();
     } catch (Exception e) {
@@ -64,8 +70,15 @@ public abstract class AbstractIntegrationTest {
     }
   }
 
+  @Configuration
+  @Import(JacksonConfig.class)
   public abstract static class TestConfig {
 
+    @Bean
+    @Primary
+    public BearerTokenHeaderConverter bearerTokenHeaderConverter() {
+      return new BearerTokenHeaderConverter();
+    }
     /**
      * Overrides the adminClient bean for test purposes to connect to our Connector container
      *
@@ -109,8 +122,12 @@ public abstract class AbstractIntegrationTest {
     public SendMoneyService sendMoneyService(ObjectMapper objectMapper,
       ConnectorAdminClient adminClient,
       OkHttpClient okHttpClient,
-      SpspClient spspClient) {
-      return new SendMoneyService(containers.getNodeBaseUri(), objectMapper, adminClient, okHttpClient, spspClient);
+      SpspClient spspClient,
+      @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix
+    ) {
+      return new SendMoneyService(
+        containers.getNodeBaseUri(), objectMapper, adminClient, okHttpClient, spspClient, spspAddressPrefix
+      );
     }
   }
 

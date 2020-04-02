@@ -1,5 +1,7 @@
 package org.interledger.spsp.server.services;
 
+import org.interledger.spsp.server.model.BearerToken;
+
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import org.slf4j.Logger;
@@ -20,27 +22,6 @@ public class AuthUtils {
   private static final Logger LOGGER = LoggerFactory.getLogger(AuthUtils.class);
 
   /**
-   * If {@code authorizationHeader} is present, treat it like a Bearer token and strip off the "Bearer" prefix,
-   * returning the token itself without that prefix.
-   *
-   * @param authorizationHeader A {@link String} representing the Authorization header as taken from an incomoing HTTP
-   *                            request.
-   *
-   * @return An optionally-present bearer token as taken from the `Authorization` header.
-   *
-   * @throws BadCredentialsException if {@code authorizationHeader} doesn't begin with the prefix "Bearer " or is there
-   *                                 is no token after the Bearer prefix.
-   * @deprecated TODO Remove if unused.
-   */
-  @Deprecated
-  public static String getBearerTokenFromAuthorizationHeader(final Optional<String> authorizationHeader) {
-    return Objects.requireNonNull(authorizationHeader)
-      .filter(authHeader -> authHeader.startsWith("Bearer "))
-      .map(authHeader -> authHeader.substring(7))
-      .orElseThrow(() -> new BadCredentialsException("Requests must have a valid Authorization header"));
-  }
-
-  /**
    * Obtain a JWT from the optionally-supplied {@code authorizationHeader} String.
    *
    * @param authorizationHeader A {@link String} containing an Authorization header, which should include a "Bearer "
@@ -48,11 +29,10 @@ public class AuthUtils {
    *
    * @return An optionally decoded {@link DecodedJWT}.
    */
-  public static Optional<DecodedJWT> getJwt(final Optional<String> authorizationHeader) {
+  public static Optional<DecodedJWT> getJwt(final Optional<BearerToken> authorizationHeader) {
     Objects.requireNonNull(authorizationHeader);
     try {
-      final String bearerToken = getBearerTokenFromAuthorizationHeader(authorizationHeader);
-      final DecodedJWT jwt = JWT.decode(bearerToken);
+      final DecodedJWT jwt = JWT.decode(authorizationHeader.map(BearerToken::rawToken).orElse(null));
       if (jwt.getExpiresAt().before(new Date())) {
         throw new BadCredentialsException("JWT is expired");
       }

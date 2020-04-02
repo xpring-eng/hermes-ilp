@@ -3,7 +3,6 @@ package org.interledger.spsp.server.grpc.services;
 import static org.interledger.spsp.server.services.HermesUtils.paymentPointerFromSpspUrl;
 
 import org.interledger.connector.accounts.AccountBalanceSettings;
-import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.accounts.SettlementEngineDetails;
@@ -182,7 +181,7 @@ public class AccountRequestResponseConverter {
     OutgoingLinkSettings outgoingLinkSettings
   ) {
     return AccountSettings.builder()
-      .accountId(AccountId.of(createAccountRequest.accountId()))
+      .accountId(createAccountRequest.accountId())
       .assetCode(createAccountRequest.assetCode())
       .assetScale(createAccountRequest.assetScale())
       .description(createAccountRequest.description())

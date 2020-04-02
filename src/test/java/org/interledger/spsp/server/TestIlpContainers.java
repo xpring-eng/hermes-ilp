@@ -20,6 +20,7 @@ import org.interledger.link.http.JwtAuthSettings;
 import org.interledger.link.http.SimpleAuthSettings;
 import org.interledger.spsp.server.client.ConnectorBalanceClient;
 import org.interledger.spsp.server.client.ConnectorTokensClient;
+import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.util.JwksServer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -46,15 +47,13 @@ public class TestIlpContainers {
   public static final String ADMIN_AUTH_TOKEN = "YWRtaW46cGFzc3dvcmQ=";
   private static final int WEB_PORT = 8080;
   private static ObjectMapper objectMapper = ObjectMapperFactory.create();
-
+  private final Network network = Network.newNetwork();
+  private final HttpUrl issuer = HttpUrl.parse("http://host.testcontainers.internal:" + WIRE_MOCK_PORT);
   private WireMockServer wireMockServer = new WireMockServer(wireMockConfig().port(WIRE_MOCK_PORT));
   private JwksServer jwtServer = new JwksServer();
   private Logger logger = LoggerFactory.getLogger(this.getClass());
-  private final Network network = Network.newNetwork();
   private GenericContainer interledgerNode;
   private GenericContainer spspServer;
-
-  private final HttpUrl issuer = HttpUrl.parse("http://host.testcontainers.internal:" + WIRE_MOCK_PORT);
 
   public static TestIlpContainers createContainers() {
     TestIlpContainers containers = new TestIlpContainers();
@@ -96,7 +95,7 @@ public class TestIlpContainers {
 
   private void startIlpNode() {
     interledgerNode = new GenericContainer<>("interledger4j/java-ilpv4-connector:0.3.2-SNAPSHOT")
-      .withLogConsumer(new org.testcontainers.containers.output.Slf4jLogConsumer (logger))
+      .withLogConsumer(new org.testcontainers.containers.output.Slf4jLogConsumer(logger))
       .withNetworkAliases("connector")
       .withExposedPorts(WEB_PORT)
       .withNetwork(network);
@@ -106,7 +105,7 @@ public class TestIlpContainers {
   private void startSpsp() {
     spspServer = new GenericContainer<>("interledger4j/spsp-server:0.1-SNAPSHOT")
       .withExposedPorts(WEB_PORT)
-      .withLogConsumer(new org.testcontainers.containers.output.Slf4jLogConsumer (logger))
+      .withLogConsumer(new org.testcontainers.containers.output.Slf4jLogConsumer(logger))
       .withNetworkAliases("spsp")
       .withEnv("interledger.spsp_server.parent_account.custom_settings.ilpOverHttp.outgoing.token_subject", "spsp")
       .withEnv("interledger.spsp_server.parent_account.custom_settings.ilpOverHttp.outgoing.shared_secret",
@@ -181,19 +180,19 @@ public class TestIlpContainers {
     }
   }
 
-  public String createJwt(String subject, int expirySeconds) {
+  public BearerToken createJwt(AccountId subject, int expirySeconds) {
     JwtAuthSettings jwtAuthSettings = defaultJwtAuthSettings(subject);
     return jwtServer.createJwt(jwtAuthSettings, Instant.now().plusSeconds(600));
   }
 
-  public String createJwt(String subject) {
+  public BearerToken createJwt(AccountId subject) {
     return createJwt(subject, 600);
   }
 
-  public ImmutableJwtAuthSettings defaultJwtAuthSettings(String subject) {
+  public ImmutableJwtAuthSettings defaultJwtAuthSettings(AccountId subject) {
     return JwtAuthSettings.builder()
       .tokenIssuer(getIssuerUrl())
-      .tokenSubject(subject)
+      .tokenSubject(subject.value())
       .tokenAudience("bar")
       .build();
   }

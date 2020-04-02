@@ -52,16 +52,18 @@ public class PaymentController {
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
   public PaymentResponse sendPayment(
-    @RequestHeader(AUTHORIZATION) String authorizationHeader,
-    @PathVariable("accountId") String accountId,
+    @RequestHeader(AUTHORIZATION) Optional<BearerToken> authorizationHeader,
+    @PathVariable("accountId") AccountId accountId,
     @RequestBody ImmutablePaymentRequest paymentRequest
   ) {
     try {
-      getJwt(Optional.ofNullable(authorizationHeader)); // hack to make sure JWT isn't expired
-      SendMoneyResult result = sendMoneyService.sendMoney(AccountId.of(accountId),
-        BearerToken.fromBearerTokenValue(authorizationHeader),
+      getJwt(authorizationHeader); // hack to make sure JWT isn't expired
+      SendMoneyResult result = sendMoneyService.sendMoney(
+        accountId,
+        authorizationHeader,
         paymentRequest.amount(),
-        PaymentPointer.of(paymentRequest.destinationPaymentPointer()));
+        PaymentPointer.of(paymentRequest.destinationPaymentPointer())
+      );
 
       return PaymentResponse.builder()
         .amountDelivered(result.amountDelivered())

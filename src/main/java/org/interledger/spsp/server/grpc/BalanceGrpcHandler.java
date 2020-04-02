@@ -12,6 +12,8 @@ import io.grpc.stub.StreamObserver;
 import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.Optional;
+
 @GRpcService
 public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBase {
 
@@ -27,9 +29,10 @@ public class BalanceGrpcHandler extends BalanceServiceGrpc.BalanceServiceImplBas
   @Override
   public void getBalance(GetBalanceRequest request, StreamObserver<GetBalanceResponse> responseObserver) {
     try {
-      BearerToken bearerToken = BearerToken.fromBearerTokenValue(ilpGrpcAuthContext.getAuthorizationHeader());
+      Optional<BearerToken> bearerToken =
+        Optional.of(BearerToken.fromBearerTokenValue(ilpGrpcAuthContext.getAuthorizationHeader()));
       AccountBalanceResponse balanceResponse = balanceClient
-        .getBalance(bearerToken.value(), AccountId.of(request.getAccountId()));
+        .getBalance(bearerToken, AccountId.of(request.getAccountId()));
 
       final GetBalanceResponse reply = GetBalanceResponse.newBuilder()
         .setAssetScale(balanceResponse.assetScale())

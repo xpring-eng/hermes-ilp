@@ -1,6 +1,7 @@
 package org.interledger.spsp.server.util;
 
 import org.interledger.link.http.JwtAuthSettings;
+import org.interledger.spsp.server.model.BearerToken;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -24,9 +25,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * For testing purposes to simulate a JWKS server. Creates RSA keys in-memory that can be used to created signed
- * JWTs. Also provides a {@link JwksServer#getJwks()} method to create a JWKS response that can be served up
- * by fake JWKS server like WireMock for {@code GET /.well-known/jwks.json requests}.
+ * For testing purposes to simulate a JWKS server. Creates RSA keys in-memory that can be used to created signed JWTs.
+ * Also provides a {@link JwksServer#getJwks()} method to create a JWKS response that can be served up by fake JWKS
+ * server like WireMock for {@code GET /.well-known/jwks.json requests}.
  */
 public class JwksServer {
 
@@ -35,6 +36,18 @@ public class JwksServer {
 
   public JwksServer() {
     resetKeyPairs();
+  }
+
+  public static void main(String[] args) {
+    JwksServer jwtServer = new JwksServer();
+    System.out.println(
+      jwtServer.createJwt(JwtAuthSettings.builder()
+          .tokenIssuer(HttpUrl.parse("http://somedomain.com"))
+          .tokenSubject("test")
+          .tokenAudience("some-audience")
+          .build(),
+        Instant.now().plusSeconds(30)
+      ));
   }
 
   /**
@@ -54,28 +67,32 @@ public class JwksServer {
 
   /**
    * Creates a signed JWT using the provide auth settings (using default key 0)
+   *
    * @param jwtAuthSettings
-   * @param expiresAt jwt expiration
+   * @param expiresAt       jwt expiration
+   *
    * @return
    */
-  public String createJwt(JwtAuthSettings jwtAuthSettings, Instant expiresAt) {
+  public BearerToken createJwt(JwtAuthSettings jwtAuthSettings, Instant expiresAt) {
     return createJwtUsingKey(jwtAuthSettings, expiresAt, 0);
   }
 
   /**
    * Creates a signed JWT using the provide auth settings
+   *
    * @param jwtAuthSettings
-   * @param expiresAt jwt expiration
-   * @param keyNum specific key number to use
+   * @param expiresAt       jwt expiration
+   * @param keyNum          specific key number to use
+   *
    * @return signed jwt
    */
-  public String createJwtUsingKey(JwtAuthSettings jwtAuthSettings, Instant expiresAt, int keyNum) {
+  public BearerToken createJwtUsingKey(JwtAuthSettings jwtAuthSettings, Instant expiresAt, int keyNum) {
     if (keyNum > KEY_IDS.size()) {
       throw new IllegalArgumentException(keyNum + " out of bounds");
     }
     KeyPair keyPair = keyPairs.get(keyNum);
     String keyId = KEY_IDS.get(keyNum);
-    return JWT.create()
+    return BearerToken.fromRawToken(JWT.create()
       .withAudience(jwtAuthSettings.tokenAudience().get())
       .withKeyId(keyId)
       .withIssuer(jwtAuthSettings.tokenIssuer().get().toString())
@@ -96,11 +113,12 @@ public class JwksServer {
         public String getPrivateKeyId() {
           return keyId;
         }
-      }));
+      })));
   }
 
   /**
    * Creates JWKS response with the public keys for this server
+   *
    * @return
    */
   public JwksResponse getJwks() {
@@ -108,14 +126,14 @@ public class JwksServer {
       IntStream
         .range(0, KEY_IDS.size())
         .mapToObj(index -> generateJWK(keyPairs.get(index).getPublic(), KEY_IDS.get(index)))
-      .collect(Collectors.toList()));
+        .collect(Collectors.toList()));
   }
 
   public int getKeyCount() {
     return keyPairs.size();
   }
 
-  private Map<String, Object> generateJWK(PublicKey publicKey, String keyId){
+  private Map<String, Object> generateJWK(PublicKey publicKey, String keyId) {
     RSAPublicKey rsa = (RSAPublicKey) publicKey;
     Map<String, Object> values = new HashMap<>();
     values.put("kty", rsa.getAlgorithm()); // getAlgorithm() returns kty not algorithm
@@ -131,6 +149,7 @@ public class JwksServer {
    * JWKS response object
    */
   public static class JwksResponse {
+
     private final List<Map<String, Object>> keys;
 
     public JwksResponse(List<Map<String, Object>> keys) {
@@ -140,18 +159,6 @@ public class JwksServer {
     public List<Map<String, Object>> getKeys() {
       return keys;
     }
-  }
-
-  public static void main(String[] args) {
-    JwksServer jwtServer = new JwksServer();
-    System.out.println(
-      jwtServer.createJwt(JwtAuthSettings.builder()
-      .tokenIssuer(HttpUrl.parse("http://somedomain.com"))
-      .tokenSubject("test")
-      .tokenAudience("some-audience")
-      .build(),
-      Instant.now().plusSeconds(30)
-    ));
   }
 
 

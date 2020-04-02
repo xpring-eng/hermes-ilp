@@ -36,11 +36,11 @@ public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
   @Test
   public void testCreateAccountWithTokenAndFullRequest() {
     CreateAccountRestRequest request = CreateAccountRestRequest.builder("USD", 6)
-      .accountId("foo")
+      .accountId(AccountId.of("foo"))
       .build();
 
     AccountSettingsResponse response = accountController
-      .createAccount(Optional.of("Bearer password"), Optional.of(request));
+      .createAccount(Optional.of(BearerToken.fromRawToken("password")), Optional.of(request));
     assertThat(response.accountId()).isEqualTo(AccountId.of("foo"));
     assertThat(response.assetCode()).isEqualTo("USD");
     assertThat(response.assetScale()).isEqualTo(6);
@@ -57,7 +57,7 @@ public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
   @Test
   public void testCreateAccountWithTokenButNoRequest() {
     AccountSettingsResponse response = accountController
-      .createAccount(Optional.of("Bearer password"), Optional.empty());
+      .createAccount(Optional.of(BearerToken.fromRawToken("password")), Optional.empty());
     assertThat(response.accountId().value()).startsWith("user_");
     assertThat(response.assetCode()).isEqualTo("XRP");
     assertThat(response.assetScale()).isEqualTo(9);
@@ -108,11 +108,11 @@ public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
    */
   @Test
   public void testCreateAccountWithJwtAndFullRequest() {
-    String accountID = "AccountServiceGRPCTest";
+    AccountId accountID = AccountId.of("AccountServiceGRPCTest");
     String accountDescription = "Noah's test account";
 
     JwtAuthSettings jwtAuthSettings = containers.defaultJwtAuthSettings(accountID);
-    BearerToken jwt = BearerToken.fromRawToken(containers.createJwt(accountID));
+    BearerToken jwt = containers.createJwt(accountID);
 
     CreateAccountRestRequest request = CreateAccountRestRequest.builder("XRP", 9)
       .accountId(accountID)
@@ -120,7 +120,7 @@ public class AccountsRestControllerUnitTests extends AbstractIntegrationTest {
       .build();
 
     AccountSettingsResponse createdAccountSettings = accountController
-      .createAccount(Optional.of(jwt.value()), Optional.of(request));
+      .createAccount(Optional.of(jwt), Optional.of(request));
 
     assertThat(createdAccountSettings.paymentPointer())
       .isEqualTo(PaymentPointer.of(containers.paymentPointerBase() + "/" + createdAccountSettings.accountId()));

@@ -4,6 +4,7 @@ import org.interledger.connector.accounts.AccountNotFoundProblem;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.gax.rpc.ResponseObserver;
 import feign.FeignException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -11,6 +12,8 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.zalando.problem.Problem;
+import org.zalando.problem.ThrowableProblem;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +37,12 @@ public class ExceptionHandlerUtils {
     this.objectMapper = Objects.requireNonNull(objectMapper);
   }
 
+  /**
+   * Handle an exception by mapping it to something that gRPC can understand.
+   *
+   * @param exception        An {@link Exception} thrown by any code.
+   * @param responseObserver A {@link ResponseObserver} that can return a response back to a gRPC client.
+   */
   public void handleException(final Exception exception, final StreamObserver<?> responseObserver) {
     Objects.requireNonNull(exception);
     Objects.requireNonNull(responseObserver);
@@ -83,6 +92,21 @@ public class ExceptionHandlerUtils {
     else {
       logger.error(exception.getMessage(), exception);
       responseObserver.onError(new StatusRuntimeException(Status.INTERNAL));
+    }
+  }
+
+  /**
+   * Map a {@link FeignException} to a {@link Problem}.
+   *
+   * @param feignException A {@link FeignException} to map from.
+   *
+   * @return A {@link ThrowableProblem} to emit to the client.
+   */
+  public ThrowableProblem mapToProblem(final FeignException feignException) {
+    try {
+      return objectMapper.readValue(new String(feignException.content()), ThrowableProblem.class);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e.getMessage(), e);
     }
   }
 }

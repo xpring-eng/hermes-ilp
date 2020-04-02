@@ -1,5 +1,7 @@
 package org.interledger.spsp.server.services;
 
+import static org.interledger.spsp.server.config.ilp.IlpOverHttpConfig.SPSP;
+
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountRelationship;
 import org.interledger.connector.accounts.AccountSettings;
@@ -16,6 +18,7 @@ import org.interledger.spsp.server.model.CreateAccountRestRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +37,7 @@ public class NewAccountService {
   public NewAccountService(
     final ConnectorAdminClient adminClient,
     final OutgoingLinkSettings spspLinkSettings,
-    final InterledgerAddressPrefix spspAddressPrefix
+    @Qualifier(SPSP) final InterledgerAddressPrefix spspAddressPrefix
   ) {
     this.adminClient = adminClient;
     this.spspLinkSettings = spspLinkSettings;

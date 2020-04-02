@@ -14,6 +14,8 @@ import io.grpc.stub.StreamObserver;
 import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.Optional;
+
 @GRpcService
 public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpServiceImplBase {
 
@@ -33,7 +35,7 @@ public class IlpOverHttpGrpcHandler extends IlpOverHttpServiceGrpc.IlpOverHttpSe
       final BearerToken bearerToken = BearerToken.fromBearerTokenValue(ilpGrpcAuthContext.getAuthorizationHeader());
       final SendMoneyResult result = sendMoneyService.sendMoney(
         AccountId.of(request.getAccountId()),
-        bearerToken,
+        Optional.of(bearerToken),
         UnsignedLong.valueOf(request.getAmount()),
         PaymentPointer.of(request.getDestinationPaymentPointer())
       );

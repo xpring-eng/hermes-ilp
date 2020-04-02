@@ -132,8 +132,10 @@ public class IlpOverHttpConfig {
 
   @Bean
   @Qualifier(SPSP)
-  OutgoingLinkSettings spspSettings(@Qualifier(SPSP) HttpUrl receiverUrl,
-    @Value("${interledger.spsp.auth-token}") String spspAuthToken) {
+  OutgoingLinkSettings spspSettings(
+    @Qualifier(SPSP) HttpUrl receiverUrl,
+    @Value("${interledger.spsp.auth-token}") String spspAuthToken
+  ) {
     return OutgoingLinkSettings.builder()
       .authType(IlpOverHttpLinkSettings.AuthType.SIMPLE)
       .url(receiverUrl.newBuilder().addPathSegment("ilp").build())
@@ -148,8 +150,9 @@ public class IlpOverHttpConfig {
   }
 
   @Bean
-  SpspClient spspClient(OkHttpClient okHttpClient, PaymentPointerResolver paymentPointerResolver,
-    ObjectMapper objectMapper) {
+  SpspClient spspClient(
+    OkHttpClient okHttpClient, PaymentPointerResolver paymentPointerResolver, ObjectMapper objectMapper
+  ) {
     return new SimpleSpspClient(okHttpClient, paymentPointerResolver, objectMapper);
   }
 
@@ -174,12 +177,17 @@ public class IlpOverHttpConfig {
   }
 
   @Bean
-  public SendMoneyService sendMoneyService(@Value("${interledger.connector.connector-url}") String connectorUrl,
+  public SendMoneyService sendMoneyService(
+    @Value("${interledger.connector.connector-url}") String connectorUrl,
     ObjectMapper objectMapper,
     ConnectorAdminClient adminClient,
     OkHttpClient okHttpClient,
-    SpspClient spspClient) {
-    return new SendMoneyService(HttpUrl.parse(connectorUrl), objectMapper, adminClient, okHttpClient, spspClient);
+    SpspClient spspClient,
+    @Qualifier(SPSP) InterledgerAddressPrefix spspAddressPrefix
+  ) {
+    return new SendMoneyService(
+      HttpUrl.parse(connectorUrl), objectMapper, adminClient, okHttpClient, spspClient, spspAddressPrefix
+    );
   }
 
   @Bean

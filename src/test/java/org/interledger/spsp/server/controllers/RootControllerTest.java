@@ -42,5 +42,4 @@ public class RootControllerTest extends AbstractIntegrationTest {
     assertJson.hasJsonPath("version");
     assertJson.hasJsonPath("ilpOverHttpUrl");
   }
-
 }

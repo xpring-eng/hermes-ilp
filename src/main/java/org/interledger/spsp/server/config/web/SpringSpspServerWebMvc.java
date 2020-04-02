@@ -3,6 +3,7 @@ package org.interledger.spsp.server.config.web;
 import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM;
 
 import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
+import org.interledger.spsp.server.model.BearerTokenHeaderConverter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -49,6 +50,8 @@ public class SpringSpspServerWebMvc implements WebMvcConfigurer {
     converters.add(new MappingJackson2HttpMessageConverter(objectMapper)); // For any JSON payloads.
   }
 
+
+
   @Override
   public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
     converters.replaceAll(messageConverter -> {
@@ -71,6 +74,7 @@ public class SpringSpspServerWebMvc implements WebMvcConfigurer {
 
   @Override
   public void addFormatters(FormatterRegistry registry) {
+    registry.addConverter(new BearerTokenHeaderConverter());
 //    registry.addConverter(rateLimitSettingsEntityConverter);
 //    registry.addConverter(accountBalanceSettingsEntityConverter);
 //    registry.addConverter(settlementEngineDetailsEntityConverter);

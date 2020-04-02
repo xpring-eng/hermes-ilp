@@ -1,5 +1,6 @@
 package org.interledger.spsp.server.model;
 
+import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.services.AccountGeneratorService;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -14,7 +15,7 @@ public interface CreateAccountRestRequest {
   }
 
   @Value.Default
-  default String accountId() {
+  default AccountId accountId() {
     return AccountGeneratorService.generateAccountId();
   }
 

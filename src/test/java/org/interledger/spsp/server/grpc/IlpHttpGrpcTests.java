@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RunWith(SpringRunner.class)
@@ -81,8 +82,8 @@ public class IlpHttpGrpcTests extends AbstractIntegrationTest {
 
   @Before
   public void startUp() throws IOException {
-    createTestAccount("alice");
-    createTestAccount("bob");
+    createTestAccount(AccountId.of("alice"));
+    createTestAccount(AccountId.of("bob"));
     registerGrpc();
   }
 
@@ -105,7 +106,7 @@ public class IlpHttpGrpcTests extends AbstractIntegrationTest {
       grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build()));
   }
 
-  private void createTestAccount(String jwtSubject) {
+  private void createTestAccount(AccountId jwtSubject) {
     JwtAuthSettings jwtAuthSettings = containers.defaultJwtAuthSettings(jwtSubject);
     createTestAccount(jwtAuthSettings);
   }
@@ -147,7 +148,7 @@ public class IlpHttpGrpcTests extends AbstractIntegrationTest {
   @Test
   public void sendMoneyTest() throws JsonProcessingException {
     int sendAmount = 10000;
-    BearerToken aliceJwt = BearerToken.fromRawToken(containers.createJwt("alice", 10));
+    BearerToken aliceJwt = containers.createJwt(AccountId.of("alice"), 10);
 
     SendPaymentRequest sendMoneyRequest = SendPaymentRequest.newBuilder()
       .setAccountId("alice")
@@ -174,9 +175,9 @@ public class IlpHttpGrpcTests extends AbstractIntegrationTest {
 
     assertThat(response).isEqualToComparingFieldByField(expected);
 
-    BearerToken bobJwt = BearerToken.fromRawToken(containers.createJwt("bob", 10));
-    AccountBalanceResponse aliceBalance = balanceClient.getBalance(aliceJwt.value(), AccountId.of("alice"));
-    AccountBalanceResponse bobBalance = balanceClient.getBalance(bobJwt.value(), AccountId.of("bob"));
+    BearerToken bobJwt = containers.createJwt(AccountId.of("bob"), 10);
+    AccountBalanceResponse aliceBalance = balanceClient.getBalance(Optional.of(aliceJwt), AccountId.of("alice"));
+    AccountBalanceResponse bobBalance = balanceClient.getBalance(Optional.of(bobJwt), AccountId.of("bob"));
 
     logger.info("Alice's balance after sending payment: ");
     logger.info(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(aliceBalance));

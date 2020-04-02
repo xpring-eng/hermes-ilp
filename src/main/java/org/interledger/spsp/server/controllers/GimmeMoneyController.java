@@ -46,10 +46,10 @@ public class GimmeMoneyController {
     value = "/accounts/{accountId}/money", method = {RequestMethod.POST},
     produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
   )
-  public UnsignedLong getBalance(@PathVariable("accountId") String accountId) {
+  public UnsignedLong getBalance(@PathVariable("accountId") AccountId accountId) {
     try {
       UnsignedLong amount = UnsignedLong.valueOf(ONE_XRP_IN_SCALE_9 * 10);
-      return gimmeMoneyService.gimmeMoney(AccountId.of(accountId), amount);
+      return gimmeMoneyService.gimmeMoney(accountId, amount);
     } catch (ExecutionException | InterruptedException e) {
       throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
     }
