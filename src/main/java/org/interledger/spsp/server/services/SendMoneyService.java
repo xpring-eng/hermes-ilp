@@ -20,6 +20,7 @@ import org.interledger.stream.SendMoneyResult;
 import org.interledger.stream.crypto.JavaxStreamEncryptionService;
 import org.interledger.stream.sender.FixedSenderAmountPaymentTracker;
 import org.interledger.stream.sender.SimpleStreamSender;
+import org.interledger.stream.sender.StreamConnectionManager;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.primitives.UnsignedLong;
@@ -107,15 +108,16 @@ public class SendMoneyService {
     // TODO: https://github.com/xpring-eng/hermes-ilp/issues/50
     // SenderAddress is {connectorIlpAddress}.{spsp-prefix}.{accountId}.{shared_secret}
     final InterledgerAddress senderAddress = InterledgerAddress.of(
-        spspAddressPrefix.with(senderAccountId.value()
+      spspAddressPrefix.with(senderAccountId.value()
       ).with("NotYetImplemented").getValue());
 
     // Use ILP over HTTP for our underlying link
-    IlpOverHttpLink link = newIlpOverHttpLink(senderAddress, senderAccountId, bearerToken.map(BearerToken::rawToken).orElse(""));
+    IlpOverHttpLink link = newIlpOverHttpLink(senderAddress, senderAccountId,
+      bearerToken.map(BearerToken::rawToken).orElse(""));
 
     // Create SimpleStreamSender for sending STREAM payments
     SimpleStreamSender simpleStreamSender = new SimpleStreamSender(
-      new JavaxStreamEncryptionService(), link, executorService
+      link, Duration.ofMillis(10L), new JavaxStreamEncryptionService(), new StreamConnectionManager(), executorService
     );
 
     // Send payment using STREAM
