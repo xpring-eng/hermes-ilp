@@ -10,7 +10,7 @@
     </parent>
     <groupId>io.xpring.interledger.hermes</groupId>
     <artifactId>hermes-server</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.2.1</version>
     <name>Hermes Parent</name>
     <description>
         An ILP-as-a-Service endpoint that provides STREAM sending and SPSP support via gRPC to Xpring Wallet
