@@ -4,9 +4,9 @@ package org.interledger.spsp.server.client;
 import org.interledger.connector.accounts.AccountId;
 import org.interledger.spsp.server.config.jackson.ObjectMapperFactory;
 import org.interledger.spsp.server.model.BearerToken;
-import org.interledger.spsp.server.model.BearerTokenHeaderConverter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import feign.Body;
 import feign.Feign;
 import feign.Headers;
 import feign.Param;
@@ -46,8 +46,10 @@ public interface ConnectorTokensClient {
   @RequestLine("POST /accounts/{accountId}/tokens")
   @Headers({
     ACCEPT + APPLICATION_JSON,
-    "Authorization: {authorizationHeader}"
+    "Authorization: {authorizationHeader}",
+    "Content-Type: " + APPLICATION_JSON
   })
+  @Body(" ") // work around for https://github.com/xpring-eng/hermes-ilp/issues/59
   CreateAccessTokenResponse createToken(
     @Param(value = "authorizationHeader", expander = OptionalBearerTokenExpander.class) Optional<BearerToken> authorizationHeader,
     @Param("accountId") AccountId accountId
