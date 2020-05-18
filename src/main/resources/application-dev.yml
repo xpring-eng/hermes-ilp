@@ -6,14 +6,14 @@ spring:
 
 interledger:
   connector:
-    connector-url: http://localhost:8000
+    connector-url: http://localhost:8080
     admin-password: admin:password
   # SPSP settings below are used to create new accounts on the Connector so that they forward and route proplery to
   # the remote SPSP server.
   spsp:
-    spsp-url: https://money.ilpv4.dev
+    spsp-url: http://localhost:8080
     auth-token: placeholder:c2ho
-    address-prefix: test.jc.money
+    address-prefix: test1.connie
 
 grpc:
   enableReflection: true

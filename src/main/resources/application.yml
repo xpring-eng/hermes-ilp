@@ -10,6 +10,9 @@ management:
   endpoints:
     enabled-by-default: false
 
+server:
+  port: 8082
+
 spring:
   cache:
     redis:

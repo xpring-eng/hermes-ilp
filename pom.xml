@@ -43,7 +43,7 @@
 
         <java.version>1.8</java.version>
         <quilt.version>1.2.0</quilt.version>
-        <ilp-connector.version>0.3.0</ilp-connector.version>
+        <ilp-connector.version>HEAD-SNAPSHOT</ilp-connector.version>
         <problem.version>0.23.0</problem.version>
         <problem-spring-web.version>0.25.2</problem-spring-web.version>
         <failBuildOnAnyVulnerability>false</failBuildOnAnyVulnerability>
@@ -229,6 +229,10 @@
         <dependency>
             <groupId>org.interledger.connector</groupId>
             <artifactId>connector-crypto</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.interledger.connector</groupId>
+            <artifactId>connector-model</artifactId>
         </dependency>
         <dependency>
             <groupId>org.interledger.connector</groupId>
@@ -465,6 +469,11 @@
             <dependency>
                 <groupId>org.interledger.connector</groupId>
                 <artifactId>connector-crypto</artifactId>
+                <version>${ilp-connector.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.interledger.connector</groupId>
+                <artifactId>connector-model</artifactId>
                 <version>${ilp-connector.version}</version>
             </dependency>
             <dependency>

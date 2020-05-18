@@ -7,6 +7,7 @@ import org.interledger.connector.accounts.AccountId;
 import org.interledger.connector.accounts.AccountNotFoundProblem;
 import org.interledger.connector.accounts.AccountSettings;
 import org.interledger.connector.client.ConnectorAdminClient;
+import org.interledger.connector.payments.ListStreamPaymentsResponse;
 import org.interledger.spsp.server.client.AccountSettingsResponse;
 import org.interledger.spsp.server.model.BearerToken;
 import org.interledger.spsp.server.model.CreateAccountRestRequest;
@@ -79,6 +80,16 @@ public class AccountController {
       .from(accountSettings)
       .paymentPointer(paymentPointerFromSpspUrl(spspReceiverUrl, accountSettings.accountId()))
       .build();
+  }
+
+  @RequestMapping(
+    value = "/accounts/{accountId}/payments",
+    method = {RequestMethod.GET},
+    produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.PROBLEM_VALUE}
+  )
+  public @ResponseBody
+  ListStreamPaymentsResponse getAccountPayments(@PathVariable("accountId") AccountId accountId) {
+    return adminClient.findAccountPayments(accountId.value());
   }
 
   @RequestMapping(
