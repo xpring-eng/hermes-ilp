@@ -54,7 +54,7 @@
     "typescript-eslint-parser": "22.0.0"
   },
   "dependencies": {
-    "grpc": "^1.24.2"
+    "grpc": "^1.24.9"
   },
   "nyc": {
     "extension": [
