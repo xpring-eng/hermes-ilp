@@ -54,7 +54,7 @@
     "typescript": "3.5.3",
     "typescript-eslint-parser": "22.0.0",
     "webpack": "^4.41.2",
-    "webpack-cli": "^3.3.10"
+    "webpack-cli": "^3.3.12"
   },
   "dependencies": {
     "google-protobuf": "^3.11.2",
