@@ -53,8 +53,8 @@
     "tslint-eslint-rules": "^5.4.0",
     "typescript": "3.5.3",
     "typescript-eslint-parser": "22.0.0",
-    "webpack": "^4.41.2",
-    "webpack-cli": "^3.3.10"
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
   },
   "dependencies": {
     "google-protobuf": "^3.11.2",
